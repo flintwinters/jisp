@@ -62,5 +62,128 @@
       "required": ["stack", "variables", "state"],
       "additionalProperties": true
     }
+  },
+  {
+    "description": "Test Case 3: Exists operation - variable exists.",
+    "jisp_program": {
+      "code": [
+        {"op": "push", "args": "some_value"},
+        {"op": "push", "args": "existing_var"},
+        {"op": "set"},
+        {"op": "push", "args": "existing_var"},
+        {"op": "exists"}
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {"type": "boolean", "const": true}
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "existing_var": {"type": "string", "const": "some_value"}
+          },
+          "required": ["existing_var"],
+          "additionalProperties": true
+        }
+      },
+      "required": ["stack", "variables"],
+      "additionalProperties": true
+    }
+  },
+  {
+    "description": "Test Case 4: Exists operation - variable does not exist.",
+    "jisp_program": {
+      "code": [
+        {"op": "push", "args": "non_existent_var"},
+        {"op": "exists"}
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {"type": "boolean", "const": false}
+        },
+        "variables": {"type": "object", "maxProperties": 0}
+      },
+      "required": ["stack", "variables"],
+      "additionalProperties": true
+    }
+  },
+  {
+    "description": "Test Case 5: Delete operation.",
+    "jisp_program": {
+      "code": [
+        {"op": "push", "args": "value_to_delete"},
+        {"op": "push", "args": "var_to_delete"},
+        {"op": "set"},
+        {"op": "push", "args": "var_to_delete"},
+        {"op": "delete"}
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {"type": "object", "maxProperties": 0}
+      },
+      "required": ["stack", "variables"],
+      "additionalProperties": true
+    }
+  },
+  {
+    "description": "Test Case 6: Eq operation - equal values.",
+    "jisp_program": {
+      "code": [
+        {"op": "push", "args": 10},
+        {"op": "push", "args": 10},
+        {"op": "eq"}
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {"type": "boolean", "const": true}
+        }
+      },
+      "required": ["stack"],
+      "additionalProperties": true
+    }
+  },
+  {
+    "description": "Test Case 7: Eq operation - unequal values.",
+    "jisp_program": {
+      "code": [
+        {"op": "push", "args": 10},
+        {"op": "push", "args": 20},
+        {"op": "eq"}
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {"type": "boolean", "const": false}
+        }
+      },
+      "required": ["stack"],
+      "additionalProperties": true
+    }
   }
 ]

@@ -78,6 +78,76 @@ func (jp *JispProgram) Get() error {
 	return nil
 }
 
+// Exists checks if a variable exists in the Variables map and pushes the boolean result onto the stack.
+func (jp *JispProgram) Exists() error {
+	if len(jp.Stack) == 0 {
+		return fmt.Errorf("stack underflow for exists: expected key on stack")
+	}
+
+	keyVal := jp.Stack[len(jp.Stack)-1]
+	key, ok := keyVal.(string)
+	if !ok {
+		return fmt.Errorf("exists error: expected a string key on top of stack, got %T", keyVal)
+	}
+	jp.Stack = jp.Stack[:len(jp.Stack)-1] // Remove key
+
+	_, found := jp.Variables[key]
+	jp.Push(found)
+	return nil
+}
+
+// Delete removes a variable from the Variables map.
+func (jp *JispProgram) Delete() error {
+	if len(jp.Stack) == 0 {
+		return fmt.Errorf("stack underflow for delete: expected key on stack")
+	}
+
+	keyVal := jp.Stack[len(jp.Stack)-1]
+	key, ok := keyVal.(string)
+	if !ok {
+		return fmt.Errorf("delete error: expected a string key on top of stack, got %T", keyVal)
+	}
+	jp.Stack = jp.Stack[:len(jp.Stack)-1] // Remove key
+
+	if jp.Variables != nil {
+		delete(jp.Variables, key)
+	}
+	return nil
+}
+
+// Eq pops two values, checks for strict equality, and pushes the boolean result onto the stack.
+func (jp *JispProgram) Eq() error {
+	if len(jp.Stack) < 2 {
+		return fmt.Errorf("stack underflow for eq: expected two values on stack")
+	}
+
+	b := jp.Stack[len(jp.Stack)-1]
+	a := jp.Stack[len(jp.Stack)-2]
+	jp.Stack = jp.Stack[:len(jp.Stack)-2] // Pop a and b
+
+	jp.Push(a == b)
+	return nil
+}
+
+// Add pops two numbers, adds them, and pushes the result onto the stack.
+func (jp *JispProgram) Add() error {
+	if len(jp.Stack) < 2 {
+		return fmt.Errorf("stack underflow for add: expected two numbers on stack")
+	}
+
+	b := jp.Stack[len(jp.Stack)-1]
+	a := jp.Stack[len(jp.Stack)-2]
+	jp.Stack = jp.Stack[:len(jp.Stack)-2] // Pop a and b
+
+	numA, okA := a.(float64) // JSON numbers are float64
+	numB, okB := b.(float64)
+	if !okA || !okB {
+		return fmt.Errorf("add error: expected two numbers on stack, got %T and %T", a, b)
+	}
+	jp.Push(numA + numB)
+	return nil
+}
+
 // JispOperation represents a single operation in a JISP program.
 type JispOperation struct {
 	Op   string      `json:"op"`
@@ -120,21 +190,14 @@ func main() {
 			err = jp.Set()
 		case "get":
 			err = jp.Get()
+		case "exists":
+			err = jp.Exists()
+		case "delete":
+			err = jp.Delete()
+		case "eq":
+			err = jp.Eq()
 		case "add":
-			if len(jp.Stack) < 2 {
-				err = fmt.Errorf("stack underflow for add: expected two numbers on stack")
-			} else {
-				a := jp.Stack[len(jp.Stack)-2]
-				b := jp.Stack[len(jp.Stack)-1]
-				jp.Stack = jp.Stack[:len(jp.Stack)-2] // Pop a and b
-				numA, okA := a.(float64) // JSON numbers are float64
-				numB, okB := b.(float64)
-				if !okA || !okB {
-					err = fmt.Errorf("add error: expected two numbers on stack, got %T and %T", a, b)
-				} else {
-					jp.Push(numA + numB)
-				}
-			}
+			err = jp.Add()
 		default:
 			err = fmt.Errorf("unknown operation: %s", op.Op)
 		}
