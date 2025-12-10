@@ -78,112 +78,77 @@ func (jp *JispProgram) Get() error {
 	return nil
 }
 
-func main() {
-	fmt.Println("Hello from JISP Go!")
-
-	// Simple JSON parsing sanity check (kept for now, but not directly related to JISP ops)
-	jsonString := `{"name": "Jisp Core", "version": "0.1.0"}`
-	var config struct{ Name, Version string }
-	err := json.Unmarshal([]byte(jsonString), &config)
-	if err != nil {
-		log.Printf("Warning: Error parsing JSON in main (JispConfig): %v\n", err)
-	} else {
-		fmt.Printf("Parsed Jisp Config: Name=%s, Version=%s\n", config.Name, config.Version)
-	}
-
-	// Run all JISP operation tests
-	if !TestPush() || !TestSetGetPop() {
-		fmt.Println("One or more JISP operation tests failed!")
-		os.Exit(1) // Indicate failure
-	}
-	os.Exit(0) // Indicate success
+// JispOperation represents a single operation in a JISP program.
+type JispOperation struct {
+	Op   string      `json:"op"`
+	Args interface{} `json:"args"`
 }
 
-// TestPush performs a simple test of the Push operation.
-func TestPush() bool {
+// JispCode represents the code part of a JISP program.
+type JispCode struct {
+	Code []JispOperation `json:"code"`
+}
+
+func main() {
 	jp := &JispProgram{
 		Stack:     []interface{}{},
 		Variables: make(map[string]interface{}),
 		State:     make(map[string]interface{}),
 	}
 
-	jp.Push(10)
-	jp.Push("hello")
-	jp.Push(true)
-
-	expectedStack := []interface{}{10, "hello", true}
-
-	if len(jp.Stack) != len(expectedStack) {
-		fmt.Printf("TestPush: Stack length mismatch. Expected %d, got %d\n", len(expectedStack), len(jp.Stack))
-		return false
+	// Read JISP program from stdin
+	var jispCode JispCode
+	decoder := json.NewDecoder(os.Stdin)
+	if err := decoder.Decode(&jispCode); err != nil {
+		log.Fatalf("Error reading JISP program from stdin: %v", err)
 	}
 
-	for i, v := range jp.Stack {
-		if v != expectedStack[i] {
-			fmt.Printf("TestPush: Stack content mismatch at index %d. Expected %v, got %v\n", i, expectedStack[i], v)
-			return false
+	// Execute JISP operations
+	for _, op := range jispCode.Code {
+		var err error
+		switch op.Op {
+		case "push":
+			jp.Push(op.Args)
+		case "pop":
+			fieldName, ok := op.Args.(string)
+			if !ok {
+				err = fmt.Errorf("pop error: expected string argument for fieldName, got %T", op.Args)
+			} else {
+				err = jp.Pop(fieldName)
+			}
+		case "set":
+			err = jp.Set()
+		case "get":
+			err = jp.Get()
+		case "add":
+			if len(jp.Stack) < 2 {
+				err = fmt.Errorf("stack underflow for add: expected two numbers on stack")
+			} else {
+				a := jp.Stack[len(jp.Stack)-2]
+				b := jp.Stack[len(jp.Stack)-1]
+				jp.Stack = jp.Stack[:len(jp.Stack)-2] // Pop a and b
+				numA, okA := a.(float64) // JSON numbers are float64
+				numB, okB := b.(float64)
+				if !okA || !okB {
+					err = fmt.Errorf("add error: expected two numbers on stack, got %T and %T", a, b)
+				} else {
+					jp.Push(numA + numB)
+				}
+			}
+		default:
+			err = fmt.Errorf("unknown operation: %s", op.Op)
+		}
+
+		if err != nil {
+			log.Fatalf("Error executing operation '%s': %v", op.Op, err)
 		}
 	}
 
-	fmt.Println("TestPush: Push operation check passed.")
-	return true
-}
-
-// TestSetGetPop performs a combined test of Set, Get, and Pop operations.
-func TestSetGetPop() bool {
-	// Test Case 1: Set operation
-	jp1 := &JispProgram{
-		Stack:     []interface{}{},
-		Variables: make(map[string]interface{}),
-		State:     make(map[string]interface{}),
+	// Output final JispProgram state as JSON
+	encoder := json.NewEncoder(os.Stdout)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(jp); err != nil {
+		log.Fatalf("Error encoding JISP program state to stdout: %v", err)
 	}
-	jp1.Push("test_value_set")
-	jp1.Push("test_key_set")
-	if err := jp1.Set(); err != nil {
-		fmt.Printf("TestSetGetPop: Set operation failed: %v\n", err)
-		return false
-	}
-	if val, found := jp1.Variables["test_key_set"]; !found || val != "test_value_set" {
-		fmt.Printf("TestSetGetPop: Set operation failed, variable not set correctly. Got %v\n", val)
-		return false
-	}
-
-	// Test Case 2: Get operation
-	jp2 := &JispProgram{
-		Stack:     []interface{}{},
-		Variables: map[string]interface{}{"test_key_get": "test_value_get"},
-		State:     make(map[string]interface{}),
-	}
-	jp2.Push("test_key_get")
-	if err := jp2.Get(); err != nil {
-		fmt.Printf("TestSetGetPop: Get operation failed: %v\n", err)
-		return false
-	}
-	if len(jp2.Stack) != 1 || jp2.Stack[0] != "test_value_get" {
-		fmt.Printf("TestSetGetPop: Get operation failed, stack content mismatch. Expected [test_value_get], got %v\n", jp2.Stack)
-		return false
-	}
-
-	// Test Case 3: Pop operation
-	jp3 := &JispProgram{
-		Stack:     []interface{}{},
-		Variables: make(map[string]interface{}),
-		State:     make(map[string]interface{}),
-	}
-	jp3.Push(42)
-	if err := jp3.Pop("result_field"); err != nil {
-		fmt.Printf("TestSetGetPop: Pop operation failed: %v\n", err)
-		return false
-	}
-	if len(jp3.Stack) != 0 {
-		fmt.Printf("TestSetGetPop: Pop operation failed, stack not empty. Got %v\n", jp3.Stack)
-		return false
-	}
-	if val, found := jp3.State["result_field"]; !found || val != 42 {
-		fmt.Printf("TestSetGetPop: Pop operation failed, state field not set correctly. Expected 42, got %v\n", val)
-		return false
-	}
-
-	fmt.Println("TestSetGetPop: Set, Get, and Pop operations check passed.")
-	return true
+	os.Exit(0)
 }
