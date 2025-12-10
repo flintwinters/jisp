@@ -13,9 +13,16 @@
       "type": "object",
       "properties": {
         "stack": {"type": "array", "maxItems": 0},
-        "result_of_addition": {"type": "number", "const": 8}
+        "state": {
+          "type": "object",
+          "properties": {
+            "result_of_addition": {"type": "number", "const": 8}
+          },
+          "required": ["result_of_addition"],
+          "additionalProperties": true
+        }
       },
-      "required": ["stack", "result_of_addition"],
+      "required": ["stack", "state"],
       "additionalProperties": true
     }
   },
@@ -43,9 +50,16 @@
           "required": ["my_variable"],
           "additionalProperties": true
         },
-        "retrieved_message": {"type": "string", "const": "Hello, JISP!"}
+        "state": {
+          "type": "object",
+          "properties": {
+            "retrieved_message": {"type": "string", "const": "Hello, JISP!"}
+          },
+          "required": ["retrieved_message"],
+          "additionalProperties": true
+        }
       },
-      "required": ["stack", "variables", "retrieved_message"],
+      "required": ["stack", "variables", "state"],
       "additionalProperties": true
     }
   }
