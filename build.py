@@ -27,10 +27,10 @@ def run_and_test_binary():
         result = subprocess.run(run_command, check=True, capture_output=True, text=True)
         console.print(f"[bold cyan]Binary Output[/bold cyan]\n{result.stdout.strip()}")
 
-        if "TestJisp: JSON parsing check passed." in result.stdout:
+        if result.returncode == 0:
             return True
         else:
-            console.print("[bold red]❌ TestJisp did NOT report success.[/bold red]")
+            console.print(f"[bold red]❌ Go binary exited with non-zero status: {result.returncode}[/bold red]")
             return False
 
     except subprocess.CalledProcessError as e:

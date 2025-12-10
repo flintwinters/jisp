@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 )
 
 // JispProgram represents the entire state of a JISP program.
@@ -92,8 +93,10 @@ func main() {
 
 	// Run all JISP operation tests
 	if !TestPush() || !TestSetGetPop() {
-		log.Fatal("One or more JISP operation tests failed!")
+		fmt.Println("One or more JISP operation tests failed!")
+		os.Exit(1) // Indicate failure
 	}
+	os.Exit(0) // Indicate success
 }
 
 // TestPush performs a simple test of the Push operation.
