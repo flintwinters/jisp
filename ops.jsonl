@@ -3,7 +3,7 @@
 {"op": "exists", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "array", "items": {"type": ["string", "number"]}}}, "output": {"type": "boolean"}, "doc": "Return true if the given JSON path exists."}
 {"op": "delete", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "array", "items": {"type": ["string", "number"]}}}, "output": {"type": "null"}, "doc": "Remove a key or index from the given JSON path."}
 {"op": "push", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {}}, "output": {"type": "null"}, "doc": "Push a value onto the operand stack."}
-{"op": "pop", "args": {"type": "array", "maxItems": 0}, "output": {}, "doc": "Pop and return the top value from the operand stack."}
+{"op": "pop", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "string"}}, "output": {"type": "null"}, "doc": "Pop the top value from the operand stack and move it to the program state field specified by the argument."}
 {"op": "eq", "args": {"type": "array", "minItems": 2, "maxItems": 2, "items": [{}, {}]}, "output": {"type": "boolean"}, "doc": "Return true if two values are strictly equal."}
 {"op": "lt", "args": {"type": "array", "minItems": 2, "maxItems": 2, "items": [{"type": ["number", "string"]}, {"type": ["number", "string"]}]}, "output": {"type": "boolean"}, "doc": "Return true if a < b."}
 {"op": "gt", "args": {"type": "array", "minItems": 2, "maxItems": 2, "items": [{"type": ["number", "string"]}, {"type": ["number", "string"]}]}, "output": {"type": "boolean"}, "doc": "Return true if a > b."}

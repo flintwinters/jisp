@@ -6,15 +6,16 @@
         {"op": "push", "args": 5},
         {"op": "push", "args": 3},
         {"op": "add"},
-        {"op": "pop"}
+        {"op": "pop", "args": "result_of_addition"}
       ]
     },
     "validation_schema": {
       "type": "object",
       "properties": {
-        "stack": {"type": "array", "maxItems": 0}
+        "stack": {"type": "array", "maxItems": 0},
+        "result_of_addition": {"type": "number", "const": 8}
       },
-      "required": ["stack"],
+      "required": ["stack", "result_of_addition"],
       "additionalProperties": true
     }
   },
@@ -27,7 +28,7 @@
         {"op": "set"},
         {"op": "push", "args": "my_variable"},
         {"op": "get"},
-        {"op": "pop"}
+        {"op": "pop", "args": "retrieved_message"}
       ]
     },
     "validation_schema": {
@@ -41,9 +42,10 @@
           },
           "required": ["my_variable"],
           "additionalProperties": true
-        }
+        },
+        "retrieved_message": {"type": "string", "const": "Hello, JISP!"}
       },
-      "required": ["stack", "variables"],
+      "required": ["stack", "variables", "retrieved_message"],
       "additionalProperties": true
     }
   }
