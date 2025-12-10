@@ -27,7 +27,6 @@ def compile_go_program():
 def run_checks_from_json():
     total_tests = 0
     passed_tests = 0
-    console.print(f"[bold blue]Running tests from {CHECKS_FILE}...[/bold blue]")
 
     try:
         with open(CHECKS_FILE, 'r') as f:
@@ -57,7 +56,6 @@ def run_checks_from_json():
             
             program_state = json.loads(process.stdout)
             validate(instance=program_state, schema=validation_schema)
-            console.print(f"[bold green]✔ Test '{description}' PASSED.[/bold green]")
             passed_tests += 1
         except subprocess.CalledProcessError as e:
             console.print(f"[bold red]❌ Test '{description}' FAILED: JISP program execution error.[/bold red]")
