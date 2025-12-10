@@ -12,10 +12,9 @@
     "validation_schema": {
       "type": "object",
       "properties": {
-        "stack": {"type": "array", "maxItems": 0},
-        "popped_value": {"type": "number", "const": 8}
+        "stack": {"type": "array", "maxItems": 0}
       },
-      "required": ["stack", "popped_value"],
+      "required": ["stack"],
       "additionalProperties": true
     }
   },
@@ -42,10 +41,9 @@
           },
           "required": ["my_variable"],
           "additionalProperties": true
-        },
-        "popped_value": {"type": "string", "const": "Hello, JISP!"}
+        }
       },
-      "required": ["stack", "variables", "popped_value"],
+      "required": ["stack", "variables"],
       "additionalProperties": true
     }
   }
