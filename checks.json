@@ -1,0 +1,52 @@
+[
+  {
+    "description": "Sanity Check 1: Simple stack-based addition.",
+    "jisp_program": {
+      "code": [
+        {"op": "push", "args": 5},
+        {"op": "push", "args": 3},
+        {"op": "add"},
+        {"op": "pop"}
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "popped_value": {"type": "number", "const": 8}
+      },
+      "required": ["stack", "popped_value"],
+      "additionalProperties": true
+    }
+  },
+  {
+    "description": "Sanity Check 2: Variable assignment and retrieval.",
+    "jisp_program": {
+      "code": [
+        {"op": "push", "args": "Hello, JISP!"},
+        {"op": "push", "args": "my_variable"},
+        {"op": "set"},
+        {"op": "push", "args": "my_variable"},
+        {"op": "get"},
+        {"op": "pop"}
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {
+            "my_variable": {"type": "string", "const": "Hello, JISP!"}
+          },
+          "required": ["my_variable"],
+          "additionalProperties": true
+        },
+        "popped_value": {"type": "string", "const": "Hello, JISP!"}
+      },
+      "required": ["stack", "variables", "popped_value"],
+      "additionalProperties": true
+    }
+  }
+]
