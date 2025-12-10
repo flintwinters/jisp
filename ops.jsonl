@@ -12,7 +12,7 @@
 {"op": "and", "args": {"type": "array", "minItems": 2, "maxItems": 2, "items": [{"type": "boolean"}, {"type": "boolean"}]}, "output": {"type": "boolean"}, "doc": "Logical AND."}
 {"op": "or", "args": {"type": "array", "minItems": 2, "maxItems": 2, "items": [{"type": "boolean"}, {"type": "boolean"}]}, "output": {"type": "boolean"}, "doc": "Logical OR."}
 {"op": "not", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "boolean"}}, "output": {"type": "boolean"}, "doc": "Logical NOT."}
-{"op": "if", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "boolean"}}, "output": {"type": "null"}, "doc": "Conditionally execute steps based on a boolean condition. The condition is taken from the stack, followed by the 'then' and optionally 'else' bodies."}
+{"op": "if", "args": {"type": "array", "minItems": 1, "maxItems": 2, "items": [{"type": "array", "items": {"type": "object"}}, {"type": "array", "items": {"type": "object"}}]}, "output": {"type": "null"}, "doc": "Conditionally execute steps based on a boolean condition popped from the stack. The arguments are the 'then' and optionally 'else' bodies (arrays of JispOperations)."}
 {"op": "call", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "string"}}, "output": {"type": "null"}, "doc": "Jump to a named workflow label and push a return point to the frame stack."}
 {"op": "return", "args": {"type": "array", "maxItems": 0}, "output": {"type": "null"}, "doc": "Return execution to the most recent call frame."}
 {"op": "for", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {}}, "output": {"type": "null"}, "doc": "Iterate over an array or object: evaluate `over`, bind each element to `var`, and execute `body` for each element."}

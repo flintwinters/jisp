@@ -185,5 +185,84 @@
       "required": ["stack"],
       "additionalProperties": true
     }
+  },
+  {
+    "description": "Test Case 8: If operation - true condition, then block executes.",
+    "jisp_program": {
+      "code": [
+        {"op": "push", "args": true},
+        {"op": "if", "args": [
+          [{"op": "push", "args": "then_executed"},
+           {"op": "pop", "args": "if_result"}]
+        ]}
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "state": {
+          "type": "object",
+          "properties": {
+            "if_result": {"type": "string", "const": "then_executed"}
+          },
+          "required": ["if_result"],
+          "additionalProperties": true
+        }
+      },
+      "required": ["stack", "state"],
+      "additionalProperties": true
+    }
+  },
+  {
+    "description": "Test Case 9: If operation - false condition, else block executes.",
+    "jisp_program": {
+      "code": [
+        {"op": "push", "args": false},
+        {"op": "if", "args": [
+          [{"op": "push", "args": "then_not_executed"},
+           {"op": "pop", "args": "if_result_then"}],
+          [{"op": "push", "args": "else_executed"},
+           {"op": "pop", "args": "if_result_else"}]
+        ]}
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "state": {
+          "type": "object",
+          "properties": {
+            "if_result_else": {"type": "string", "const": "else_executed"}
+          },
+          "required": ["if_result_else"],
+          "additionalProperties": false
+        }
+      },
+      "required": ["stack", "state"],
+      "additionalProperties": true
+    }
+  },
+  {
+    "description": "Test Case 10: If operation - false condition, no else block.",
+    "jisp_program": {
+      "code": [
+        {"op": "push", "args": false},
+        {"op": "if", "args": [
+          [{"op": "push", "args": "should_not_execute"},
+           {"op": "pop", "args": "if_result_no_else"}]
+        ]}
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "state": {"type": "object", "maxProperties": 0}
+      },
+      "required": ["stack", "state"],
+      "additionalProperties": true
+    }
   }
 ]

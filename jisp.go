@@ -148,6 +148,28 @@ func (jp *JispProgram) Add() error {
 	return nil
 }
 
+// If conditionally executes operations based on a boolean popped from the stack.
+func (jp *JispProgram) If(thenBody, elseBody []JispOperation) error {
+	if len(jp.Stack) == 0 {
+		return fmt.Errorf("stack underflow for if: expected boolean condition on stack")
+	}
+
+	conditionVal := jp.Stack[len(jp.Stack)-1]
+	jp.Stack = jp.Stack[:len(jp.Stack)-1] // Remove condition
+
+	condition, ok := conditionVal.(bool)
+	if !ok {
+		return fmt.Errorf("if error: expected boolean condition on stack, got %T", conditionVal)
+	}
+
+	if condition {
+		return jp.ExecuteOperations(thenBody)
+	} else if elseBody != nil {
+		return jp.ExecuteOperations(elseBody)
+	}
+	return nil
+}
+
 // JispOperation represents a single operation in a JISP program.
 type JispOperation struct {
 	Op   string      `json:"op"`
@@ -159,22 +181,9 @@ type JispCode struct {
 	Code []JispOperation `json:"code"`
 }
 
-func main() {
-	jp := &JispProgram{
-		Stack:     []interface{}{},
-		Variables: make(map[string]interface{}),
-		State:     make(map[string]interface{}),
-	}
-
-	// Read JISP program from stdin
-	var jispCode JispCode
-	decoder := json.NewDecoder(os.Stdin)
-	if err := decoder.Decode(&jispCode); err != nil {
-		log.Fatalf("Error reading JISP program from stdin: %v", err)
-	}
-
-	// Execute JISP operations
-	for _, op := range jispCode.Code {
+// ExecuteOperations iterates and executes a slice of JispOperations.
+func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
+	for _, op := range ops {
 		var err error
 		switch op.Op {
 		case "push":
@@ -198,13 +207,76 @@ func main() {
 			err = jp.Eq()
 		case "add":
 			err = jp.Add()
+		case "if":
+			argsArray, ok := op.Args.([]interface{})
+			if !ok || len(argsArray) < 1 || len(argsArray) > 2 {
+				return fmt.Errorf("if error: expected 1 or 2 array arguments for then/else bodies, got %v", op.Args)
+			}
+
+			thenBodyRaw, ok := argsArray[0].([]interface{})
+			if !ok {
+				return fmt.Errorf("if error: expected 'then' body to be an array of operations, got %T", argsArray[0])
+			}
+			thenBody := make([]JispOperation, len(thenBodyRaw))
+			for i, v := range thenBodyRaw {
+				opMap, isMap := v.(map[string]interface{})
+				if !isMap {
+					return fmt.Errorf("if error: expected 'then' body operation to be an object, got %T", v)
+				}
+				thenBody[i] = JispOperation{
+					Op:   opMap["op"].(string),
+					Args: opMap["args"],
+				}
+			}
+
+			var elseBody []JispOperation
+			if len(argsArray) == 2 {
+				elseBodyRaw, ok := argsArray[1].([]interface{})
+				if !ok {
+					return fmt.Errorf("if error: expected 'else' body to be an array of operations, got %T", argsArray[1])
+				}
+				elseBody = make([]JispOperation, len(elseBodyRaw))
+				for i, v := range elseBodyRaw {
+					opMap, isMap := v.(map[string]interface{})
+					if !isMap {
+						return fmt.Errorf("if error: expected 'else' body operation to be an object, got %T", v)
+					}
+					elseBody[i] = JispOperation{
+						Op:   opMap["op"].(string),
+						Args: opMap["args"],
+					}
+				}
+			}
+			err = jp.If(thenBody, elseBody)
+
 		default:
 			err = fmt.Errorf("unknown operation: %s", op.Op)
 		}
 
 		if err != nil {
-			log.Fatalf("Error executing operation '%s': %v", op.Op, err)
+			return fmt.Errorf("Error executing operation '%s': %v", op.Op, err)
 		}
+	}
+	return nil
+}
+
+func main() {
+	jp := &JispProgram{
+		Stack:     []interface{}{},
+		Variables: make(map[string]interface{}),
+		State:     make(map[string]interface{}),
+	}
+
+	// Read JISP program from stdin
+	var jispCode JispCode
+	decoder := json.NewDecoder(os.Stdin)
+	if err := decoder.Decode(&jispCode); err != nil {
+		log.Fatalf("Error reading JISP program from stdin: %v", err)
+	}
+
+	// Execute JISP operations
+	if err := jp.ExecuteOperations(jispCode.Code); err != nil {
+		log.Fatalf("Error during program execution: %v", err)
 	}
 
 	// Output final JispProgram state as JSON
