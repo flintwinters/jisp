@@ -8,7 +8,7 @@ from jsonschema import validate, ValidationError
 console = Console()
 
 GO_SOURCE_FILE = "jisp.go"
-BINARY_NAME = "jisp-go-binary"
+BINARY_NAME = "bin-jisp"
 CHECKS_FILE = "checks.json"
 
 def compile_go_program():
