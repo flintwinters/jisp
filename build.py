@@ -79,20 +79,13 @@ def run_checks_from_json():
         console.print(f"[bold red]{passed_tests}/{total_tests} tests passed.[/bold red]")
         return False
 
-def clean_up():
-    if os.path.exists(BINARY_NAME):
-        os.remove(BINARY_NAME)
-
 if __name__ == "__main__":
-    try:
-        if compile_go_program():
-            if run_checks_from_json():
-                sys.exit(0)
-            else:
-                console.print("[bold red]❌ JISP checks failed.[/bold red]")
-                sys.exit(1)
+    if compile_go_program():
+        if run_checks_from_json():
+            sys.exit(0)
         else:
-            console.print("[bold red]❌ Compilation failed.[/bold red]")
+            console.print("[bold red]❌ JISP checks failed.[/bold red]")
             sys.exit(1)
-    finally:
-        clean_up()
+    else:
+        console.print("[bold red]❌ Compilation failed.[/bold red]")
+        sys.exit(1)
