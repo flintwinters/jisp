@@ -12,6 +12,9 @@ BINARY_NAME = "bin-jisp"
 CHECKS_FILE = "checks.json"
 
 def compile_go_program():
+    if os.path.exists(BINARY_NAME) and os.path.getmtime(GO_SOURCE_FILE) < os.path.getmtime(BINARY_NAME):
+        return True
+
     compile_command = ["go", "build", "-o", BINARY_NAME, GO_SOURCE_FILE]
     try:
         subprocess.run(compile_command, check=True, capture_output=True, text=True)
