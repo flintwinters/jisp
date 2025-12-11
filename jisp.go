@@ -129,6 +129,64 @@ func (jp *JispProgram) Eq() error {
 	return nil
 }
 
+// Lt pops two values, checks if the first is less than the second, and pushes the boolean result onto the stack.
+func (jp *JispProgram) Lt() error {
+	if len(jp.Stack) < 2 {
+		return fmt.Errorf("stack underflow for lt: expected two values on stack")
+	}
+
+	b := jp.Stack[len(jp.Stack)-1]
+	a := jp.Stack[len(jp.Stack)-2]
+	jp.Stack = jp.Stack[:len(jp.Stack)-2] // Pop a and b
+
+	switch vA := a.(type) {
+	case float64:
+		vB, ok := b.(float64)
+		if !ok {
+			return fmt.Errorf("lt error: cannot compare number with %T", b)
+		}
+		jp.Push(vA < vB)
+	case string:
+		vB, ok := b.(string)
+		if !ok {
+			return fmt.Errorf("lt error: cannot compare string with %T", b)
+		}
+		jp.Push(vA < vB)
+	default:
+		return fmt.Errorf("lt error: unsupported type for comparison: %T", a)
+	}
+	return nil
+}
+
+// Gt pops two values, checks if the first is greater than the second, and pushes the boolean result onto the stack.
+func (jp *JispProgram) Gt() error {
+	if len(jp.Stack) < 2 {
+		return fmt.Errorf("stack underflow for gt: expected two values on stack")
+	}
+
+	b := jp.Stack[len(jp.Stack)-1]
+	a := jp.Stack[len(jp.Stack)-2]
+	jp.Stack = jp.Stack[:len(jp.Stack)-2] // Pop a and b
+
+	switch vA := a.(type) {
+	case float64:
+		vB, ok := b.(float64)
+		if !ok {
+			return fmt.Errorf("gt error: cannot compare number with %T", b)
+		}
+		jp.Push(vA > vB)
+	case string:
+		vB, ok := b.(string)
+		if !ok {
+			return fmt.Errorf("gt error: cannot compare string with %T", b)
+		}
+		jp.Push(vA > vB)
+	default:
+		return fmt.Errorf("gt error: unsupported type for comparison: %T", a)
+	}
+	return nil
+}
+
 // Add pops two numbers, adds them, and pushes the result onto the stack.
 func (jp *JispProgram) Add() error {
 	if len(jp.Stack) < 2 {
@@ -139,12 +197,127 @@ func (jp *JispProgram) Add() error {
 	a := jp.Stack[len(jp.Stack)-2]
 	jp.Stack = jp.Stack[:len(jp.Stack)-2] // Pop a and b
 
-	numA, okA := a.(float64) // JSON numbers are float64
+	numA, okA := a.(float64)
 	numB, okB := b.(float64)
 	if !okA || !okB {
 		return fmt.Errorf("add error: expected two numbers on stack, got %T and %T", a, b)
 	}
 	jp.Push(numA + numB)
+	return nil
+}
+
+// Sub pops two numbers, subtracts the second from the first, and pushes the result onto the stack.
+func (jp *JispProgram) Sub() error {
+	if len(jp.Stack) < 2 {
+		return fmt.Errorf("stack underflow for sub: expected two numbers on stack")
+	}
+
+	b := jp.Stack[len(jp.Stack)-1]
+	a := jp.Stack[len(jp.Stack)-2]
+	jp.Stack = jp.Stack[:len(jp.Stack)-2] // Pop a and b
+
+	numA, okA := a.(float64)
+	numB, okB := b.(float64)
+	if !okA || !okB {
+		return fmt.Errorf("sub error: expected two numbers on stack, got %T and %T", a, b)
+	}
+	jp.Push(numA - numB)
+	return nil
+}
+
+// Mul pops two numbers, multiplies them, and pushes the result onto the stack.
+func (jp *JispProgram) Mul() error {
+	if len(jp.Stack) < 2 {
+		return fmt.Errorf("stack underflow for mul: expected two numbers on stack")
+	}
+
+	b := jp.Stack[len(jp.Stack)-1]
+	a := jp.Stack[len(jp.Stack)-2]
+	jp.Stack = jp.Stack[:len(jp.Stack)-2] // Pop a and b
+
+	numA, okA := a.(float64)
+	numB, okB := b.(float64)
+	if !okA || !okB {
+		return fmt.Errorf("mul error: expected two numbers on stack, got %T and %T", a, b)
+	}
+	jp.Push(numA * numB)
+	return nil
+}
+
+// Div pops two numbers, divides the first by the second, and pushes the result onto the stack.
+func (jp *JispProgram) Div() error {
+	if len(jp.Stack) < 2 {
+		return fmt.Errorf("stack underflow for div: expected two numbers on stack")
+	}
+
+	b := jp.Stack[len(jp.Stack)-1]
+	a := jp.Stack[len(jp.Stack)-2]
+	jp.Stack = jp.Stack[:len(jp.Stack)-2] // Pop a and b
+
+	numA, okA := a.(float64)
+	numB, okB := b.(float64)
+	if !okA || !okB {
+		return fmt.Errorf("div error: expected two numbers on stack, got %T and %T", a, b)
+	}
+	if numB == 0 {
+		return fmt.Errorf("div error: division by zero")
+	}
+	jp.Push(numA / numB)
+	return nil
+}
+
+// And pops two booleans, performs logical AND, and pushes the result onto the stack.
+func (jp *JispProgram) And() error {
+	if len(jp.Stack) < 2 {
+		return fmt.Errorf("stack underflow for and: expected two booleans on stack")
+	}
+
+	b := jp.Stack[len(jp.Stack)-1]
+	a := jp.Stack[len(jp.Stack)-2]
+	jp.Stack = jp.Stack[:len(jp.Stack)-2] // Pop a and b
+
+	boolA, okA := a.(bool)
+	boolB, okB := b.(bool)
+	if !okA || !okB {
+		return fmt.Errorf("and error: expected two booleans on stack, got %T and %T", a, b)
+	}
+	jp.Push(boolA && boolB)
+	return nil
+}
+
+// Or pops two booleans, performs logical OR, and pushes the result onto the stack.
+func (jp *JispProgram) Or() error {
+	if len(jp.Stack) < 2 {
+		return fmt.Errorf("stack underflow for or: expected two booleans on stack")
+	}
+
+	b := jp.Stack[len(jp.Stack)-1]
+	a := jp.Stack[len(jp.Stack)-2]
+	jp.Stack = jp.Stack[:len(jp.Stack)-2] // Pop a and b
+
+	boolA, okA := a.(bool)
+	boolB, okB := b.(bool)
+	if !okA || !okB {
+		return fmt.Errorf("or error: expected two booleans on stack, got %T and %T", a, b)
+	}
+	jp.Push(boolA || boolB)
+	return nil
+}
+
+// Not pops a boolean, performs logical NOT, and pushes the result onto the stack.
+func (jp *JispProgram) Not() error {
+	if len(jp.Stack) < 1 {
+		return fmt.Errorf("stack underflow for not: expected a boolean on stack")
+	}
+
+	val := jp.Stack[len(jp.Stack)-1]
+	jp.Stack = jp.Stack[:len(jp.Stack)-1] // Pop value
+
+	boolVal, ok := val.(bool)
+	if !ok {
+		return fmt.Errorf("not error: expected a boolean on stack, got %T", val)
+	}
+	jp.Push(!boolVal)
 	return nil
 }
 
@@ -205,8 +378,24 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
 			err = jp.Delete()
 		case "eq":
 			err = jp.Eq()
+		case "lt":
+			err = jp.Lt()
+		case "gt":
+			err = jp.Gt()
 		case "add":
 			err = jp.Add()
+		case "sub":
+			err = jp.Sub()
+		case "mul":
+			err = jp.Mul()
+		case "div":
+			err = jp.Div()
+		case "and":
+			err = jp.And()
+		case "or":
+			err = jp.Or()
+		case "not":
+			err = jp.Not()
 		case "if":
 			argsArray, ok := op.Args.([]interface{})
 			if !ok || len(argsArray) < 1 || len(argsArray) > 2 {
