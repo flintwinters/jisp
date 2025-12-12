@@ -20,7 +20,6 @@
 {"op": "while", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "array", "items": {"type": ["string", "number"]}}}, "output": {"type": "null"}, "doc": "Repeatedly check the value at `path`; while truthy, execute `body` each iteration."}
 {"op": "break", "args": {"type": "array", "maxItems": 0}, "output": {"type": "null"}, "doc": "Exit the nearest enclosing loop immediately (for/while)."}
 {"op": "continue", "args": {"type": "array", "maxItems": 0}, "output": {"type": "null"}, "doc": "Skip the remainder of the current loop iteration and continue with the next iteration of the nearest enclosing loop."}
-{"op": "switch", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {}}, "output": {"type": "null"}, "doc": "Evaluate `selector`, compare against each case.match (== semantics), run the first matching case.body or default if provided."}
 {"op": "try", "args": {"type": "array", "maxItems": 0}, "output": {"type": "null"}, "doc": "Execute `try` body; on error bind exception to `catch.var` and run `catch.body`; always run `finally` if present."}
 {"op": "concat", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "array"}}, "output": {"type": "string"}, "doc": "Convert all values to strings and concatenate them."}
 {"op": "to_string", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {}}, "output": {"type": "string"}, "doc": "Convert a value to its string representation."}
@@ -28,7 +27,6 @@
 {"op": "lower", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "string"}}, "output": {"type": "string"}, "doc": "Convert a string to lowercase."}
 {"op": "trim", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "string"}}, "output": {"type": "string"}, "doc": "Trim leading and trailing whitespace."}
 {"op": "replace", "args": {"type": "array", "minItems": 3, "maxItems": 3, "items": [{"type": "string"}, {"type": "string"}, {"type": "string"}]}, "output": {"type": "string"}, "doc": "Replace all occurrences of a substring in a string."}
-{"op": "format", "args": {"type": "array", "minItems": 2, "maxItems": 2, "items": [{"type": ["array", "object"]}, {"type": "string"}]}, "output": {"type": "string"}, "doc": "Placeholder-based string formatting."}
 {"op": "len", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"oneOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]}}, "output": {"type": "number"}, "doc": "Return length of a string/array or number of keys in an object."}
 {"op": "slice", "args": {"type": "array", "minItems": 1, "maxItems": 3}, "output": {"oneOf": [{"type": "array"}, {"type": "string"}]}, "doc": "Return a slice of an array or string."}
 {"op": "map", "args": {"type": "array", "minItems": 2, "maxItems": 2, "items": [{"type": "object"}, {"type": "array"}]}, "output": {"type": "array"}, "doc": "Apply a step to each array element."}
