@@ -4,8 +4,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"os"
+	"strings"
 )
+
+// Custom error types for control flow
+type BreakSignal struct{}
+
+func (b *BreakSignal) Error() string { return "break" }
+
+type ContinueSignal struct{}
+
+func (c *ContinueSignal) Error() string { return "continue" }
 
 // JispProgram represents the entire state of a JISP program.
 type JispProgram struct {
@@ -45,10 +56,19 @@ func init() {
 		"sub":    subOp,
 		"mul":    mulOp,
 		"div":    divOp,
+		"mod":    modOp,
 		"and":    andOp,
 		"or":     orOp,
 		"not":    notOp,
-		"if":     ifOp,
+		"if":      ifOp,
+		"while":   whileOp,
+		"trim":    trimOp,
+		"lower":   lowerOp,
+		"upper":   upperOp,
+		"to_string": toStringOp,
+		"concat": concatOp,
+		"break": breakOp,
+		"continue": continueOp,
 	}
 }
 
@@ -60,6 +80,13 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
 			return fmt.Errorf("unknown operation: %s", op.Op)
 		}
 		if err := handler(jp, op.Args); err != nil {
+			// Propagate break and continue signals without wrapping, and stop execution of current operations list
+			if _, isBreak := err.(*BreakSignal); isBreak {
+				return err
+			}
+			if _, isContinue := err.(*ContinueSignal); isContinue {
+				return err
+			}
 			return fmt.Errorf("error executing operation '%s': %w", op.Op, err)
 		}
 	}
@@ -81,6 +108,14 @@ func popOp(jp *JispProgram, args interface{}) error {
 	return jp.Pop(fieldName)
 }
 
+func breakOp(jp *JispProgram, _ interface{}) error {
+	return &BreakSignal{}
+}
+
+func continueOp(jp *JispProgram, _ interface{}) error {
+	return &ContinueSignal{}
+}
+
 func setOp(jp *JispProgram, _ interface{}) error    { return jp.Set() }
 func getOp(jp *JispProgram, _ interface{}) error    { return jp.Get() }
 func existsOp(jp *JispProgram, _ interface{}) error { return jp.Exists() }
@@ -92,6 +127,7 @@ func addOp(jp *JispProgram, _ interface{}) error    { return jp.Add() }
 func subOp(jp *JispProgram, _ interface{}) error    { return jp.Sub() }
 func mulOp(jp *JispProgram, _ interface{}) error    { return jp.Mul() }
 func divOp(jp *JispProgram, _ interface{}) error    { return jp.Div() }
+func modOp(jp *JispProgram, _ interface{}) error    { return jp.Mod() }
 func andOp(jp *JispProgram, _ interface{}) error    { return jp.And() }
 func orOp(jp *JispProgram, _ interface{}) error     { return jp.Or() }
 func notOp(jp *JispProgram, _ interface{}) error    { return jp.Not() }
@@ -115,6 +151,109 @@ func ifOp(jp *JispProgram, args interface{}) error {
 		}
 	}
 	return jp.If(thenBody, elseBody)
+}
+
+
+func trimOp(jp *JispProgram, _ interface{}) error {
+	val, err := jp.popString("trim")
+	if err != nil {
+		return err
+	}
+	jp.Push(strings.TrimSpace(val))
+	return nil
+}
+
+func lowerOp(jp *JispProgram, _ interface{}) error {
+	val, err := jp.popString("lower")
+	if err != nil {
+		return err
+	}
+	jp.Push(strings.ToLower(val))
+	return nil
+}
+
+func upperOp(jp *JispProgram, _ interface{}) error {
+	val, err := jp.popString("upper")
+	if err != nil {
+		return err
+	}
+	jp.Push(strings.ToUpper(val))
+	return nil
+}
+
+func toStringOp(jp *JispProgram, _ interface{}) error {
+	val, err := jp.popValue("to_string")
+	if err != nil {
+		return err
+	}
+	jp.Push(fmt.Sprintf("%v", val))
+	return nil
+}
+
+func whileOp(jp *JispProgram, args interface{}) error {
+	argsArray, ok := args.([]interface{})
+	if !ok || len(argsArray) != 2 {
+		return fmt.Errorf("while error: expected 2 array arguments for condition path and body, got %v", args)
+	}
+
+	conditionPathRaw := argsArray[0]
+	conditionPath, ok := conditionPathRaw.(string)
+	if !ok {
+		return fmt.Errorf("while error: expected condition path to be a string, got %T", conditionPathRaw)
+	}
+
+	bodyOps, err := parseJispOps(argsArray[1])
+	if err != nil {
+		return fmt.Errorf("while error in 'body' operations: %w", err)
+	}
+
+	for {
+		// Push the condition path and get its value
+		jp.Push(conditionPath)
+		if err := jp.Get(); err != nil {
+			return fmt.Errorf("while error: failed to get condition variable '%s': %w", conditionPath, err)
+		}
+
+		conditionVal, err := jp.popValue("while condition check")
+		if err != nil {
+			return fmt.Errorf("while error: %w", err)
+		}
+
+		condition, ok := conditionVal.(bool)
+		if !ok {
+			return fmt.Errorf("while error: expected boolean condition at '%s', got %T", conditionPath, conditionVal)
+		}
+
+		if !condition {
+			break
+		}
+
+		if err := jp.ExecuteOperations(bodyOps); err != nil {
+			// Handle break and continue signals
+			if _, isBreak := err.(*BreakSignal); isBreak {
+				break // Exit the while loop
+			}
+			if _, isContinue := err.(*ContinueSignal); isContinue {
+				continue // Skip to the next iteration of the while loop
+			}
+			return fmt.Errorf("while error during body execution: %w", err)
+		}
+	}
+	return nil
+}
+
+
+func concatOp(jp *JispProgram, _ interface{}) error {
+	val2, err := jp.popString("concat")
+	if err != nil {
+		return err
+	}
+	val1, err := jp.popString("concat")
+	if err != nil {
+		return err
+	}
+	jp.Push(val1 + val2)
+	return nil
 }
 
 // --- Core JISP Logic ---
@@ -241,6 +380,16 @@ func (jp *JispProgram) Div() error {
 			return nil, fmt.Errorf("division by zero")
 		}
 		return a / b, nil
+	})
+}
+
+// Mod pops two numbers, performs modulo, and pushes the result.
+func (jp *JispProgram) Mod() error {
+	return jp.applyNumericBinaryOp("mod", func(a, b float64) (interface{}, error) {
+		if b == 0 {
+			return nil, fmt.Errorf("modulo by zero")
+		}
+		return math.Mod(a, b), nil
 	})
 }
 
