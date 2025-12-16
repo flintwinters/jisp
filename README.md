@@ -53,4 +53,6 @@ Jisp takes advantage of JSON's simplicity and universality to create a programmi
 - [x] `noop`
 - [ ] `valid`
 - [ ] `output`
+- [ ] `raise`
+- [ ] `assert`
 
