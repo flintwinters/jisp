@@ -1966,5 +1966,60 @@
       "required": ["stack", "state", "variables"],
       "additionalProperties": false
     }
+  },
+  {
+    "description": "Test Case 29: Error handling - getting a non-existent variable.",
+    "jisp_program": {
+      "code": [
+        ["push", "non_existent_var"],
+        ["get"]
+      ]
+    },
+    "expected_error_message": "Error during program execution: error executing operation 'get': get error: variable 'non_existent_var' not found"
+  },
+  {
+    "description": "Test Case 30: Raise operation - raises a custom error.",
+    "jisp_program": {
+      "code": [
+        ["push", "this is a custom error"],
+        ["raise"]
+      ]
+    },
+    "expected_error_message": "this is a custom error"
+  },
+  {
+    "description": "Test Case 31: Assert operation - positive case.",
+    "jisp_program": {
+      "code": [
+        ["push", true],
+        ["assert"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": { "type": "array", "maxItems": 0 }
+      }
+    }
+  },
+  {
+    "description": "Test Case 32: Assert operation - negative case with default message.",
+    "jisp_program": {
+      "code": [
+        ["push", false],
+        ["assert"]
+      ]
+    },
+    "expected_error_message": "assertion failed"
+  },
+  {
+    "description": "Test Case 33: Assert operation - negative case with custom message.",
+    "jisp_program": {
+      "code": [
+        ["push", false],
+        ["assert", "my custom assertion message"]
+      ]
+    },
+    "expected_error_message": "my custom assertion message"
   }
 ]

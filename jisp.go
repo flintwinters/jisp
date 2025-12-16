@@ -117,7 +117,41 @@ func init() {
 		"replace":   replaceOp,
 		"for":       forOp,
 		"slice":     sliceOp,
+		"raise":     raiseOp,
+		"assert":    assertOp,
 	}
+}
+
+func raiseOp(jp *JispProgram, _ *JispOperation) error {
+	errMsg, err := jp.popString("raise")
+	if err != nil {
+		return err
+	}
+	return &JispError{Message: errMsg}
+}
+
+func assertOp(jp *JispProgram, op *JispOperation) error {
+	val, err := jp.popValue("assert")
+	if err != nil {
+		return err
+	}
+
+	condition, ok := val.(bool)
+	if !ok {
+		return fmt.Errorf("assert error: expected a boolean on the stack, got %T", val)
+	}
+
+	if !condition {
+		errMsg := "assertion failed"
+		if len(op.Args) > 0 {
+			if customMsg, ok := op.Args[0].(string); ok {
+				errMsg = customMsg
+			}
+		}
+		return &JispError{Message: errMsg}
+	}
+
+	return nil
 }
 
 func noopOp(jp *JispProgram, _ *JispOperation) error {
