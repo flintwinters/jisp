@@ -1975,7 +1975,7 @@
         ["get"]
       ]
     },
-    "expected_error_message": "Error during program execution: error executing operation 'get': get error: variable 'non_existent_var' not found"
+    "expected_error_message": "Message: get error: variable 'non_existent_var' not found"
   },
   {
     "description": "Test Case 30: Raise operation - raises a custom error.",
@@ -1985,7 +1985,7 @@
         ["raise"]
       ]
     },
-    "expected_error_message": "this is a custom error"
+    "expected_error_message": "Message: this is a custom error"
   },
   {
     "description": "Test Case 31: Assert operation - positive case.",
@@ -2010,7 +2010,7 @@
         ["assert"]
       ]
     },
-    "expected_error_message": "assertion failed"
+    "expected_error_message": "Message: assertion failed"
   },
   {
     "description": "Test Case 33: Assert operation - negative case with custom message.",
@@ -2020,6 +2020,6 @@
         ["assert", "my custom assertion message"]
       ]
     },
-    "expected_error_message": "my custom assertion message"
+    "expected_error_message": "Message: my custom assertion message"
   }
 ]

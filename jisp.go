@@ -25,11 +25,16 @@ func (c *ContinueSignal) Error() string { return "continue" }
 // JispError is a custom error type for JISP program errors.
 // It allows the 'try' operation to catch and handle runtime errors gracefully.
 type JispError struct {
-	Message string
+	OperationName      string
+	InstructionPointer int
+	Message            string
+	StackSnapshot      []interface{}
 }
 
 func (e *JispError) Error() string {
-	return e.Message
+	stackJSON, _ := json.MarshalIndent(e.StackSnapshot, "", "  ")
+	return fmt.Sprintf("Jisp Execution Error:\n  Operation: '%s'\n  Instruction: %d\n  Message: %s\n  Stack:\n%s",
+		e.OperationName, e.InstructionPointer, e.Message, stackJSON)
 }
 
 // JispProgram represents the entire state of a JISP program, including the
@@ -38,6 +43,19 @@ type JispProgram struct {
 	Stack     []interface{}          `json:"stack"`
 	Variables map[string]interface{} `json:"variables"`
 	State     map[string]interface{} `json:"state"` // For pop operation target
+	ip        int                    // Instruction pointer
+}
+
+// newError creates a new JispError with the current program state.
+func (jp *JispProgram) newError(op *JispOperation, message string) *JispError {
+	stackCopy := make([]interface{}, len(jp.Stack))
+	copy(stackCopy, jp.Stack)
+	return &JispError{
+		OperationName:      op.Name,
+		InstructionPointer: jp.ip,
+		Message:            message,
+		StackSnapshot:      stackCopy,
+	}
 }
 
 // JispOperation represents a single instruction in a JISP program, consisting
@@ -235,10 +253,11 @@ func (s sliceSlicer) Slice(i, j int) interface{} { return s[i:j] }
 
 // ExecuteOperations iterates and executes a slice of JispOperations.
 func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
-	for _, op := range ops {
+	for i, op := range ops {
+		jp.ip = i
 		handler, found := operations[op.Name]
 		if !found {
-			return fmt.Errorf("unknown operation: %s", op.Name)
+			return jp.newError(&op, fmt.Sprintf("unknown operation: %s", op.Name))
 		}
 		if err := handler(jp, &op); err != nil {
 			var breakSig *BreakSignal
@@ -246,11 +265,13 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
 			var jispErr *JispError
 
 			switch {
-			case errors.As(err, &breakSig), errors.As(err, &contSig), errors.As(err, &jispErr):
-				return err // Propagate control flow signals and existing JispErrors directly
+			case errors.As(err, &breakSig), errors.As(err, &contSig):
+				return err // Propagate control flow signals directly
+			case errors.As(err, &jispErr):
+				return err // Already a JispError, propagate
 			default:
 				// Wrap other errors as JispError for 'try' to catch
-				return &JispError{Message: fmt.Sprintf("error executing operation '%s': %v", op.Name, err)}
+				return jp.newError(&op, err.Error())
 			}
 		}
 	}
