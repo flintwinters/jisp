@@ -1,3 +1,4 @@
+
 [
   {
     "description": "Sanity Check 1: Simple stack-based addition.",
@@ -1568,7 +1569,7 @@
           "properties": {
             "caught_error": {
               "type": "string",
-              "pattern": ".*get error: variable 'non_existent_var' not found.*"
+              "pattern": "get error: variable 'non_existent_var' not found"
             }
           },
           "required": [
@@ -1585,12 +1586,92 @@
             },
             "error_message": {
               "type": "string",
-              "pattern": ".*get error: variable 'non_existent_var' not found.*"
+              "pattern": "get error: variable 'non_existent_var' not found"
             }
           },
           "required": [
             "status",
             "error_message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "stack",
+        "variables",
+        "state"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "description": "Test Case 23: Try operation - no error, try block completes.",
+    "jisp_program": {
+      "code": [
+        [
+          "try",
+          [
+            [
+              "push", 1
+            ],
+            [
+              "push", "successful_result"
+            ],
+            [
+              "set"
+            ]
+          ],
+          "no_error_var",
+          [
+            [
+              "push", "this should not execute"
+            ],
+            [
+              "pop", "unexpected_status"
+            ]
+          ]
+        ],
+        [
+          "push", "successful_result"
+        ],
+        [
+          "get"
+        ],
+        [
+          "pop", "final_status"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "successful_result": {
+              "type": "number",
+              "const": 1.0
+            }
+          },
+          "required": [
+            "successful_result"
+          ],
+          "additionalProperties": false
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "final_status": {
+              "type": "number",
+              "const": 1.0
+            }
+          },
+          "required": [
+            "final_status"
           ],
           "additionalProperties": false
         }
