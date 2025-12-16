@@ -54,10 +54,3 @@ Jisp takes advantage of JSON's simplicity and universality to create a programmi
 - [ ] `valid`
 - [ ] `output`
 
-#### Implemented but not tested
-- [ ] `lt`
-- [ ] `mul`
-- [ ] `div`
-- [ ] `and`
-- [ ] `or`
-- [ ] `not`
