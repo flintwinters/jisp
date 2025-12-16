@@ -27,8 +27,33 @@ type JispProgram struct {
 
 // JispOperation represents a single operation in a JISP program.
 type JispOperation struct {
-	Op   string      `json:"op"`
-	Args interface{} `json:"args"`
+	Name string        `json:"op_name"` // Not directly from JSON, but will be set by UnmarshalJSON
+	Args []interface{} `json:"args_list"` // Not directly from JSON, but will be set by UnmarshalJSON
+}
+
+func (op *JispOperation) UnmarshalJSON(data []byte) error {
+	var raw []interface{}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return fmt.Errorf("JispOperation UnmarshalJSON: expected an array, got %w", err)
+	}
+
+	if len(raw) == 0 {
+		return fmt.Errorf("JispOperation UnmarshalJSON: array is empty")
+	}
+
+	opName, ok := raw[0].(string)
+	if !ok {
+		return fmt.Errorf("JispOperation UnmarshalJSON: first element (operation name) is not a string, got %T", raw[0])
+	}
+	op.Name = opName
+
+	if len(raw) > 1 {
+		op.Args = raw[1:]
+	} else {
+		op.Args = []interface{}{}
+	}
+
+	return nil
 }
 
 // JispCode represents the code part of a JISP program.
@@ -37,7 +62,7 @@ type JispCode struct {
 }
 
 // operationHandler defines the signature for all JISP operations.
-type operationHandler func(jp *JispProgram, args interface{}) error
+type operationHandler func(jp *JispProgram, op *JispOperation) error
 
 var operations map[string]operationHandler
 
@@ -69,17 +94,18 @@ func init() {
 		"concat": concatOp,
 		"break": breakOp,
 		"continue": continueOp,
+		"len":      lenOp,
 	}
 }
 
 // ExecuteOperations iterates and executes a slice of JispOperations.
 func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
 	for _, op := range ops {
-		handler, found := operations[op.Op]
+		handler, found := operations[op.Name]
 		if !found {
-			return fmt.Errorf("unknown operation: %s", op.Op)
+			return fmt.Errorf("unknown operation: %s", op.Name)
 		}
-		if err := handler(jp, op.Args); err != nil {
+		if err := handler(jp, &op); err != nil { // Pass the whole op struct
 			// Propagate break and continue signals without wrapping, and stop execution of current operations list
 			if _, isBreak := err.(*BreakSignal); isBreak {
 				return err
@@ -87,7 +113,7 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
 			if _, isContinue := err.(*ContinueSignal); isContinue {
 				return err
 			}
-			return fmt.Errorf("error executing operation '%s': %w", op.Op, err)
+			return fmt.Errorf("error executing operation '%s': %w", op.Name, err)
 		}
 	}
 	return nil
@@ -95,57 +121,62 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
 
 // --- Operation Handlers ---
 
-func pushOp(jp *JispProgram, args interface{}) error {
-	jp.Push(args)
+func pushOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) == 0 {
+		return fmt.Errorf("push error: no argument provided")
+	}
+	jp.Push(op.Args[0])
 	return nil
 }
 
-func popOp(jp *JispProgram, args interface{}) error {
-	fieldName, ok := args.(string)
+func popOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) == 0 {
+		return fmt.Errorf("pop error: no argument provided for field name")
+	}
+	fieldName, ok := op.Args[0].(string)
 	if !ok {
-		return fmt.Errorf("pop error: expected string argument for fieldName, got %T", args)
+		return fmt.Errorf("pop error: expected string argument for fieldName, got %T", op.Args[0])
 	}
 	return jp.Pop(fieldName)
 }
 
-func breakOp(jp *JispProgram, _ interface{}) error {
+func breakOp(jp *JispProgram, _ *JispOperation) error {
 	return &BreakSignal{}
 }
 
-func continueOp(jp *JispProgram, _ interface{}) error {
+func continueOp(jp *JispProgram, _ *JispOperation) error {
 	return &ContinueSignal{}
 }
 
-func setOp(jp *JispProgram, _ interface{}) error    { return jp.Set() }
-func getOp(jp *JispProgram, _ interface{}) error    { return jp.Get() }
-func existsOp(jp *JispProgram, _ interface{}) error { return jp.Exists() }
-func deleteOp(jp *JispProgram, _ interface{}) error { return jp.Delete() }
-func eqOp(jp *JispProgram, _ interface{}) error     { return jp.Eq() }
-func ltOp(jp *JispProgram, _ interface{}) error     { return jp.Lt() }
-func gtOp(jp *JispProgram, _ interface{}) error     { return jp.Gt() }
-func addOp(jp *JispProgram, _ interface{}) error    { return jp.Add() }
-func subOp(jp *JispProgram, _ interface{}) error    { return jp.Sub() }
-func mulOp(jp *JispProgram, _ interface{}) error    { return jp.Mul() }
-func divOp(jp *JispProgram, _ interface{}) error    { return jp.Div() }
-func modOp(jp *JispProgram, _ interface{}) error    { return jp.Mod() }
-func andOp(jp *JispProgram, _ interface{}) error    { return jp.And() }
-func orOp(jp *JispProgram, _ interface{}) error     { return jp.Or() }
-func notOp(jp *JispProgram, _ interface{}) error    { return jp.Not() }
+func setOp(jp *JispProgram, _ *JispOperation) error    { return jp.Set() }
+func getOp(jp *JispProgram, _ *JispOperation) error    { return jp.Get() }
+func existsOp(jp *JispProgram, _ *JispOperation) error { return jp.Exists() }
+func deleteOp(jp *JispProgram, _ *JispOperation) error { return jp.Delete() }
+func eqOp(jp *JispProgram, _ *JispOperation) error     { return jp.Eq() }
+func ltOp(jp *JispProgram, _ *JispOperation) error     { return jp.Lt() }
+func gtOp(jp *JispProgram, _ *JispOperation) error     { return jp.Gt() }
+func addOp(jp *JispProgram, _ *JispOperation) error    { return jp.Add() }
+func subOp(jp *JispProgram, _ *JispOperation) error    { return jp.Sub() }
+func mulOp(jp *JispProgram, _ *JispOperation) error    { return jp.Mul() }
+func divOp(jp *JispProgram, _ *JispOperation) error    { return jp.Div() }
+func modOp(jp *JispProgram, _ *JispOperation) error    { return jp.Mod() }
+func andOp(jp *JispProgram, _ *JispOperation) error    { return jp.And() }
+func orOp(jp *JispProgram, _ *JispOperation) error     { return jp.Or() }
+func notOp(jp *JispProgram, _ *JispOperation) error    { return jp.Not() }
 
-func ifOp(jp *JispProgram, args interface{}) error {
-	argsArray, ok := args.([]interface{})
-	if !ok || len(argsArray) < 1 || len(argsArray) > 2 {
-		return fmt.Errorf("if error: expected 1 or 2 array arguments for then/else bodies, got %v", args)
+func ifOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) == 0 || len(op.Args) > 2 {
+		return fmt.Errorf("if error: expected 1 or 2 array arguments for then/else bodies, got %v", op.Args)
 	}
 
-	thenBody, err := parseJispOps(argsArray[0])
+	thenBody, err := parseJispOps(op.Args[0])
 	if err != nil {
 		return fmt.Errorf("if error in 'then' body: %w", err)
 	}
 
 	var elseBody []JispOperation
-	if len(argsArray) == 2 {
-		elseBody, err = parseJispOps(argsArray[1])
+	if len(op.Args) == 2 {
+		elseBody, err = parseJispOps(op.Args[1])
 		if err != nil {
 			return fmt.Errorf("if error in 'else' body: %w", err)
 		}
@@ -154,7 +185,7 @@ func ifOp(jp *JispProgram, args interface{}) error {
 }
 
 
-func trimOp(jp *JispProgram, _ interface{}) error {
+func trimOp(jp *JispProgram, _ *JispOperation) error {
 	val, err := jp.popString("trim")
 	if err != nil {
 		return err
@@ -163,7 +194,7 @@ func trimOp(jp *JispProgram, _ interface{}) error {
 	return nil
 }
 
-func lowerOp(jp *JispProgram, _ interface{}) error {
+func lowerOp(jp *JispProgram, _ *JispOperation) error {
 	val, err := jp.popString("lower")
 	if err != nil {
 		return err
@@ -172,7 +203,7 @@ func lowerOp(jp *JispProgram, _ interface{}) error {
 	return nil
 }
 
-func upperOp(jp *JispProgram, _ interface{}) error {
+func upperOp(jp *JispProgram, _ *JispOperation) error {
 	val, err := jp.popString("upper")
 	if err != nil {
 		return err
@@ -181,7 +212,7 @@ func upperOp(jp *JispProgram, _ interface{}) error {
 	return nil
 }
 
-func toStringOp(jp *JispProgram, _ interface{}) error {
+func toStringOp(jp *JispProgram, _ *JispOperation) error {
 	val, err := jp.popValue("to_string")
 	if err != nil {
 		return err
@@ -190,19 +221,18 @@ func toStringOp(jp *JispProgram, _ interface{}) error {
 	return nil
 }
 
-func whileOp(jp *JispProgram, args interface{}) error {
-	argsArray, ok := args.([]interface{})
-	if !ok || len(argsArray) != 2 {
-		return fmt.Errorf("while error: expected 2 array arguments for condition path and body, got %v", args)
+func whileOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 2 {
+		return fmt.Errorf("while error: expected 2 arguments for condition path and body, got %v", op.Args)
 	}
 
-	conditionPathRaw := argsArray[0]
+	conditionPathRaw := op.Args[0]
 	conditionPath, ok := conditionPathRaw.(string)
 	if !ok {
 		return fmt.Errorf("while error: expected condition path to be a string, got %T", conditionPathRaw)
 	}
 
-	bodyOps, err := parseJispOps(argsArray[1])
+	bodyOps, err := parseJispOps(op.Args[1])
 	if err != nil {
 		return fmt.Errorf("while error in 'body' operations: %w", err)
 	}
@@ -243,7 +273,33 @@ func whileOp(jp *JispProgram, args interface{}) error {
 }
 
 
-func concatOp(jp *JispProgram, _ interface{}) error {
+func lenOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 { // len operation takes its argument from the stack, not from op.Args
+		return fmt.Errorf("len error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	val, err := jp.popValue("len")
+	if err != nil {
+		return fmt.Errorf("len error: %w", err)
+	}
+
+	var length float64
+	switch v := val.(type) {
+	case string:
+		length = float64(len(v))
+	case []interface{}: // Array
+		length = float64(len(v))
+	case map[string]interface{}: // Object
+		length = float64(len(v))
+	default:
+		return fmt.Errorf("len error: unsupported type %T", val)
+	}
+
+	jp.Push(length)
+	return nil
+}
+
+func concatOp(jp *JispProgram, _ *JispOperation) error {
 	val2, err := jp.popString("concat")
 	if err != nil {
 		return err
@@ -546,15 +602,15 @@ func parseJispOps(raw interface{}) ([]JispOperation, error) {
 	}
 	ops := make([]JispOperation, len(bodyArr))
 	for i, v := range bodyArr {
-		opMap, isMap := v.(map[string]interface{})
-		if !isMap {
-			return nil, fmt.Errorf("expected operation to be an object, got %T", v)
+		jsonData, err := json.Marshal(v)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal raw operation: %w", err)
 		}
-		op, ok := opMap["op"].(string)
-		if !ok {
-			return nil, fmt.Errorf("operation 'op' must be a string")
+		var op JispOperation
+		if err := json.Unmarshal(jsonData, &op); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal operation from raw data: %w", err)
 		}
-		ops[i] = JispOperation{Op: op, Args: opMap["args"]}
+		ops[i] = op
 	}
 	return ops, nil
 }
