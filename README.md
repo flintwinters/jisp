@@ -36,12 +36,12 @@ Jisp takes advantage of JSON's simplicity and universality to create a programmi
 #### Not Implemented
 - [ ] `call`
 - [ ] `return`
-- [ ] `for`
+- [x] `for`
 - [ ] `foreach`
 - [x] `try`
 - [x] `replace`
 - [x] `len`
-- [ ] `slice`
+- [x] `slice`
 - [ ] `map`
 - [ ] `filter`
 - [ ] `reduce`

@@ -1746,5 +1746,225 @@
       ],
       "additionalProperties": false
     }
+  },
+  {
+    "description": "Test Case 25: For operation - iterates over an array and sums values.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          0.0
+        ],
+        [
+          "push",
+          "sum"
+        ],
+        [
+          "set"
+        ],
+        [
+          "for",
+          "item",
+          [
+            1.0,
+            2.0,
+            3.0
+          ],
+          [
+            [
+              "push",
+              "sum"
+            ],
+            [
+              "get"
+            ],
+            [
+              "push",
+              "item"
+            ],
+            [
+              "get"
+            ],
+            [
+              "add"
+            ],
+            [
+              "push",
+              "sum"
+            ],
+            [
+              "set"
+            ]
+          ]
+        ],
+        [
+          "push",
+          "sum"
+        ],
+        [
+          "get"
+        ],
+        [
+          "pop",
+          "final_sum"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "sum": {
+              "type": "number",
+              "const": 6.0
+            }
+          },
+          "required": [
+            "sum"
+          ],
+          "additionalProperties": true
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "final_sum": {
+              "type": "number",
+              "const": 6.0
+            }
+          },
+          "required": [
+            "final_sum"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "stack",
+        "variables",
+        "state"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "description": "Test Case 26: Slice operation - slice a string with start and end index.",
+    "jisp_program": {
+      "code": [
+        ["push", "hello world"],
+        ["push", 0.0],
+        ["push", 5.0],
+        ["slice"],
+        ["pop", "sliced_string"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "sliced_string": {
+              "type": "string",
+              "const": "hello"
+            }
+          },
+          "required": ["sliced_string"],
+          "additionalProperties": false
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": ["stack", "state", "variables"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "description": "Test Case 27: Slice operation - slice an array with start index only.",
+    "jisp_program": {
+      "code": [
+        ["push", [1.0, 2.0, 3.0, 4.0, 5.0]],
+        ["push", 2.0],
+        ["slice"],
+        ["pop", "sliced_array"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "sliced_array": {
+              "type": "array",
+              "items": {"type": "number"},
+              "const": [3.0, 4.0, 5.0]
+            }
+          },
+          "required": ["sliced_array"],
+          "additionalProperties": false
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": ["stack", "state", "variables"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "description": "Test Case 28: Slice operation - slice an array with start and end index.",
+    "jisp_program": {
+      "code": [
+        ["push", [10.0, 20.0, 30.0, 40.0, 50.0]],
+        ["push", 1.0],
+        ["push", 4.0],
+        ["slice"],
+        ["pop", "another_sliced_array"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "another_sliced_array": {
+              "type": "array",
+              "items": {"type": "number"},
+              "const": [20.0, 30.0, 40.0]
+            }
+          },
+          "required": ["another_sliced_array"],
+          "additionalProperties": false
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": ["stack", "state", "variables"],
+      "additionalProperties": false
+    }
   }
 ]

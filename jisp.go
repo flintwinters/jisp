@@ -30,7 +30,7 @@ func (e *JispError) Error() string {
 // JispProgram represents the entire state of a JISP program.
 type JispProgram struct {
 	Stack     []interface{}          `json:"stack"`
-	Variables map[string]interface{} `json:"variables"`
+	Variables map[string]interface{} `json:"variables"`	
 	State     map[string]interface{} `json:"state"` // For pop operation target
 }
 
@@ -109,11 +109,110 @@ func init() {
 		"noop":      noopOp,
 		"try":       tryOp,
 		"replace":   replaceOp,
+		"for":       forOp,
+		"slice":     sliceOp,
 	}
 }
 
 func noopOp(jp *JispProgram, _ *JispOperation) error {
 	// No operation, do nothing.
+	return nil
+}
+
+func sliceOp(jp *JispProgram, _ *JispOperation) error {
+	var endRaw interface{}
+	var startRaw interface{}
+	var inputVal interface{}
+
+	// Determine if end index is provided.
+	// Peek at the stack to see if there are 3 or 2 arguments for slice.
+	// If 3, it's [input, start, end]. If 2, it's [input, start].
+	if len(jp.Stack) < 2 {
+		return fmt.Errorf("slice error: stack underflow, expected at least 2 values (input, start_index)")
+	}
+
+	// Temporarily pop the top two values to check if there's a third, and their types
+	val2 := jp.Stack[len(jp.Stack)-1] // potential end or start
+	val1 := jp.Stack[len(jp.Stack)-2] // potential start or input
+
+	// Scenario 1: [input, start, end]
+	if len(jp.Stack) >= 3 {
+		// Check if the top two are numbers, implying they are start and end.
+		_, isNum1 := val1.(float64)
+		_, isNum2 := val2.(float64)
+
+		if isNum1 && isNum2 { // Likely [input, start, end]
+			endRaw = jp.Stack[len(jp.Stack)-1]
+			startRaw = jp.Stack[len(jp.Stack)-2]
+			inputVal = jp.Stack[len(jp.Stack)-3]
+			jp.Stack = jp.Stack[:len(jp.Stack)-3]
+		} else { // Likely [input, start]
+			endRaw = nil // No end index
+			startRaw = jp.Stack[len(jp.Stack)-1]
+			inputVal = jp.Stack[len(jp.Stack)-2]
+			jp.Stack = jp.Stack[:len(jp.Stack)-2]
+		}
+	} else { // Scenario 2: [input, start]
+		endRaw = nil // No end index
+		startRaw = jp.Stack[len(jp.Stack)-1]
+		inputVal = jp.Stack[len(jp.Stack)-2]
+		jp.Stack = jp.Stack[:len(jp.Stack)-2]
+	}
+
+	startIndex, ok := startRaw.(float64)
+	if !ok {
+		return fmt.Errorf("slice error: expected numeric start index, got %T", startRaw)
+	}
+
+	var endIndex float64
+	hasEndIndex := false
+	if endRaw != nil {
+		endIndex, ok = endRaw.(float64)
+		if !ok {
+			return fmt.Errorf("slice error: expected numeric end index, got %T", endRaw)
+		}
+		hasEndIndex = true
+	}
+
+	start := int(startIndex)
+	var end int
+
+	switch v := inputVal.(type) {
+	case string:
+		if start < 0 || start > len(v) {
+			return fmt.Errorf("slice error: start index %d out of bounds for string of length %d", start, len(v))
+		}
+		if hasEndIndex {
+			end = int(endIndex)
+			if end < 0 || end > len(v) {
+				return fmt.Errorf("slice error: end index %d out of bounds for string of length %d", end, len(v))
+			}
+			if start > end {
+				return fmt.Errorf("slice error: start index %d cannot be greater than end index %d", start, end)
+			}
+			jp.Push(v[start:end])
+		} else {
+			jp.Push(v[start:])
+		}
+	case []interface{}:
+		if start < 0 || start > len(v) {
+			return fmt.Errorf("slice error: start index %d out of bounds for array of length %d", start, len(v))
+		}
+		if hasEndIndex {
+			end = int(endIndex)
+			if end < 0 || end > len(v) {
+				return fmt.Errorf("slice error: end index %d out of bounds for array of length %d", end, len(v))
+			}
+			if start > end {
+				return fmt.Errorf("slice error: start index %d cannot be greater than end index %d", start, end)
+			}
+			jp.Push(v[start:end])
+		} else {
+			jp.Push(v[start:])
+		}
+	default:
+		return fmt.Errorf("slice error: unsupported type %T for slicing, expected string or array", inputVal)
+	}
 	return nil
 }
 
@@ -231,6 +330,26 @@ func tryOp(jp *JispProgram, op *JispOperation) error {
 	}
 
 	return jp.Try(tryBody, catchVar, catchBody)
+}
+
+func forOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 3 {
+		return fmt.Errorf("for error: expected 3 arguments: loop_var, collection, body_operations, got %v", op.Args)
+	}
+
+	loopVar, ok := op.Args[0].(string)
+	if !ok {
+		return fmt.Errorf("for error: expected loop_var to be a string, got %T", op.Args[0])
+	}
+
+	collection := op.Args[1]
+
+	bodyOps, err := parseJispOps(op.Args[2])
+	if err != nil {
+		return fmt.Errorf("for error in 'body_operations': %w", err)
+	}
+
+	return jp.For(loopVar, collection, bodyOps)
 }
 
 func trimOp(jp *JispProgram, _ *JispOperation) error {
@@ -619,6 +738,48 @@ func (jp *JispProgram) Try(tryBody []JispOperation, catchVar string, catchBody [
 		}
 		return tryErr // Propagate other types of errors
 	}
+	return nil
+}
+
+// For iterates over a collection (array or object).
+// For arrays, it binds each element to loopVar and executes bodyOps.
+// For objects, it binds each key to loopVar and executes bodyOps.
+func (jp *JispProgram) For(loopVar string, collection interface{}, bodyOps []JispOperation) error {
+	if jp.Variables == nil {
+		jp.Variables = make(map[string]interface{})
+	}
+
+	switch c := collection.(type) {
+	case []interface{}:
+		for _, item := range c {
+			jp.Variables[loopVar] = item
+			if err := jp.ExecuteOperations(bodyOps); err != nil {
+				if _, isBreak := err.(*BreakSignal); isBreak {
+					break
+				}
+				if _, isContinue := err.(*ContinueSignal); isContinue {
+					continue
+				}
+				return fmt.Errorf("for loop (array) error during body execution: %w", err)
+			}
+		}
+	case map[string]interface{}:
+		for key := range c {
+			jp.Variables[loopVar] = key
+			if err := jp.ExecuteOperations(bodyOps); err != nil {
+				if _, isBreak := err.(*BreakSignal); isBreak {
+					break
+				}
+				if _, isContinue := err.(*ContinueSignal); isContinue {
+					continue
+				}
+				return fmt.Errorf("for loop (object) error during body execution: %w", err)
+			}
+		}
+	default:
+		return fmt.Errorf("for error: unsupported collection type %T", collection)
+	}
+
 	return nil
 }
 
