@@ -1361,5 +1361,60 @@
       ],
       "additionalProperties": true
     }
+  },
+  {
+    "description": "Test Case 21: Values operation - retrieves values from an object.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "name": "Bob",
+            "age": 25,
+            "city": "Los Angeles"
+          }
+        ],
+        [
+          "values"
+        ],
+        [
+          "pop",
+          "object_values"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "object_values": {
+              "type": "array",
+              "items": {},
+              "minItems": 3,
+              "maxItems": 3,
+              "uniqueItems": false,
+              "contentSchema": {
+                "description": "Array of values from the object, order may vary."
+              }
+            }
+          },
+          "required": [
+            "object_values"
+          ],
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "stack",
+        "state"
+      ],
+      "additionalProperties": true
+    }
   }
 ]

@@ -96,6 +96,7 @@ func init() {
 		"continue": continueOp,
 		"len":      lenOp,
 		"keys": keysOp, 
+		"values": valuesOp,
 		"noop": noopOp,
 	}
 }
@@ -303,6 +304,30 @@ func lenOp(jp *JispProgram, op *JispOperation) error {
 	}
 
 	jp.Push(length)
+	return nil
+}
+
+func valuesOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 { // values operation takes its argument from the stack, not from op.Args
+		return fmt.Errorf("values error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	val, err := jp.popValue("values")
+	if err != nil {
+		return fmt.Errorf("values error: %w", err)
+	}
+
+	var values []interface{}
+	switch v := val.(type) {
+	case map[string]interface{}: // Object
+		for _, val := range v {
+			values = append(values, val)
+		}
+	default:
+		return fmt.Errorf("values error: unsupported type %T, expected object", val)
+	}
+
+	jp.Push(values)
 	return nil
 }
 
