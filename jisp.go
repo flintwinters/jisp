@@ -1,3 +1,6 @@
+// Jisp is a stack-based programming system designed for simplicity and integration.
+// It uses JSON as its underlying data model for code, stack, and variables,
+// making it highly debuggable and interoperable with other tools.
 package main
 
 import (
@@ -19,6 +22,7 @@ type ContinueSignal struct{}
 func (c *ContinueSignal) Error() string { return "continue" }
 
 // JispError is a custom error type for JISP program errors.
+// It allows the 'try' operation to catch and handle runtime errors gracefully.
 type JispError struct {
 	Message string
 }
@@ -27,16 +31,18 @@ func (e *JispError) Error() string {
 	return e.Message
 }
 
-// JispProgram represents the entire state of a JISP program.
+// JispProgram represents the entire state of a JISP program, including the
+// execution stack, variables map, and a general-purpose state map.
 type JispProgram struct {
 	Stack     []interface{}          `json:"stack"`
-	Variables map[string]interface{} `json:"variables"`	
+	Variables map[string]interface{} `json:"variables"`
 	State     map[string]interface{} `json:"state"` // For pop operation target
 }
 
-// JispOperation represents a single operation in a JISP program.
+// JispOperation represents a single instruction in a JISP program, consisting
+// of an operation name and a list of arguments.
 type JispOperation struct {
-	Name string        `json:"op_name"` // Not directly from JSON, but will be set by UnmarshalJSON
+	Name string        `json:"op_name"`   // Not directly from JSON, but will be set by UnmarshalJSON
 	Args []interface{} `json:"args_list"` // Not directly from JSON, but will be set by UnmarshalJSON
 }
 
@@ -120,96 +126,70 @@ func noopOp(jp *JispProgram, _ *JispOperation) error {
 }
 
 func sliceOp(jp *JispProgram, _ *JispOperation) error {
-	var endRaw interface{}
-	var startRaw interface{}
-	var inputVal interface{}
-
-	// Determine if end index is provided.
-	// Peek at the stack to see if there are 3 or 2 arguments for slice.
-	// If 3, it's [input, start, end]. If 2, it's [input, start].
 	if len(jp.Stack) < 2 {
-		return fmt.Errorf("slice error: stack underflow, expected at least 2 values (input, start_index)")
+		return fmt.Errorf("slice error: stack underflow, expected at least 2 values (input, start)")
 	}
 
-	// Temporarily pop the top two values to check if there's a third, and their types
-	val2 := jp.Stack[len(jp.Stack)-1] // potential end or start
-	val1 := jp.Stack[len(jp.Stack)-2] // potential start or input
+	// The slice operation is flexible: it can take 2 or 3 arguments from the stack.
+	// Stack state can be either `[..., input, start]` or `[..., input, start, end]`.
+	// To differentiate, we peek at the types of the top two stack values.
+	// If both are numbers, we assume a 3-argument slice `[input, start, end]`.
+	var inputVal, startRaw, endRaw interface{}
 
-	// Scenario 1: [input, start, end]
-	if len(jp.Stack) >= 3 {
-		// Check if the top two are numbers, implying they are start and end.
-		_, isNum1 := val1.(float64)
-		_, isNum2 := val2.(float64)
+	// Peek at top two values to determine if an end index is present.
+	val2 := jp.Stack[len(jp.Stack)-1]
+	val1 := jp.Stack[len(jp.Stack)-2]
+	_, isNum1 := val1.(float64)
+	_, isNum2 := val2.(float64)
 
-		if isNum1 && isNum2 { // Likely [input, start, end]
-			endRaw = jp.Stack[len(jp.Stack)-1]
-			startRaw = jp.Stack[len(jp.Stack)-2]
-			inputVal = jp.Stack[len(jp.Stack)-3]
-			jp.Stack = jp.Stack[:len(jp.Stack)-3]
-		} else { // Likely [input, start]
-			endRaw = nil // No end index
-			startRaw = jp.Stack[len(jp.Stack)-1]
-			inputVal = jp.Stack[len(jp.Stack)-2]
-			jp.Stack = jp.Stack[:len(jp.Stack)-2]
-		}
-	} else { // Scenario 2: [input, start]
-		endRaw = nil // No end index
+	if len(jp.Stack) >= 3 && isNum1 && isNum2 {
+		// 3-argument slice: [input, start, end]
+		endRaw = jp.Stack[len(jp.Stack)-1]
+		startRaw = jp.Stack[len(jp.Stack)-2]
+		inputVal = jp.Stack[len(jp.Stack)-3]
+		jp.Stack = jp.Stack[:len(jp.Stack)-3]
+	} else {
+		// 2-argument slice: [input, start]
 		startRaw = jp.Stack[len(jp.Stack)-1]
 		inputVal = jp.Stack[len(jp.Stack)-2]
 		jp.Stack = jp.Stack[:len(jp.Stack)-2]
 	}
 
-	startIndex, ok := startRaw.(float64)
+	startFloat, ok := startRaw.(float64)
 	if !ok {
 		return fmt.Errorf("slice error: expected numeric start index, got %T", startRaw)
 	}
+	start := int(startFloat)
 
-	var endIndex float64
-	hasEndIndex := false
-	if endRaw != nil {
-		endIndex, ok = endRaw.(float64)
+	hasEnd := endRaw != nil
+	var end int
+	if hasEnd {
+		endFloat, ok := endRaw.(float64)
 		if !ok {
 			return fmt.Errorf("slice error: expected numeric end index, got %T", endRaw)
 		}
-		hasEndIndex = true
+		end = int(endFloat)
 	}
-
-	start := int(startIndex)
-	var end int
 
 	switch v := inputVal.(type) {
 	case string:
-		if start < 0 || start > len(v) {
-			return fmt.Errorf("slice error: start index %d out of bounds for string of length %d", start, len(v))
+		length := len(v)
+		if !hasEnd {
+			end = length
 		}
-		if hasEndIndex {
-			end = int(endIndex)
-			if end < 0 || end > len(v) {
-				return fmt.Errorf("slice error: end index %d out of bounds for string of length %d", end, len(v))
-			}
-			if start > end {
-				return fmt.Errorf("slice error: start index %d cannot be greater than end index %d", start, end)
-			}
-			jp.Push(v[start:end])
-		} else {
-			jp.Push(v[start:])
+		if start < 0 || end < start || end > length {
+			return fmt.Errorf("slice error: invalid indices [%d:%d] for string of length %d", start, end, length)
 		}
+		jp.Push(v[start:end])
 	case []interface{}:
-		if start < 0 || start > len(v) {
-			return fmt.Errorf("slice error: start index %d out of bounds for array of length %d", start, len(v))
+		length := len(v)
+		if !hasEnd {
+			end = length
 		}
-		if hasEndIndex {
-			end = int(endIndex)
-			if end < 0 || end > len(v) {
-				return fmt.Errorf("slice error: end index %d out of bounds for array of length %d", end, len(v))
-			}
-			if start > end {
-				return fmt.Errorf("slice error: start index %d cannot be greater than end index %d", start, end)
-			}
-			jp.Push(v[start:end])
-		} else {
-			jp.Push(v[start:])
+		if start < 0 || end < start || end > length {
+			return fmt.Errorf("slice error: invalid indices [%d:%d] for array of length %d", start, end, length)
 		}
+		jp.Push(v[start:end])
 	default:
 		return fmt.Errorf("slice error: unsupported type %T for slicing, expected string or array", inputVal)
 	}
@@ -353,30 +333,15 @@ func forOp(jp *JispProgram, op *JispOperation) error {
 }
 
 func trimOp(jp *JispProgram, _ *JispOperation) error {
-	val, err := jp.popString("trim")
-	if err != nil {
-		return err
-	}
-	jp.Push(strings.TrimSpace(val))
-	return nil
+	return jp.applyStringUnaryOp("trim", strings.TrimSpace)
 }
 
 func lowerOp(jp *JispProgram, _ *JispOperation) error {
-	val, err := jp.popString("lower")
-	if err != nil {
-		return err
-	}
-	jp.Push(strings.ToLower(val))
-	return nil
+	return jp.applyStringUnaryOp("lower", strings.ToLower)
 }
 
 func upperOp(jp *JispProgram, _ *JispOperation) error {
-	val, err := jp.popString("upper")
-	if err != nil {
-		return err
-	}
-	jp.Push(strings.ToUpper(val))
-	return nil
+	return jp.applyStringUnaryOp("upper", strings.ToUpper)
 }
 
 func toStringOp(jp *JispProgram, _ *JispOperation) error {
@@ -512,27 +477,27 @@ func valuesOp(jp *JispProgram, op *JispOperation) error {
 }
 
 func keysOp(jp *JispProgram, op *JispOperation) error {
-    if len(op.Args) != 0 { // keys operation takes its argument from the stack, not from op.Args
-        return fmt.Errorf("keys error: expected 0 arguments, got %d", len(op.Args))
-    }
+	if len(op.Args) != 0 { // keys operation takes its argument from the stack, not from op.Args
+		return fmt.Errorf("keys error: expected 0 arguments, got %d", len(op.Args))
+	}
 
-    val, err := jp.popValue("keys")
-    if err != nil {
-        return fmt.Errorf("keys error: %w", err)
-    }
+	val, err := jp.popValue("keys")
+	if err != nil {
+		return fmt.Errorf("keys error: %w", err)
+	}
 
-    var keys []string
-    switch v := val.(type) {
-    case map[string]interface{}: // Object
-        for k := range v {
-        	keys = append(keys, k)
-        }
-    default:
-        return fmt.Errorf("keys error: unsupported type %T, expected object", val)
-    }
+	var keys []string
+	switch v := val.(type) {
+	case map[string]interface{}: // Object
+		for k := range v {
+			keys = append(keys, k)
+		}
+	default:
+		return fmt.Errorf("keys error: unsupported type %T, expected object", val)
+	}
 
-    jp.Push(keys)
-    return nil
+	jp.Push(keys)
+	return nil
 }
 
 // --- Core JISP Logic ---
@@ -806,7 +771,6 @@ func (jp *JispProgram) handleCaughtError(caught interface{}, catchVar string, ca
 	return nil // If no catchBody, just absorb the error
 }
 
-
 // --- Helper Functions ---
 
 func (jp *JispProgram) popValue(opName string) (interface{}, error) {
@@ -867,6 +831,15 @@ func (jp *JispProgram) popKeyValue(opName string) (string, interface{}, error) {
 	value := jp.Stack[len(jp.Stack)-2]
 	jp.Stack = jp.Stack[:len(jp.Stack)-2]
 	return keyVal, value, nil
+}
+
+func (jp *JispProgram) applyStringUnaryOp(opName string, op func(string) string) error {
+	val, err := jp.popString(opName)
+	if err != nil {
+		return err
+	}
+	jp.Push(op(val))
+	return nil
 }
 
 func (jp *JispProgram) applyNumericBinaryOp(opName string, op func(float64, float64) (interface{}, error)) error {
@@ -932,16 +905,26 @@ func parseJispOps(raw interface{}) ([]JispOperation, error) {
 		return nil, fmt.Errorf("expected body to be an array of operations, got %T", raw)
 	}
 	ops := make([]JispOperation, len(bodyArr))
-	for i, v := range bodyArr {
-		jsonData, err := json.Marshal(v)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal raw operation: %w", err)
+	for i, rawOp := range bodyArr {
+		opArr, ok := rawOp.([]interface{})
+		if !ok {
+			return nil, fmt.Errorf("expected operation to be an array, got %T", rawOp)
 		}
-		var op JispOperation
-		if err := json.Unmarshal(jsonData, &op); err != nil {
-			return nil, fmt.Errorf("failed to unmarshal operation from raw data: %w", err)
+		if len(opArr) == 0 {
+			return nil, fmt.Errorf("operation array is empty")
 		}
-		ops[i] = op
+
+		opName, ok := opArr[0].(string)
+		if !ok {
+			return nil, fmt.Errorf("operation name is not a string, got %T", opArr[0])
+		}
+
+		ops[i].Name = opName
+		if len(opArr) > 1 {
+			ops[i].Args = opArr[1:]
+		} else {
+			ops[i].Args = []interface{}{}
+		}
 	}
 	return ops, nil
 }
