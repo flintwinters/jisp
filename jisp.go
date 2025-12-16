@@ -95,7 +95,14 @@ func init() {
 		"break": breakOp,
 		"continue": continueOp,
 		"len":      lenOp,
+		"keys": keysOp, 
+		"noop": noopOp,
 	}
+}
+
+func noopOp(jp *JispProgram, _ *JispOperation) error {
+	// No operation, do nothing.
+	return nil
 }
 
 // ExecuteOperations iterates and executes a slice of JispOperations.
@@ -299,17 +306,41 @@ func lenOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
+func keysOp(jp *JispProgram, op *JispOperation) error {
+    if len(op.Args) != 0 { // keys operation takes its argument from the stack, not from op.Args
+        return fmt.Errorf("keys error: expected 0 arguments, got %d", len(op.Args))
+    }
+
+    val, err := jp.popValue("keys")
+    if err != nil {
+        return fmt.Errorf("keys error: %w", err)
+    }
+
+    var keys []string
+    switch v := val.(type) {
+    case map[string]interface{}: // Object
+        for k := range v {
+        	keys = append(keys, k)
+        }
+    default:
+        return fmt.Errorf("keys error: unsupported type %T, expected object", val)
+    }
+
+    jp.Push(keys)
+    return nil
+}
+
 func concatOp(jp *JispProgram, _ *JispOperation) error {
-	val2, err := jp.popString("concat")
-	if err != nil {
-		return err
-	}
-	val1, err := jp.popString("concat")
-	if err != nil {
-		return err
-	}
-	jp.Push(val1 + val2)
-	return nil
+    val2, err := jp.popString("concat")
+    if err != nil {
+        return err
+    }
+    val1, err := jp.popString("concat")
+    if err != nil {
+        return err
+    }
+    jp.Push(val1 + val2)
+    return nil
 }
 
 // --- Core JISP Logic ---
