@@ -563,13 +563,15 @@ func (jp *JispProgram) Set() error {
 	if jp.Variables == nil {
 		jp.Variables = make(map[string]interface{})
 	}
+	// Note: In `popKeyValue`, the key is popped first, then the value,
+	// which matches the expected stack order `[..., value, key]`.
 	jp.Variables[key] = val
 	return nil
 }
 
 // Get retrieves a value from the Variables map and pushes it onto the stack.
 func (jp *JispProgram) Get() error {
-	key, err := jp.popString("get")
+	key, err := pop[string](jp, "get")
 	if err != nil {
 		return err
 	}
@@ -583,7 +585,7 @@ func (jp *JispProgram) Get() error {
 
 // Exists checks if a variable exists and pushes the boolean result onto the stack.
 func (jp *JispProgram) Exists() error {
-	key, err := jp.popString("exists")
+	key, err := pop[string](jp, "exists")
 	if err != nil {
 		return err
 	}
@@ -594,7 +596,7 @@ func (jp *JispProgram) Exists() error {
 
 // Delete removes a variable from the Variables map.
 func (jp *JispProgram) Delete() error {
-	key, err := jp.popString("delete")
+	key, err := pop[string](jp, "delete")
 	if err != nil {
 		return err
 	}
@@ -683,15 +685,11 @@ func (jp *JispProgram) Or() error {
 
 // Not pops a boolean, performs logical NOT, and pushes the result.
 func (jp *JispProgram) Not() error {
-	val, err := jp.popValue("not")
+	val, err := pop[bool](jp, "not")
 	if err != nil {
 		return err
 	}
-	boolVal, ok := val.(bool)
-	if !ok {
-		return fmt.Errorf("not error: expected a boolean on stack, got %T", val)
-	}
-	jp.Push(!boolVal)
+	jp.Push(!val)
 	return nil
 }
 
@@ -807,6 +805,25 @@ func (jp *JispProgram) handleCaughtError(caught interface{}, catchVar string, ca
 
 // --- Helper Functions ---
 
+// pop pops a single value from the stack and asserts it to the specified type T.
+func pop[T any](jp *JispProgram, opName string) (T, error) {
+	var zero T // Get the zero value for type T
+
+	if len(jp.Stack) < 1 {
+		return zero, fmt.Errorf("stack underflow for %s: expected 1 value", opName)
+	}
+
+	val := jp.Stack[len(jp.Stack)-1]
+	jp.Stack = jp.Stack[:len(jp.Stack)-1]
+
+	typedVal, ok := val.(T)
+	if !ok {
+		return zero, fmt.Errorf("%s error: expected a %T on stack, got %T", opName, zero, val)
+	}
+
+	return typedVal, nil
+}
+
 func (jp *JispProgram) popValue(opName string) (interface{}, error) {
 	if len(jp.Stack) < 1 {
 		return nil, fmt.Errorf("stack underflow for %s: expected 1 value", opName)
@@ -823,6 +840,26 @@ func (jp *JispProgram) popTwoValues(opName string) (interface{}, interface{}, er
 	b := jp.Stack[len(jp.Stack)-1]
 	a := jp.Stack[len(jp.Stack)-2]
 	jp.Stack = jp.Stack[:len(jp.Stack)-2]
+	return a, b, nil
+}
+
+// popTwo pops two values of the same type T from the stack.
+func popTwo[T any](jp *JispProgram, opName string) (T, T, error) {
+	var zero T
+	if len(jp.Stack) < 2 {
+		return zero, zero, fmt.Errorf("stack underflow for %s: expected 2 values", opName)
+	}
+
+	b, err := pop[T](jp, opName)
+	if err != nil {
+		return zero, zero, err
+	}
+
+	a, err := pop[T](jp, opName)
+	if err != nil {
+		return zero, zero, err
+	}
+
 	return a, b, nil
 }
 
@@ -843,28 +880,23 @@ func (jp *JispProgram) popThreeStrings(opName string) (string, string, string, e
 }
 
 func (jp *JispProgram) popString(opName string) (string, error) {
-	val, err := jp.popValue(opName)
-	if err != nil {
-		return "", err
-	}
-	str, ok := val.(string)
-	if !ok {
-		return "", fmt.Errorf("%s error: expected a string key on stack, got %T", opName, val)
-	}
-	return str, nil
+	return pop[string](jp, opName)
 }
 
 func (jp *JispProgram) popKeyValue(opName string) (string, interface{}, error) {
 	if len(jp.Stack) < 2 {
 		return "", nil, fmt.Errorf("stack underflow for %s: expected value and key on stack", opName)
 	}
-	keyVal, ok := jp.Stack[len(jp.Stack)-1].(string)
-	if !ok {
-		return "", nil, fmt.Errorf("%s error: expected a string key on top of stack, got %T", jp.Stack[len(jp.Stack)-1], opName)
+	// The key is popped first because it's on top of the value.
+	key, err := pop[string](jp, opName)
+	if err != nil {
+		return "", nil, err
 	}
-	value := jp.Stack[len(jp.Stack)-2]
-	jp.Stack = jp.Stack[:len(jp.Stack)-2]
-	return keyVal, value, nil
+	value, err := jp.popValue(opName)
+	if err != nil {
+		return "", nil, err
+	}
+	return key, value, nil
 }
 
 func (jp *JispProgram) applyStringUnaryOp(opName string, op func(string) string) error {
@@ -877,17 +909,11 @@ func (jp *JispProgram) applyStringUnaryOp(opName string, op func(string) string)
 }
 
 func (jp *JispProgram) applyNumericBinaryOp(opName string, op func(float64, float64) (interface{}, error)) error {
-	a, b, err := jp.popTwoValues(opName)
+	a, b, err := popTwo[float64](jp, opName)
 	if err != nil {
 		return err
 	}
-	numA, okA := a.(float64)
-	numB, okB := b.(float64)
-	if !okA || !okB {
-		return fmt.Errorf("%s error: expected two numbers, got %T and %T", opName, a, b)
-	}
-
-	res, err := op(numA, numB)
+	res, err := op(a, b)
 	if err != nil {
 		return fmt.Errorf("%s error: %w", opName, err)
 	}
@@ -896,16 +922,11 @@ func (jp *JispProgram) applyNumericBinaryOp(opName string, op func(float64, floa
 }
 
 func (jp *JispProgram) applyBooleanBinaryOp(opName string, op func(bool, bool) bool) error {
-	a, b, err := jp.popTwoValues(opName)
+	a, b, err := popTwo[bool](jp, opName)
 	if err != nil {
 		return err
 	}
-	boolA, okA := a.(bool)
-	boolB, okB := b.(bool)
-	if !okA || !okB {
-		return fmt.Errorf("%s error: expected two booleans, got %T and %T", opName, a, b)
-	}
-	jp.Push(op(boolA, boolB))
+	jp.Push(op(a, b))
 	return nil
 }
 
