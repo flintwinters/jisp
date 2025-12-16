@@ -5,6 +5,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -164,28 +165,16 @@ func sliceOp(jp *JispProgram, _ *JispOperation) error {
 		return fmt.Errorf("slice error: stack underflow, expected at least 2 values (input, start)")
 	}
 
-	// The slice operation is flexible: it can take 2 or 3 arguments from the stack.
-	// Stack state can be either `[..., input, start]` or `[..., input, start, end]`.
-	// To differentiate, we peek at the types of the top two stack values.
-	// If both are numbers, we assume a 3-argument slice `[input, start, end]`.
 	var inputVal, startRaw, endRaw interface{}
-
-	// Peek at top two values to determine if an end index is present.
-	val2 := jp.Stack[len(jp.Stack)-1]
-	val1 := jp.Stack[len(jp.Stack)-2]
+	val2, val1 := jp.Stack[len(jp.Stack)-1], jp.Stack[len(jp.Stack)-2]
 	_, isNum1 := val1.(float64)
 	_, isNum2 := val2.(float64)
 
 	if len(jp.Stack) >= 3 && isNum1 && isNum2 {
-		// 3-argument slice: [input, start, end]
-		endRaw = jp.Stack[len(jp.Stack)-1]
-		startRaw = jp.Stack[len(jp.Stack)-2]
-		inputVal = jp.Stack[len(jp.Stack)-3]
+		endRaw, startRaw, inputVal = jp.Stack[len(jp.Stack)-1], jp.Stack[len(jp.Stack)-2], jp.Stack[len(jp.Stack)-3]
 		jp.Stack = jp.Stack[:len(jp.Stack)-3]
 	} else {
-		// 2-argument slice: [input, start]
-		startRaw = jp.Stack[len(jp.Stack)-1]
-		inputVal = jp.Stack[len(jp.Stack)-2]
+		startRaw, inputVal = jp.Stack[len(jp.Stack)-1], jp.Stack[len(jp.Stack)-2]
 		jp.Stack = jp.Stack[:len(jp.Stack)-2]
 	}
 
@@ -205,30 +194,44 @@ func sliceOp(jp *JispProgram, _ *JispOperation) error {
 		end = int(endFloat)
 	}
 
+	var sliceable Slicer
 	switch v := inputVal.(type) {
 	case string:
-		length := len(v)
-		if !hasEnd {
-			end = length
-		}
-		if start < 0 || end < start || end > length {
-			return fmt.Errorf("slice error: invalid indices [%d:%d] for string of length %d", start, end, length)
-		}
-		jp.Push(v[start:end])
+		sliceable = stringSlicer(v)
 	case []interface{}:
-		length := len(v)
-		if !hasEnd {
-			end = length
-		}
-		if start < 0 || end < start || end > length {
-			return fmt.Errorf("slice error: invalid indices [%d:%d] for array of length %d", start, end, length)
-		}
-		jp.Push(v[start:end])
+		sliceable = sliceSlicer(v)
 	default:
 		return fmt.Errorf("slice error: unsupported type %T for slicing, expected string or array", inputVal)
 	}
+
+	length := sliceable.Len()
+	if !hasEnd {
+		end = length
+	}
+
+	if start < 0 || end < start || end > length {
+		return fmt.Errorf("slice error: invalid indices [%d:%d] for collection of length %d", start, end, length)
+	}
+
+	jp.Push(sliceable.Slice(start, end))
 	return nil
 }
+
+// Slicer defines an interface for types that can be sliced.
+type Slicer interface {
+	Len() int
+	Slice(i, j int) interface{}
+}
+
+type stringSlicer string
+
+func (s stringSlicer) Len() int                   { return len(s) }
+func (s stringSlicer) Slice(i, j int) interface{} { return s[i:j] }
+
+type sliceSlicer []interface{}
+
+func (s sliceSlicer) Len() int                   { return len(s) }
+func (s sliceSlicer) Slice(i, j int) interface{} { return s[i:j] }
 
 // ExecuteOperations iterates and executes a slice of JispOperations.
 func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
@@ -237,19 +240,18 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
 		if !found {
 			return fmt.Errorf("unknown operation: %s", op.Name)
 		}
-		if err := handler(jp, &op); err != nil { // Pass the whole op struct
-			// Propagate break and continue signals without wrapping, and stop execution of current operations list
-			if _, isBreak := err.(*BreakSignal); isBreak {
-				return err
+		if err := handler(jp, &op); err != nil {
+			var breakSig *BreakSignal
+			var contSig *ContinueSignal
+			var jispErr *JispError
+
+			switch {
+			case errors.As(err, &breakSig), errors.As(err, &contSig), errors.As(err, &jispErr):
+				return err // Propagate control flow signals and existing JispErrors directly
+			default:
+				// Wrap other errors as JispError for 'try' to catch
+				return &JispError{Message: fmt.Sprintf("error executing operation '%s': %v", op.Name, err)}
 			}
-			if _, isContinue := err.(*ContinueSignal); isContinue {
-				return err
-			}
-			// Wrap other errors as JispError for 'try' to catch
-			if _, isJispError := err.(*JispError); isJispError {
-				return err
-			}
-			return &JispError{Message: fmt.Sprintf("error executing operation '%s': %v", op.Name, err)}
 		}
 	}
 	return nil
@@ -534,6 +536,51 @@ func keysOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
+type collectionHandlers struct {
+	stringHandler func(string) (interface{}, error)
+	arrayHandler  func([]interface{}) (interface{}, error)
+	objectHandler func(map[string]interface{}) (interface{}, error)
+}
+
+func applyCollectionOp(jp *JispProgram, opName string, op *JispOperation, handlers collectionHandlers) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("%s error: expected 0 arguments, got %d", opName, len(op.Args))
+	}
+
+	val, err := jp.popValue(opName)
+	if err != nil {
+		return fmt.Errorf("%s error: %w", opName, err)
+	}
+
+	var result interface{}
+	switch v := val.(type) {
+	case string:
+		if handlers.stringHandler == nil {
+			return fmt.Errorf("%s error: unsupported type string", opName)
+		}
+		result, err = handlers.stringHandler(v)
+	case []interface{}:
+		if handlers.arrayHandler == nil {
+			return fmt.Errorf("%s error: unsupported type array", opName)
+		}
+		result, err = handlers.arrayHandler(v)
+	case map[string]interface{}:
+		if handlers.objectHandler == nil {
+			return fmt.Errorf("%s error: unsupported type object", opName)
+		}
+		result, err = handlers.objectHandler(v)
+	default:
+		return fmt.Errorf("%s error: unsupported type %T", opName, val)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	jp.Push(result)
+	return nil
+}
+
 // --- Core JISP Logic ---
 
 // Push adds a value to the top of the stack.
@@ -750,33 +797,38 @@ func (jp *JispProgram) For(loopVar string, collection interface{}, bodyOps []Jis
 	case []interface{}:
 		for _, item := range c {
 			jp.Variables[loopVar] = item
-			if err := jp.ExecuteOperations(bodyOps); err != nil {
+			if err := jp.executeLoopBody(bodyOps); err != nil {
 				if _, isBreak := err.(*BreakSignal); isBreak {
-					break
+					return nil // Break from loop
 				}
-				if _, isContinue := err.(*ContinueSignal); isContinue {
-					continue
-				}
-				return fmt.Errorf("for loop (array) error during body execution: %w", err)
+				return err // Propagate other errors
 			}
 		}
 	case map[string]interface{}:
 		for key := range c {
 			jp.Variables[loopVar] = key
-			if err := jp.ExecuteOperations(bodyOps); err != nil {
+			if err := jp.executeLoopBody(bodyOps); err != nil {
 				if _, isBreak := err.(*BreakSignal); isBreak {
-					break
+					return nil // Break from loop
 				}
-				if _, isContinue := err.(*ContinueSignal); isContinue {
-					continue
-				}
-				return fmt.Errorf("for loop (object) error during body execution: %w", err)
+				return err // Propagate other errors
 			}
 		}
 	default:
 		return fmt.Errorf("for error: unsupported collection type %T", collection)
 	}
+	return nil
+}
 
+// executeLoopBody runs the operations in a loop's body and handles break/continue.
+func (jp *JispProgram) executeLoopBody(bodyOps []JispOperation) error {
+	err := jp.ExecuteOperations(bodyOps)
+	if err != nil {
+		if _, isContinue := err.(*ContinueSignal); isContinue {
+			return nil // Signal to continue to next iteration
+		}
+		return err // Propagate break signals or other errors
+	}
 	return nil
 }
 
@@ -867,15 +919,19 @@ func (jp *JispProgram) popThreeStrings(opName string) (string, string, string, e
 	if len(jp.Stack) < 3 {
 		return "", "", "", fmt.Errorf("stack underflow for %s: expected 3 strings", opName)
 	}
-	newVal, okNew := jp.Stack[len(jp.Stack)-1].(string)
-	oldVal, okOld := jp.Stack[len(jp.Stack)-2].(string)
-	strVal, okStr := jp.Stack[len(jp.Stack)-3].(string)
-
-	if !okNew || !okOld || !okStr {
-		return "", "", "", fmt.Errorf("%s error: expected three strings on stack, got %T, %T, %T", opName, strVal, oldVal, newVal)
+	// Note the order of popping: new, old, then the string to modify.
+	newVal, err := pop[string](jp, opName)
+	if err != nil {
+		return "", "", "", err
 	}
-
-	jp.Stack = jp.Stack[:len(jp.Stack)-3]
+	oldVal, err := pop[string](jp, opName)
+	if err != nil {
+		return "", "", "", err
+	}
+	strVal, err := pop[string](jp, opName)
+	if err != nil {
+		return "", "", "", err
+	}
 	return oldVal, newVal, strVal, nil
 }
 
