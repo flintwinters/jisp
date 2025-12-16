@@ -1,4 +1,3 @@
-
 [
   {
     "description": "Sanity Check 1: Simple stack-based addition.",
@@ -1612,10 +1611,12 @@
           "try",
           [
             [
-              "push", 1
+              "push",
+              1
             ],
             [
-              "push", "successful_result"
+              "push",
+              "successful_result"
             ],
             [
               "set"
@@ -1624,21 +1625,25 @@
           "no_error_var",
           [
             [
-              "push", "this should not execute"
+              "push",
+              "this should not execute"
             ],
             [
-              "pop", "unexpected_status"
+              "pop",
+              "unexpected_status"
             ]
           ]
         ],
         [
-          "push", "successful_result"
+          "push",
+          "successful_result"
         ],
         [
           "get"
         ],
         [
-          "pop", "final_status"
+          "pop",
+          "final_status"
         ]
       ]
     },
@@ -1680,6 +1685,64 @@
         "stack",
         "variables",
         "state"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "description": "Test Case 24: Replace operation - replaces all occurrences of a substring.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "hello world hello"
+        ],
+        [
+          "push",
+          "hello"
+        ],
+        [
+          "push",
+          "hi"
+        ],
+        [
+          "replace"
+        ],
+        [
+          "pop",
+          "replaced_string"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "replaced_string": {
+              "type": "string",
+              "const": "hi world hi"
+            }
+          },
+          "required": [
+            "replaced_string"
+          ],
+          "additionalProperties": false
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "state",
+        "variables"
       ],
       "additionalProperties": false
     }

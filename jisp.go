@@ -108,6 +108,7 @@ func init() {
 		"values":    valuesOp,
 		"noop":      noopOp,
 		"try":       tryOp,
+		"replace":   replaceOp,
 	}
 }
 
@@ -268,6 +269,28 @@ func toStringOp(jp *JispProgram, _ *JispOperation) error {
 	return nil
 }
 
+func concatOp(jp *JispProgram, _ *JispOperation) error {
+	val2, err := jp.popString("concat")
+	if err != nil {
+		return err
+	}
+	val1, err := jp.popString("concat")
+	if err != nil {
+		return err
+	}
+	jp.Push(val1 + val2)
+	return nil
+}
+
+func replaceOp(jp *JispProgram, _ *JispOperation) error {
+	old, new, str, err := jp.popThreeStrings("replace")
+	if err != nil {
+		return err
+	}
+	jp.Push(strings.ReplaceAll(str, old, new))
+	return nil
+}
+
 func whileOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) != 2 {
 		return fmt.Errorf("while error: expected 2 arguments for condition path and body, got %v", op.Args)
@@ -370,40 +393,27 @@ func valuesOp(jp *JispProgram, op *JispOperation) error {
 }
 
 func keysOp(jp *JispProgram, op *JispOperation) error {
-	if len(op.Args) != 0 { // keys operation takes its argument from the stack, not from op.Args
-		return fmt.Errorf("keys error: expected 0 arguments, got %d", len(op.Args))
-	}
+    if len(op.Args) != 0 { // keys operation takes its argument from the stack, not from op.Args
+        return fmt.Errorf("keys error: expected 0 arguments, got %d", len(op.Args))
+    }
 
-	val, err := jp.popValue("keys")
-	if err != nil {
-		return fmt.Errorf("keys error: %w", err)
-	}
+    val, err := jp.popValue("keys")
+    if err != nil {
+        return fmt.Errorf("keys error: %w", err)
+    }
 
-	var keys []string
-	switch v := val.(type) {
-	case map[string]interface{}: // Object
-		for k := range v {
-			keys = append(keys, k)
-		}
-	default:
-		return fmt.Errorf("keys error: unsupported type %T, expected object", val)
-	}
+    var keys []string
+    switch v := val.(type) {
+    case map[string]interface{}: // Object
+        for k := range v {
+        	keys = append(keys, k)
+        }
+    default:
+        return fmt.Errorf("keys error: unsupported type %T, expected object", val)
+    }
 
-	jp.Push(keys)
-	return nil
-}
-
-func concatOp(jp *JispProgram, _ *JispOperation) error {
-	val2, err := jp.popString("concat")
-	if err != nil {
-		return err
-	}
-	val1, err := jp.popString("concat")
-	if err != nil {
-		return err
-	}
-	jp.Push(val1 + val2)
-	return nil
+    jp.Push(keys)
+    return nil
 }
 
 // --- Core JISP Logic ---
@@ -655,6 +665,22 @@ func (jp *JispProgram) popTwoValues(opName string) (interface{}, interface{}, er
 	a := jp.Stack[len(jp.Stack)-2]
 	jp.Stack = jp.Stack[:len(jp.Stack)-2]
 	return a, b, nil
+}
+
+func (jp *JispProgram) popThreeStrings(opName string) (string, string, string, error) {
+	if len(jp.Stack) < 3 {
+		return "", "", "", fmt.Errorf("stack underflow for %s: expected 3 strings", opName)
+	}
+	newVal, okNew := jp.Stack[len(jp.Stack)-1].(string)
+	oldVal, okOld := jp.Stack[len(jp.Stack)-2].(string)
+	strVal, okStr := jp.Stack[len(jp.Stack)-3].(string)
+
+	if !okNew || !okOld || !okStr {
+		return "", "", "", fmt.Errorf("%s error: expected three strings on stack, got %T, %T, %T", opName, strVal, oldVal, newVal)
+	}
+
+	jp.Stack = jp.Stack[:len(jp.Stack)-3]
+	return oldVal, newVal, strVal, nil
 }
 
 func (jp *JispProgram) popString(opName string) (string, error) {
