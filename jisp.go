@@ -403,9 +403,15 @@ func concatOp(jp *JispProgram, _ *JispOperation) error {
 }
 
 func replaceOp(jp *JispProgram, _ *JispOperation) error {
-	old, new, str, err := jp.popThreeStrings("replace")
+	values, err := jp.popx("replace", 3)
 	if err != nil {
 		return err
+	}
+	str, okStr := values[0].(string)
+	old, okOld := values[1].(string)
+	new, okNew := values[2].(string)
+	if !okStr || !okOld || !okNew {
+		return fmt.Errorf("replace error: expected three strings on the stack")
 	}
 	jp.Push(strings.ReplaceAll(str, old, new))
 	return nil
@@ -655,11 +661,11 @@ func (jp *JispProgram) Delete() error {
 
 // Eq pops two values, checks for strict equality, and pushes the boolean result.
 func (jp *JispProgram) Eq() error {
-	a, b, err := jp.popTwoValues("eq")
+	vals, err := jp.popx("eq", 2)
 	if err != nil {
 		return err
 	}
-	jp.Push(a == b)
+	jp.Push(vals[0] == vals[1])
 	return nil
 }
 
@@ -915,24 +921,14 @@ func popTwo[T any](jp *JispProgram, opName string) (T, T, error) {
 	return a, b, nil
 }
 
-func (jp *JispProgram) popThreeStrings(opName string) (string, string, string, error) {
-	if len(jp.Stack) < 3 {
-		return "", "", "", fmt.Errorf("stack underflow for %s: expected 3 strings", opName)
+// popx pops n values from the stack and returns them as a slice.
+func (jp *JispProgram) popx(opName string, n int) ([]interface{}, error) {
+	if len(jp.Stack) < n {
+		return nil, fmt.Errorf("stack underflow for %s: expected %d values", opName, n)
 	}
-	// Note the order of popping: new, old, then the string to modify.
-	newVal, err := pop[string](jp, opName)
-	if err != nil {
-		return "", "", "", err
-	}
-	oldVal, err := pop[string](jp, opName)
-	if err != nil {
-		return "", "", "", err
-	}
-	strVal, err := pop[string](jp, opName)
-	if err != nil {
-		return "", "", "", err
-	}
-	return oldVal, newVal, strVal, nil
+	values := jp.Stack[len(jp.Stack)-n:]
+	jp.Stack = jp.Stack[:len(jp.Stack)-n]
+	return values, nil
 }
 
 func (jp *JispProgram) popString(opName string) (string, error) {
@@ -987,10 +983,12 @@ func (jp *JispProgram) applyBooleanBinaryOp(opName string, op func(bool, bool) b
 }
 
 func (jp *JispProgram) applyComparisonOp(opName string, opNum func(float64, float64) bool, opStr func(string, string) bool) error {
-	a, b, err := jp.popTwoValues(opName)
+	vals, err := jp.popx(opName, 2)
 	if err != nil {
 		return err
 	}
+	a, b := vals[0], vals[1]
+
 	switch vA := a.(type) {
 	case float64:
 		vB, ok := b.(float64)
