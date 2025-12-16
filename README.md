@@ -26,3 +26,38 @@ Jisp programs are written in JSON, a format most developers are already familiar
 ### Conclusion
 
 Jisp takes advantage of JSON's simplicity and universality to create a programming system that’s easy to understand, easy to debug, and easy to integrate.
+
+### Build & Test
+
+`python3 build.py`
+
+### TODO
+
+#### Not Implemented
+- [ ] `call`
+- [ ] `return`
+- [ ] `for`
+- [ ] `foreach`
+- [x] `try`
+- [ ] `replace`
+- [x] `len`
+- [ ] `slice`
+- [ ] `map`
+- [ ] `filter`
+- [ ] `reduce`
+- [ ] `sort`
+- [x] `keys`
+- [x] `values`
+- [ ] `merge`
+- [ ] `range`
+- [x] `noop`
+- [ ] `valid`
+- [ ] `output`
+
+#### Implemented but not tested
+- [ ] `lt`
+- [ ] `mul`
+- [ ] `div`
+- [ ] `and`
+- [ ] `or`
+- [ ] `not`

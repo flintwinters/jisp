@@ -18,6 +18,15 @@ type ContinueSignal struct{}
 
 func (c *ContinueSignal) Error() string { return "continue" }
 
+// JispError is a custom error type for JISP program errors.
+type JispError struct {
+	Message string
+}
+
+func (e *JispError) Error() string {
+	return e.Message
+}
+
 // JispProgram represents the entire state of a JISP program.
 type JispProgram struct {
 	Stack     []interface{}          `json:"stack"`
@@ -68,36 +77,37 @@ var operations map[string]operationHandler
 
 func init() {
 	operations = map[string]operationHandler{
-		"push":   pushOp,
-		"pop":    popOp,
-		"set":    setOp,
-		"get":    getOp,
-		"exists": existsOp,
-		"delete": deleteOp,
-		"eq":     eqOp,
-		"lt":     ltOp,
-		"gt":     gtOp,
-		"add":    addOp,
-		"sub":    subOp,
-		"mul":    mulOp,
-		"div":    divOp,
-		"mod":    modOp,
-		"and":    andOp,
-		"or":     orOp,
-		"not":    notOp,
-		"if":      ifOp,
-		"while":   whileOp,
-		"trim":    trimOp,
-		"lower":   lowerOp,
-		"upper":   upperOp,
+		"push":      pushOp,
+		"pop":       popOp,
+		"set":       setOp,
+		"get":       getOp,
+		"exists":    existsOp,
+		"delete":    deleteOp,
+		"eq":        eqOp,
+		"lt":        ltOp,
+		"gt":        gtOp,
+		"add":       addOp,
+		"sub":       subOp,
+		"mul":       mulOp,
+		"div":       divOp,
+		"mod":       modOp,
+		"and":       andOp,
+		"or":        orOp,
+		"not":       notOp,
+		"if":        ifOp,
+		"while":     whileOp,
+		"trim":      trimOp,
+		"lower":     lowerOp,
+		"upper":     upperOp,
 		"to_string": toStringOp,
-		"concat": concatOp,
-		"break": breakOp,
-		"continue": continueOp,
-		"len":      lenOp,
-		"keys": keysOp, 
-		"values": valuesOp,
-		"noop": noopOp,
+		"concat":    concatOp,
+		"break":     breakOp,
+		"continue":  continueOp,
+		"len":       lenOp,
+		"keys":      keysOp,
+		"values":    valuesOp,
+		"noop":      noopOp,
+		"try":       tryOp,
 	}
 }
 
@@ -121,7 +131,11 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
 			if _, isContinue := err.(*ContinueSignal); isContinue {
 				return err
 			}
-			return fmt.Errorf("error executing operation '%s': %w", op.Name, err)
+			// Wrap other errors as JispError for 'try' to catch
+			if _, isJispError := err.(*JispError); isJispError {
+				return err
+			}
+			return &JispError{Message: fmt.Sprintf("error executing operation '%s': %v", op.Name, err)}
 		}
 	}
 	return nil
@@ -192,6 +206,31 @@ func ifOp(jp *JispProgram, op *JispOperation) error {
 	return jp.If(thenBody, elseBody)
 }
 
+func tryOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) < 2 || len(op.Args) > 3 {
+		return fmt.Errorf("try error: expected 2 or 3 arguments for try_body, catch_var, and optional catch_body, got %v", op.Args)
+	}
+
+	tryBody, err := parseJispOps(op.Args[0])
+	if err != nil {
+		return fmt.Errorf("try error in 'try_body': %w", err)
+	}
+
+	catchVar, ok := op.Args[1].(string)
+	if !ok {
+		return fmt.Errorf("try error: expected catch_var to be a string, got %T", op.Args[1])
+	}
+
+	var catchBody []JispOperation
+	if len(op.Args) == 3 {
+		catchBody, err = parseJispOps(op.Args[2])
+		if err != nil {
+			return fmt.Errorf("try error in 'catch_body': %w", err)
+		}
+	}
+
+	return jp.Try(tryBody, catchVar, catchBody)
+}
 
 func trimOp(jp *JispProgram, _ *JispOperation) error {
 	val, err := jp.popString("trim")
@@ -280,7 +319,6 @@ func whileOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
-
 func lenOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) != 0 { // len operation takes its argument from the stack, not from op.Args
 		return fmt.Errorf("len error: expected 0 arguments, got %d", len(op.Args))
@@ -332,40 +370,40 @@ func valuesOp(jp *JispProgram, op *JispOperation) error {
 }
 
 func keysOp(jp *JispProgram, op *JispOperation) error {
-    if len(op.Args) != 0 { // keys operation takes its argument from the stack, not from op.Args
-        return fmt.Errorf("keys error: expected 0 arguments, got %d", len(op.Args))
-    }
+	if len(op.Args) != 0 { // keys operation takes its argument from the stack, not from op.Args
+		return fmt.Errorf("keys error: expected 0 arguments, got %d", len(op.Args))
+	}
 
-    val, err := jp.popValue("keys")
-    if err != nil {
-        return fmt.Errorf("keys error: %w", err)
-    }
+	val, err := jp.popValue("keys")
+	if err != nil {
+		return fmt.Errorf("keys error: %w", err)
+	}
 
-    var keys []string
-    switch v := val.(type) {
-    case map[string]interface{}: // Object
-        for k := range v {
-        	keys = append(keys, k)
-        }
-    default:
-        return fmt.Errorf("keys error: unsupported type %T, expected object", val)
-    }
+	var keys []string
+	switch v := val.(type) {
+	case map[string]interface{}: // Object
+		for k := range v {
+			keys = append(keys, k)
+		}
+	default:
+		return fmt.Errorf("keys error: unsupported type %T, expected object", val)
+	}
 
-    jp.Push(keys)
-    return nil
+	jp.Push(keys)
+	return nil
 }
 
 func concatOp(jp *JispProgram, _ *JispOperation) error {
-    val2, err := jp.popString("concat")
-    if err != nil {
-        return err
-    }
-    val1, err := jp.popString("concat")
-    if err != nil {
-        return err
-    }
-    jp.Push(val1 + val2)
-    return nil
+	val2, err := jp.popString("concat")
+	if err != nil {
+		return err
+	}
+	val1, err := jp.popString("concat")
+	if err != nil {
+		return err
+	}
+	jp.Push(val1 + val2)
+	return nil
 }
 
 // --- Core JISP Logic ---
@@ -547,6 +585,56 @@ func (jp *JispProgram) If(thenBody, elseBody []JispOperation) error {
 	}
 	return nil
 }
+
+// Try executes the tryBody, and if a JispError occurs, it binds the error message
+// to catchVar and executes the catchBody.
+func (jp *JispProgram) Try(tryBody []JispOperation, catchVar string, catchBody []JispOperation) (err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			// This catches panics that are not JispError.
+			// Re-throw if it's not a JispError, or if catchBody is not provided.
+			if _, ok := r.(*JispError); !ok || catchBody == nil {
+				panic(r)
+			}
+			// If it's a JispError and catchBody exists, handle it.
+			err = jp.handleCaughtError(r, catchVar, catchBody)
+		}
+	}()
+
+	// Execute tryBody
+	if tryErr := jp.ExecuteOperations(tryBody); tryErr != nil {
+		if jispErr, ok := tryErr.(*JispError); ok {
+			// JispError occurred, handle it with the catch block
+			return jp.handleCaughtError(jispErr, catchVar, catchBody)
+		}
+		return tryErr // Propagate other types of errors
+	}
+	return nil
+}
+
+func (jp *JispProgram) handleCaughtError(caught interface{}, catchVar string, catchBody []JispOperation) error {
+	var errMsg string
+	if jispErr, ok := caught.(*JispError); ok {
+		errMsg = jispErr.Message
+	} else if err, ok := caught.(error); ok {
+		errMsg = err.Error()
+	} else {
+		errMsg = fmt.Sprintf("%v", caught)
+	}
+
+	// Save the error message to the catch variable
+	if jp.Variables == nil {
+		jp.Variables = make(map[string]interface{})
+	}
+	jp.Variables[catchVar] = errMsg
+
+	// Execute catchBody
+	if catchBody != nil {
+		return jp.ExecuteOperations(catchBody)
+	}
+	return nil // If no catchBody, just absorb the error
+}
+
 
 // --- Helper Functions ---
 

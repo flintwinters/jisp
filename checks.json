@@ -1515,5 +1515,92 @@
       ],
       "additionalProperties": false
     }
+  },
+  {
+    "description": "Test Case 22: Try operation - catches an error.",
+    "jisp_program": {
+      "code": [
+        [
+          "try",
+          [
+            [
+              "push",
+              "non_existent_var"
+            ],
+            [
+              "get"
+            ]
+          ],
+          "caught_error",
+          [
+            [
+              "push",
+              "caught"
+            ],
+            [
+              "pop",
+              "status"
+            ]
+          ]
+        ],
+        [
+          "push",
+          "caught_error"
+        ],
+        [
+          "get"
+        ],
+        [
+          "pop",
+          "error_message"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "caught_error": {
+              "type": "string",
+              "pattern": ".*get error: variable 'non_existent_var' not found.*"
+            }
+          },
+          "required": [
+            "caught_error"
+          ],
+          "additionalProperties": false
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string",
+              "const": "caught"
+            },
+            "error_message": {
+              "type": "string",
+              "pattern": ".*get error: variable 'non_existent_var' not found.*"
+            }
+          },
+          "required": [
+            "status",
+            "error_message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "stack",
+        "variables",
+        "state"
+      ],
+      "additionalProperties": false
+    }
   }
 ]
