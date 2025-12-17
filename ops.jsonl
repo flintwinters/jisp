@@ -39,6 +39,5 @@
 {"op": "range", "args": {"type": "array", "minItems": 2, "maxItems": 3, "items": [{"type": "number"}, {"type": "number"}, {"type": "number"}]}, "output": {"type": "array", "items": {"type": "number"}}, "doc": "Generate a numeric range."}
 {"op": "noop", "args": {"type": "array", "maxItems": 0}, "output": {"type": "null"}, "doc": "Perform no action."}
 {"op": "valid", "args": {"type": "array", "minItems": 2, "maxItems": 2, "items": [{"type": "object"}, {}]}, "output": {"type": "boolean"}, "doc": "Validate a value against a JSON Schema."}
-{"op": "output", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {}}, "output": {"type": "null"}, "doc": "Append a value to the program output array."}
 {"op": "raise", "args": {"type": "array", "maxItems": 0}, "output": {"type": "null"}, "doc": "Pops a string from the stack and raises an error with that message, halting execution."}
 {"op": "assert", "args": {"type": "array", "minItems": 0, "maxItems": 1, "items": {"type": "string"}}, "output": {"type": "null"}, "doc": "Pops a value from the stack. If the value is false, raises an error with an optional custom message from the arguments. If no message is provided, a default 'assertion failed' error is used."}

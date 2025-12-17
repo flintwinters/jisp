@@ -71,7 +71,6 @@ Not happy with this explicit variable declaration.
 - [x] `range`
 - [x] `noop`
 - [ ] `valid`
-- [ ] `output`
 - [x] `raise`
 - [x] `assert`
 
