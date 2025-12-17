@@ -33,6 +33,25 @@ Jisp takes advantage of JSON's simplicity and universality to create a programmi
 
 ### TODO
 
+Make a decision on the ergonomics of map, filter, and reduce operations:
+
+```json
+["push", [1.0, 2.0, 3.0, 4.0]],
+["push", "item"],
+[
+    "push", [
+        ["push", "item"],
+        ["get"],
+        ["push", "item"],
+        ["get"],
+        ["mul"]
+    ]
+],
+["map"]
+```
+
+Not happy with this explicit variable declaration.
+
 #### Not Implemented
 - [ ] `call`
 - [ ] `return`
