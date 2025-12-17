@@ -49,10 +49,10 @@ Jisp takes advantage of JSON's simplicity and universality to create a programmi
 - [x] `keys`
 - [x] `values`
 - [ ] `merge`
-- [ ] `range`
+- [x] `range`
 - [x] `noop`
 - [ ] `valid`
 - [ ] `output`
-- [ ] `raise`
-- [ ] `assert`
+- [x] `raise`
+- [x] `assert`
 

@@ -138,7 +138,34 @@ func init() {
 		"slice":     sliceOp,
 		"raise":     raiseOp,
 		"assert":    assertOp,
+		"range":     rangeOp,
 	}
+}
+
+func rangeOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("range error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	args, err := jp.popx("range", 3)
+	if err != nil {
+		return err
+	}
+
+	start, okStart := args[0].(float64)
+	stop, okStop := args[1].(float64)
+	step, okStep := args[2].(float64)
+
+	if !okStart || !okStop || !okStep {
+		return fmt.Errorf("range error: all arguments on stack must be numbers")
+	}
+
+	var result []float64
+	for i := start; i < stop; i += step {
+		result = append(result, i)
+	}
+	jp.Push(result)
+	return nil
 }
 
 func raiseOp(jp *JispProgram, _ *JispOperation) error {

@@ -2021,5 +2021,33 @@
       ]
     },
     "expected_error_message": "Message: my custom assertion message"
+  },
+  {
+    "description": "Test Case 34: Range operation - with start, stop, and step.",
+    "jisp_program": {
+      "code": [
+        ["push", 2.0],
+        ["push", 10.0],
+        ["push", 2.0],
+        ["range"],
+        ["pop", "range_result"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": { "type": "array", "maxItems": 0 },
+        "state": {
+          "type": "object",
+          "properties": {
+            "range_result": {
+              "type": "array",
+              "items": { "type": "number" },
+              "const": [2.0, 4.0, 6.0, 8.0]
+            }
+          }
+        }
+      }
+    }
   }
 ]
