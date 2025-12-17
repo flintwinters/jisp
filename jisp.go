@@ -142,7 +142,58 @@ func init() {
 		"foreach":   forOp,
 		"filter":    filterOp,
 		"map":       mapOp,
+		"reduce":    reduceOp,
 	}
+}
+
+func reduceOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("reduce error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	// Pop arguments from stack (top to bottom): initialValue, reduceOps, array
+	initialValue, err := jp.popValue("reduce")
+	if err != nil {
+		return err
+	}
+
+	reduceRaw, err := jp.popValue("reduce")
+	if err != nil {
+		return err
+	}
+	reduceOps, err := parseJispOps(reduceRaw)
+	if err != nil {
+		return fmt.Errorf("reduce error: invalid operations block: %w", err)
+	}
+
+	input, err := pop[[]interface{}](jp, "reduce")
+	if err != nil {
+		return err
+	}
+
+	accumulator := initialValue
+
+	for _, item := range input {
+		jp.Push(accumulator) // Push current accumulator onto stack
+		jp.Push(item)        // Push current item onto stack
+
+		previousStackLen := len(jp.Stack) // Store stack length before executing reduceOps
+
+		if err := jp.ExecuteOperations(reduceOps); err != nil {
+			return err
+		}
+
+		if len(jp.Stack) == previousStackLen {
+			return fmt.Errorf("reduce error: operations block did not push a result to the stack")
+		}
+		accumulator, err = jp.popValue("reduce")
+		if err != nil {
+			return err
+		}
+	}
+
+	jp.Push(accumulator)
+	return nil
 }
 
 func mapOp(jp *JispProgram, op *JispOperation) error {

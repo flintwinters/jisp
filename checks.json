@@ -2173,5 +2173,39 @@
         }
       }
     }
+  },
+  {
+    "description": "Test Case 37: Reduce operation - sums an array of numbers.",
+    "jisp_program": {
+      "code": [
+        ["push", [1.0, 2.0, 3.0, 4.0]],
+        ["push", [
+          ["add"]
+        ]],
+        ["push", 0.0],
+        ["reduce"],
+        ["pop", "sum_result"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": { "type": "array", "maxItems": 0 },
+        "state": {
+          "type": "object",
+          "properties": {
+            "sum_result": {
+              "type": "number",
+              "const": 10.0
+            }
+          },
+          "required": ["sum_result"],
+          "additionalProperties": false
+        },
+        "variables": { "type": "object", "maxProperties": 0 }
+      },
+      "required": ["stack", "state", "variables"],
+      "additionalProperties": false
+    }
   }
 ]
