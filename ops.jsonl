@@ -21,7 +21,6 @@
 {"op": "break", "args": {"type": "array", "maxItems": 0}, "output": {"type": "null"}, "doc": "Exit the nearest enclosing loop immediately (for/while)."}
 {"op": "continue", "args": {"type": "array", "maxItems": 0}, "output": {"type": "null"}, "doc": "Skip the remainder of the current loop iteration and continue with the next iteration of the nearest enclosing loop."}
 {"op": "try", "args": {"type": "array", "minItems": 2, "maxItems": 3, "items": [{"type": "array", "items": {"type": "object"}}, {"type": "string"}, {"type": "array", "items": {"type": "object"}}]}, "output": {"type": "null"}, "doc": "Execute `try` body; on error, bind exception message to `catch_var` and run `catch_body`; returns nil."}
-
 {"op": "concat", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "array"}}, "output": {"type": "string"}, "doc": "Convert all values to strings and concatenate them."}
 {"op": "to_string", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {}}, "output": {"type": "string"}, "doc": "Convert a value to its string representation."}
 {"op": "upper", "args": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "string"}}, "output": {"type": "string"}, "doc": "Convert a string to uppercase."}
