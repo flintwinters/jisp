@@ -2190,16 +2190,33 @@
     "validation_schema": {
       "type": "object",
       "properties": {
+        "stack": { "type": "array", "maxItems": 0 }
+      }
+    }
+  },
+  {
+    "description": "Test Case 38: Sort operation - sorts an array of numbers.",
+    "jisp_program": {
+      "code": [
+        ["push", [3.0, 1.0, 4.0, 1.0, 5.0, 9.0, 2.0, 6.0]],
+        ["sort"],
+        ["pop", "sorted_numbers"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
         "stack": { "type": "array", "maxItems": 0 },
         "state": {
           "type": "object",
           "properties": {
-            "sum_result": {
-              "type": "number",
-              "const": 10.0
+            "sorted_numbers": {
+              "type": "array",
+              "items": { "type": "number" },
+              "const": [1.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 9.0]
             }
           },
-          "required": ["sum_result"],
+          "required": ["sorted_numbers"],
           "additionalProperties": false
         },
         "variables": { "type": "object", "maxProperties": 0 }
@@ -2207,5 +2224,76 @@
       "required": ["stack", "state", "variables"],
       "additionalProperties": false
     }
+  },
+  {
+    "description": "Test Case 39: Sort operation - sorts an array of strings.",
+    "jisp_program": {
+      "code": [
+        ["push", ["banana", "apple", "date", "cherry"]],
+        ["sort"],
+        ["pop", "sorted_strings"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": { "type": "array", "maxItems": 0 },
+        "state": {
+          "type": "object",
+          "properties": {
+            "sorted_strings": {
+              "type": "array",
+              "items": { "type": "string" },
+              "const": ["apple", "banana", "cherry", "date"]
+            }
+          },
+          "required": ["sorted_strings"],
+          "additionalProperties": false
+        },
+        "variables": { "type": "object", "maxProperties": 0 }
+      },
+      "required": ["stack", "state", "variables"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "description": "Test Case 40: Sort operation - empty array.",
+    "jisp_program": {
+      "code": [
+        ["push", []],
+        ["sort"],
+        ["pop", "sorted_empty_array"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": { "type": "array", "maxItems": 0 },
+        "state": {
+          "type": "object",
+          "properties": {
+            "sorted_empty_array": {
+              "type": "array",
+              "maxItems": 0
+            }
+          },
+          "required": ["sorted_empty_array"],
+          "additionalProperties": false
+        },
+        "variables": { "type": "object", "maxProperties": 0 }
+      },
+      "required": ["stack", "state", "variables"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "description": "Test Case 41: Sort operation - mixed types in array should error.",
+    "jisp_program": {
+      "code": [
+        ["push", [1.0, "two", 3.0]],
+        ["sort"]
+      ]
+    },
+    "expected_error_message": "Message: sort error: array contains mixed types or unsortable types"
   }
 ]

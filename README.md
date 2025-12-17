@@ -64,7 +64,7 @@ Not happy with this explicit variable declaration.
 - [x] `map`
 - [x] `filter`
 - [x] `reduce`
-- [ ] `sort`
+- [x] `sort`
 - [x] `keys`
 - [x] `values`
 - [ ] `merge`

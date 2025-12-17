@@ -10,6 +10,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -143,6 +144,78 @@ func init() {
 		"filter":    filterOp,
 		"map":       mapOp,
 		"reduce":    reduceOp,
+		"sort":      sortOp,
+	}
+}
+
+func sortOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("sort error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	val, err := jp.popValue("sort")
+	if err != nil {
+		return fmt.Errorf("sort error: %w", err)
+	}
+
+	switch v := val.(type) {
+	case []interface{}:
+		// Attempt to sort as numbers or strings
+		if len(v) == 0 {
+			jp.Push(v) // Push empty slice back
+			return nil
+		}
+
+		// Check if all elements are numbers
+		allNumbers := true
+		for _, item := range v {
+			if _, ok := item.(float64); !ok {
+				allNumbers = false
+				break
+			}
+		}
+
+		if allNumbers {
+			numSlice := make([]float64, len(v))
+			for i, item := range v {
+				numSlice[i] = item.(float64)
+			}
+			sort.Float64s(numSlice)
+			result := make([]interface{}, len(numSlice))
+			for i, num := range numSlice {
+				result[i] = num
+			}
+			jp.Push(result)
+			return nil
+		}
+
+		// Check if all elements are strings
+		allStrings := true
+		for _, item := range v {
+			if _, ok := item.(string); !ok {
+				allStrings = false
+				break
+			}
+		}
+
+		if allStrings {
+			strSlice := make([]string, len(v))
+			for i, item := range v {
+				strSlice[i] = item.(string)
+			}
+			sort.Strings(strSlice)
+			result := make([]interface{}, len(strSlice))
+			for i, str := range strSlice {
+				result[i] = str
+			}
+			jp.Push(result)
+			return nil
+		}
+
+		return fmt.Errorf("sort error: array contains mixed types or unsortable types")
+
+	default:
+		return fmt.Errorf("sort error: unsupported type %T for sorting, expected array", val)
 	}
 }
 
