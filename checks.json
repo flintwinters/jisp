@@ -2113,5 +2113,65 @@
         }
       }
     }
+  },
+  {
+    "description": "Test Case 36: Map operation - squares each number in an array.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          [1.0, 2.0, 3.0, 4.0]
+        ],
+        [
+          "push",
+          "item"
+        ],
+        [
+          "push",
+          [
+            [
+              "push",
+              "item"
+            ],
+            [
+              "get"
+            ],
+            [
+              "push",
+              "item"
+            ],
+            [
+              "get"
+            ],
+            [
+              "mul"
+            ]
+          ]
+        ],
+        [
+          "map"
+        ],
+        [
+          "pop",
+          "mapped_array"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": { "type": "array", "maxItems": 0 },
+        "state": {
+          "type": "object",
+          "properties": {
+            "mapped_array": {
+              "type": "array",
+              "items": { "type": "number" },
+              "const": [1.0, 4.0, 9.0, 16.0]
+            }
+          }
+        }
+      }
+    }
   }
 ]

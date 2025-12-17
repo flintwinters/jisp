@@ -141,7 +141,50 @@ func init() {
 		"range":     rangeOp,
 		"foreach":   forOp,
 		"filter":    filterOp,
+		"map":       mapOp,
 	}
+}
+
+func mapOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("map error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	// Pop arguments from stack: condition, varName, array
+	mapRaw, err := jp.popValue("map")
+	if err != nil {
+		return err
+	}
+	mapOps, err := parseJispOps(mapRaw)
+	if err != nil {
+		return fmt.Errorf("map error: invalid condition block: %w", err)
+	}
+
+	varName, err := pop[string](jp, "map")
+	if err != nil {
+		return err
+	}
+
+	input, err := pop[[]interface{}](jp, "map")
+	if err != nil {
+		return err
+	}
+
+	var result []interface{}
+	for _, item := range input {
+		jp.Variables[varName] = item
+		if err := jp.ExecuteOperations(mapOps); err != nil {
+			return err
+		}
+		res, err := jp.popValue("map")
+		if err != nil {
+			return err
+		}
+		result = append(result, res)
+	}
+
+	jp.Push(result)
+	return nil
 }
 
 func filterOp(jp *JispProgram, op *JispOperation) error {
