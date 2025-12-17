@@ -140,7 +140,52 @@ func init() {
 		"assert":    assertOp,
 		"range":     rangeOp,
 		"foreach":   forOp,
+		"filter":    filterOp,
 	}
+}
+
+func filterOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("filter error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	// Pop arguments from stack: condition, varName, array
+	conditionRaw, err := jp.popValue("filter")
+	if err != nil {
+		return err
+	}
+	conditionOps, err := parseJispOps(conditionRaw)
+	if err != nil {
+		return fmt.Errorf("filter error: invalid condition block: %w", err)
+	}
+
+	varName, err := pop[string](jp, "filter")
+	if err != nil {
+		return err
+	}
+
+	input, err := pop[[]interface{}](jp, "filter")
+	if err != nil {
+		return err
+	}
+
+	var result []interface{}
+	for _, item := range input {
+		jp.Variables[varName] = item
+		if err := jp.ExecuteOperations(conditionOps); err != nil {
+			return err
+		}
+		condition, err := pop[bool](jp, "filter")
+		if err != nil {
+			return err
+		}
+		if condition {
+			result = append(result, item)
+		}
+	}
+
+	jp.Push(result)
+	return nil
 }
 
 func rangeOp(jp *JispProgram, op *JispOperation) error {

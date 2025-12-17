@@ -43,7 +43,7 @@ Jisp takes advantage of JSON's simplicity and universality to create a programmi
 - [x] `len`
 - [x] `slice`
 - [ ] `map`
-- [ ] `filter`
+- [x] `filter`
 - [ ] `reduce`
 - [ ] `sort`
 - [x] `keys`

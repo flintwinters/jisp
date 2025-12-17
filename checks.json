@@ -2049,5 +2049,69 @@
         }
       }
     }
+  },
+  {
+    "description": "Test Case 35: Filter operation - filters an array of numbers.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+        ],
+        [
+          "push",
+          "item"
+        ],
+        [
+          "push",
+          [
+            [
+              "push",
+              "item"
+            ],
+            [
+              "get"
+            ],
+            [
+              "push",
+              3.0
+            ],
+            [
+              "mod"
+            ],
+            [
+              "push",
+              0.0
+            ],
+            [
+              "eq"
+            ]
+          ]
+        ],
+        [
+          "filter"
+        ],
+        [
+          "pop",
+          "filtered_array"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": { "type": "array", "maxItems": 0 },
+        "state": {
+          "type": "object",
+          "properties": {
+            "filtered_array": {
+              "type": "array",
+              "items": { "type": "number" },
+              "const": [3.0, 6.0]
+            }
+          }
+        }
+      }
+    }
   }
 ]
