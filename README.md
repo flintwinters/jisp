@@ -37,7 +37,7 @@ Jisp takes advantage of JSON's simplicity and universality to create a programmi
 - [ ] `call`
 - [ ] `return`
 - [x] `for`
-- [ ] `foreach`
+- [x] `foreach`
 - [x] `try`
 - [x] `replace`
 - [x] `len`

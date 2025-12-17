@@ -139,6 +139,7 @@ func init() {
 		"raise":     raiseOp,
 		"assert":    assertOp,
 		"range":     rangeOp,
+		"foreach":   forOp,
 	}
 }
 
