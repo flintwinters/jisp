@@ -32,8 +32,28 @@ type JispError struct {
 
 func (e *JispError) Error() string {
 	stackJSON, _ := json.MarshalIndent(e.StackSnapshot, "", "  ")
-	return fmt.Sprintf("Jisp Execution Error:\n  Operation: '%s'\n  Instruction: %d\n  Message: %s\n  Stack:\n%s",
+	return fmt.Sprintf("Jisp Execution Error:\n  Operation: '%s'\n  Instruction: %d\n  Message: %s\n  Stack: %s",
 		e.OperationName, e.InstructionPointer, e.Message, stackJSON)
+}
+
+// parseRawOperation parses a single operation from a raw array of interfaces.
+// It expects the first element to be the operation name (string) and the rest to be arguments.
+func parseRawOperation(rawOp []interface{}) (JispOperation, error) {
+	if len(rawOp) == 0 {
+		return JispOperation{}, fmt.Errorf("operation array is empty")
+	}
+
+	opName, ok := rawOp[0].(string)
+	if !ok {
+		return JispOperation{}, fmt.Errorf("operation name is not a string, got %T", rawOp[0])
+	}
+
+	var args []interface{}
+	if len(rawOp) > 1 {
+		args = rawOp[1:]
+	}
+
+	return JispOperation{Name: opName, Args: args}, nil
 }
 
 // CallFrame represents a single frame on the call stack.
@@ -76,22 +96,11 @@ func (op *JispOperation) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("JispOperation UnmarshalJSON: expected an array, got %w", err)
 	}
 
-	if len(raw) == 0 {
-		return fmt.Errorf("JispOperation UnmarshalJSON: array is empty")
+	parsedOp, err := parseRawOperation(raw)
+	if err != nil {
+		return fmt.Errorf("JispOperation UnmarshalJSON: %w", err)
 	}
-
-	opName, ok := raw[0].(string)
-	if !ok {
-		return fmt.Errorf("JispOperation UnmarshalJSON: first element (operation name) is not a string, got %T", raw[0])
-	}
-	op.Name = opName
-
-	if len(raw) > 1 {
-		op.Args = raw[1:]
-	} else {
-		op.Args = []interface{}{}
-	}
-
+	*op = parsedOp // Assign the parsed operation to the receiver
 	return nil
 }
 
@@ -1185,8 +1194,9 @@ func (jp *JispProgram) If(thenBody, elseBody []JispOperation) error {
 		return fmt.Errorf("if error: expected boolean condition on stack, got %T", conditionVal)
 	}
 
-			if condition {
-			return jp.ExecuteOperations(thenBody)	} else if elseBody != nil {
+	if condition {
+		return jp.ExecuteOperations(thenBody)
+	} else if elseBody != nil {
 		return jp.ExecuteOperations(elseBody)
 	}
 	return nil
@@ -1442,25 +1452,15 @@ func parseJispOps(raw interface{}) ([]JispOperation, error) {
 	}
 	ops := make([]JispOperation, len(bodyArr))
 	for i, rawOp := range bodyArr {
-		opArr, ok := rawOp.([]interface{})
+		opArr, ok := rawOp.([]interface{}) // Expecting each operation to be an array like [opName, arg1, ...]
 		if !ok {
 			return nil, fmt.Errorf("expected operation to be an array, got %T", rawOp)
 		}
-		if len(opArr) == 0 {
-			return nil, fmt.Errorf("operation array is empty")
+		parsedOp, err := parseRawOperation(opArr)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing operation at index %d: %w", i, err)
 		}
-
-		opName, ok := opArr[0].(string)
-		if !ok {
-			return nil, fmt.Errorf("operation name is not a string, got %T", opArr[0])
-		}
-
-		ops[i].Name = opName
-		if len(opArr) > 1 {
-			ops[i].Args = opArr[1:]
-		} else {
-			ops[i].Args = []interface{}{}
-		}
+		ops[i] = parsedOp
 	}
 	return ops, nil
 }
