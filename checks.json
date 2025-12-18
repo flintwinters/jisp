@@ -2391,5 +2391,128 @@
       "required": ["stack", "state", "variables"],
       "additionalProperties": false
     }
+  },
+  {
+    "description": "Test Case 48: Valid operation - valid document against schema.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "age": {
+                "type": "number"
+              }
+            },
+            "required": ["name"]
+          }
+        ],
+        [
+          "push",
+          {
+            "name": "Alice",
+            "age": 30
+          }
+        ],
+        [
+          "valid"
+        ],
+        [
+          "pop",
+          "is_valid"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "is_valid": {
+              "type": "boolean",
+              "const": true
+            }
+          },
+          "required": ["is_valid"],
+          "additionalProperties": false
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": ["stack", "state", "variables"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "description": "Test Case 49: Valid operation - invalid document against schema.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "age": {
+                "type": "number"
+              }
+            },
+            "required": ["name"]
+          }
+        ],
+        [
+          "push",
+          {
+            "age": "thirty"
+          }
+        ],
+        [
+          "valid"
+        ],
+        [
+          "pop",
+          "is_invalid"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "is_invalid": {
+              "type": "boolean",
+              "const": false
+            }
+          },
+          "required": ["is_invalid"],
+          "additionalProperties": false
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": ["stack", "state", "variables"],
+      "additionalProperties": false
+    }
   }
 ]

@@ -12,6 +12,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"github.com/xeipuuv/gojsonschema"
 )
 
 // Custom error types for control flow
@@ -148,7 +149,38 @@ func init() {
 		"union":     unionOp,
 		"intersection": intersectionOp,
 		"difference": differenceOp,
+		"valid":      validOp,
 	}
+}
+
+// validOp pops a schema and a document from the stack, validates the document against the schema,
+// and pushes the boolean result (true for valid, false for invalid) onto the stack.
+func validOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("valid error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	docValue, err := jp.popValue("valid")
+	if err != nil {
+		return fmt.Errorf("valid error: %w", err)
+	}
+
+	schemaValue, err := jp.popValue("valid")
+	if err != nil {
+		return fmt.Errorf("valid error: %w", err)
+	}
+
+	// Convert schema and document to gojsonschema Loaders
+	schemaLoader := gojsonschema.NewGoLoader(schemaValue)
+	documentLoader := gojsonschema.NewGoLoader(docValue)
+
+	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
+	if err != nil {
+		return fmt.Errorf("valid error during schema validation: %w", err)
+	}
+
+	jp.Push(result.Valid())
+	return nil
 }
 
 // Helper to convert []interface{} to []comparable for set operations
