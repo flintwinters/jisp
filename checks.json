@@ -2195,12 +2195,13 @@
     }
   },
   {
-    "description": "Test Case 38: Sort operation - sorts an array of numbers.",
+    "description": "Test Case 42: Union operation - combines two arrays of numbers.",
     "jisp_program": {
       "code": [
-        ["push", [3.0, 1.0, 4.0, 1.0, 5.0, 9.0, 2.0, 6.0]],
-        ["sort"],
-        ["pop", "sorted_numbers"]
+        ["push", [1.0, 2.0, 3.0]],
+        ["push", [3.0, 4.0, 5.0]],
+        ["union"],
+        ["pop", "union_result"]
       ]
     },
     "validation_schema": {
@@ -2210,13 +2211,16 @@
         "state": {
           "type": "object",
           "properties": {
-            "sorted_numbers": {
+            "union_result": {
               "type": "array",
               "items": { "type": "number" },
-              "const": [1.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 9.0]
+              "contains": { "const": 1.0 },
+              "minItems": 5,
+              "maxItems": 5,
+              "uniqueItems": true
             }
           },
-          "required": ["sorted_numbers"],
+          "required": ["union_result"],
           "additionalProperties": false
         },
         "variables": { "type": "object", "maxProperties": 0 }
@@ -2226,12 +2230,13 @@
     }
   },
   {
-    "description": "Test Case 39: Sort operation - sorts an array of strings.",
+    "description": "Test Case 43: Intersection operation - finds common elements in two arrays of numbers.",
     "jisp_program": {
       "code": [
-        ["push", ["banana", "apple", "date", "cherry"]],
-        ["sort"],
-        ["pop", "sorted_strings"]
+        ["push", [1.0, 2.0, 3.0]],
+        ["push", [2.0, 4.0, 3.0]],
+        ["intersection"],
+        ["pop", "intersection_result"]
       ]
     },
     "validation_schema": {
@@ -2241,13 +2246,13 @@
         "state": {
           "type": "object",
           "properties": {
-            "sorted_strings": {
+            "intersection_result": {
               "type": "array",
-              "items": { "type": "string" },
-              "const": ["apple", "banana", "cherry", "date"]
+              "items": { "type": "number" },
+              "const": [2.0, 3.0]
             }
           },
-          "required": ["sorted_strings"],
+          "required": ["intersection_result"],
           "additionalProperties": false
         },
         "variables": { "type": "object", "maxProperties": 0 }
@@ -2257,12 +2262,13 @@
     }
   },
   {
-    "description": "Test Case 40: Sort operation - empty array.",
+    "description": "Test Case 44: Difference operation - finds elements in array1 but not in array2 (numbers).",
     "jisp_program": {
       "code": [
-        ["push", []],
-        ["sort"],
-        ["pop", "sorted_empty_array"]
+        ["push", [1.0, 2.0, 3.0, 4.0]],
+        ["push", [3.0, 5.0]],
+        ["difference"],
+        ["pop", "difference_result"]
       ]
     },
     "validation_schema": {
@@ -2272,12 +2278,13 @@
         "state": {
           "type": "object",
           "properties": {
-            "sorted_empty_array": {
+            "difference_result": {
               "type": "array",
-              "maxItems": 0
+              "items": { "type": "number" },
+              "const": [1.0, 2.0, 4.0]
             }
           },
-          "required": ["sorted_empty_array"],
+          "required": ["difference_result"],
           "additionalProperties": false
         },
         "variables": { "type": "object", "maxProperties": 0 }
@@ -2287,13 +2294,102 @@
     }
   },
   {
-    "description": "Test Case 41: Sort operation - mixed types in array should error.",
+    "description": "Test Case 45: Union operation - arrays with mixed comparable types.",
     "jisp_program": {
       "code": [
-        ["push", [1.0, "two", 3.0]],
-        ["sort"]
+        ["push", [1.0, "hello", true, null]],
+        ["push", ["world", true, 2.0, null]],
+        ["union"],
+        ["pop", "mixed_union_result"]
       ]
     },
-    "expected_error_message": "Message: sort error: array contains mixed types or unsortable types"
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": { "type": "array", "maxItems": 0 },
+        "state": {
+          "type": "object",
+          "properties": {
+            "mixed_union_result": {
+              "type": "array",
+              "minItems": 6,
+              "maxItems": 6,
+              "uniqueItems": true
+            }
+          },
+          "required": ["mixed_union_result"],
+          "additionalProperties": false
+        },
+        "variables": { "type": "object", "maxProperties": 0 }
+      },
+      "required": ["stack", "state", "variables"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "description": "Test Case 46: Intersection operation - arrays with mixed comparable types.",
+    "jisp_program": {
+      "code": [
+        ["push", [1.0, "hello", true, null]],
+        ["push", ["world", true, 1.0, null]],
+        ["intersection"],
+        ["pop", "mixed_intersection_result"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": { "type": "array", "maxItems": 0 },
+        "state": {
+          "type": "object",
+          "properties": {
+            "mixed_intersection_result": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "uniqueItems": true
+            }
+          },
+          "required": ["mixed_intersection_result"],
+          "additionalProperties": false
+        },
+        "variables": { "type": "object", "maxProperties": 0 }
+      },
+      "required": ["stack", "state", "variables"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "description": "Test Case 47: Difference operation - arrays with mixed comparable types.",
+    "jisp_program": {
+      "code": [
+        ["push", [1.0, "hello", true, null, 5.0]],
+        ["push", ["world", true, 2.0, null]],
+        ["difference"],
+        ["pop", "mixed_difference_result"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": { "type": "array", "maxItems": 0 },
+        "state": {
+          "type": "object",
+          "properties": {
+            "mixed_difference_result": {
+              "type": "array",
+              "minItems": 3,
+              "maxItems": 3,
+              "uniqueItems": true
+            }
+          },
+          "required": ["mixed_difference_result"],
+          "additionalProperties": false
+        },
+        "variables": { "type": "object", "maxProperties": 0 }
+      },
+      "required": ["stack", "state", "variables"],
+      "additionalProperties": false
+    }
   }
 ]
