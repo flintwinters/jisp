@@ -15,14 +15,11 @@ import (
 	"github.com/xeipuuv/gojsonschema"
 )
 
-// Custom error types for control flow
-type BreakSignal struct{}
-
-func (b *BreakSignal) Error() string { return "break" }
-
-type ContinueSignal struct{}
-
-func (c *ContinueSignal) Error() string { return "continue" }
+var (
+	ErrBreak    = errors.New("break")
+	ErrContinue = errors.New("continue")
+	ErrReturn   = errors.New("return")
+)
 
 // JispError is a custom error type for JISP program errors.
 // It allows the 'try' operation to catch and handle runtime errors gracefully.
@@ -39,13 +36,19 @@ func (e *JispError) Error() string {
 		e.OperationName, e.InstructionPointer, e.Message, stackJSON)
 }
 
+// CallFrame represents a single frame on the call stack.
+type CallFrame struct {
+}
+
 // JispProgram represents the entire state of a JISP program, including the
-// execution stack, variables map, and a general-purpose state map.
+// execution stack, variables map, a general-purpose state map, and a call stack.
 type JispProgram struct {
-	Stack     []interface{}          `json:"stack"`
-	Variables map[string]interface{} `json:"variables"`
-	State     map[string]interface{} `json:"state"` // For pop operation target
-	ip        int                    // Instruction pointer
+	Stack      []interface{}          `json:"stack"`
+	Variables  map[string]interface{} `json:"variables"`
+	State      map[string]interface{} `json:"state"` // For pop operation target
+	Code       []JispOperation        `json:"-"`     // The main program code
+	ip         int                    // Instruction pointer
+	callStack  []CallFrame            // Stack for function calls
 }
 
 // newError creates a new JispError with the current program state.
@@ -148,8 +151,8 @@ func init() {
 		"sort":      sortOp,
 		"union":     unionOp,
 		"intersection": intersectionOp,
-		"difference": differenceOp,
-		"valid":      validOp,
+		"difference":   differenceOp,
+		"valid":        validOp,
 	}
 }
 
@@ -667,12 +670,9 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
 			return jp.newError(&op, fmt.Sprintf("unknown operation: %s", op.Name))
 		}
 		if err := handler(jp, &op); err != nil {
-			var breakSig *BreakSignal
-			var contSig *ContinueSignal
 			var jispErr *JispError
-
 			switch {
-			case errors.As(err, &breakSig), errors.As(err, &contSig):
+			case errors.Is(err, ErrBreak), errors.Is(err, ErrContinue), errors.Is(err, ErrReturn):
 				return err // Propagate control flow signals directly
 			case errors.As(err, &jispErr):
 				return err // Already a JispError, propagate
@@ -707,11 +707,11 @@ func popOp(jp *JispProgram, op *JispOperation) error {
 }
 
 func breakOp(jp *JispProgram, _ *JispOperation) error {
-	return &BreakSignal{}
+	return ErrBreak
 }
 
 func continueOp(jp *JispProgram, _ *JispOperation) error {
-	return &ContinueSignal{}
+	return ErrContinue
 }
 
 func setOp(jp *JispProgram, _ *JispOperation) error    { return jp.Set() }
@@ -884,10 +884,10 @@ func whileOp(jp *JispProgram, op *JispOperation) error {
 
 		if err := jp.ExecuteOperations(bodyOps); err != nil {
 			// Handle break and continue signals
-			if _, isBreak := err.(*BreakSignal); isBreak {
+			if errors.Is(err, ErrBreak) {
 				break // Exit the while loop
 			}
-			if _, isContinue := err.(*ContinueSignal); isContinue {
+			if errors.Is(err, ErrContinue) {
 				continue // Skip to the next iteration of the while loop
 			}
 			return fmt.Errorf("while error during body execution: %w", err)
@@ -1185,9 +1185,8 @@ func (jp *JispProgram) If(thenBody, elseBody []JispOperation) error {
 		return fmt.Errorf("if error: expected boolean condition on stack, got %T", conditionVal)
 	}
 
-	if condition {
-		return jp.ExecuteOperations(thenBody)
-	} else if elseBody != nil {
+			if condition {
+			return jp.ExecuteOperations(thenBody)	} else if elseBody != nil {
 		return jp.ExecuteOperations(elseBody)
 	}
 	return nil
@@ -1232,7 +1231,7 @@ func (jp *JispProgram) For(loopVar string, collection interface{}, bodyOps []Jis
 		for _, item := range c {
 			jp.Variables[loopVar] = item
 			if err := jp.executeLoopBody(bodyOps); err != nil {
-				if _, isBreak := err.(*BreakSignal); isBreak {
+				if errors.Is(err, ErrBreak) {
 					return nil // Break from loop
 				}
 				return err // Propagate other errors
@@ -1242,7 +1241,7 @@ func (jp *JispProgram) For(loopVar string, collection interface{}, bodyOps []Jis
 		for key := range c {
 			jp.Variables[loopVar] = key
 			if err := jp.executeLoopBody(bodyOps); err != nil {
-				if _, isBreak := err.(*BreakSignal); isBreak {
+				if errors.Is(err, ErrBreak) {
 					return nil // Break from loop
 				}
 				return err // Propagate other errors
@@ -1258,7 +1257,7 @@ func (jp *JispProgram) For(loopVar string, collection interface{}, bodyOps []Jis
 func (jp *JispProgram) executeLoopBody(bodyOps []JispOperation) error {
 	err := jp.ExecuteOperations(bodyOps)
 	if err != nil {
-		if _, isContinue := err.(*ContinueSignal); isContinue {
+		if errors.Is(err, ErrContinue) {
 			return nil // Signal to continue to next iteration
 		}
 		return err // Propagate break signals or other errors
@@ -1479,7 +1478,9 @@ func main() {
 		log.Fatalf("Error reading JISP program from stdin: %v", err)
 	}
 
-	if err := jp.ExecuteOperations(jispCode.Code); err != nil {
+	jp.Code = jispCode.Code
+
+	if err := jp.ExecuteOperations(jp.Code); err != nil {
 		log.Fatalf("Error during program execution: %v", err)
 	}
 
