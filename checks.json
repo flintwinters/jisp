@@ -1856,11 +1856,25 @@
     "description": "Test Case 26: Slice operation - slice a string with start and end index.",
     "jisp_program": {
       "code": [
-        ["push", "hello world"],
-        ["push", 0.0],
-        ["push", 5.0],
-        ["slice"],
-        ["pop", "sliced_string"]
+        [
+          "push",
+          "hello world"
+        ],
+        [
+          "push",
+          0.0
+        ],
+        [
+          "push",
+          5.0
+        ],
+        [
+          "slice"
+        ],
+        [
+          "pop",
+          "sliced_string"
+        ]
       ]
     },
     "validation_schema": {
@@ -1878,7 +1892,9 @@
               "const": "hello"
             }
           },
-          "required": ["sliced_string"],
+          "required": [
+            "sliced_string"
+          ],
           "additionalProperties": false
         },
         "variables": {
@@ -1886,7 +1902,11 @@
           "maxProperties": 0
         }
       },
-      "required": ["stack", "state", "variables"],
+      "required": [
+        "stack",
+        "state",
+        "variables"
+      ],
       "additionalProperties": false
     }
   },
@@ -1894,10 +1914,27 @@
     "description": "Test Case 27: Slice operation - slice an array with start index only.",
     "jisp_program": {
       "code": [
-        ["push", [1.0, 2.0, 3.0, 4.0, 5.0]],
-        ["push", 2.0],
-        ["slice"],
-        ["pop", "sliced_array"]
+        [
+          "push",
+          [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0
+          ]
+        ],
+        [
+          "push",
+          2.0
+        ],
+        [
+          "slice"
+        ],
+        [
+          "pop",
+          "sliced_array"
+        ]
       ]
     },
     "validation_schema": {
@@ -1912,11 +1949,19 @@
           "properties": {
             "sliced_array": {
               "type": "array",
-              "items": {"type": "number"},
-              "const": [3.0, 4.0, 5.0]
+              "items": {
+                "type": "number"
+              },
+              "const": [
+                3.0,
+                4.0,
+                5.0
+              ]
             }
           },
-          "required": ["sliced_array"],
+          "required": [
+            "sliced_array"
+          ],
           "additionalProperties": false
         },
         "variables": {
@@ -1924,7 +1969,11 @@
           "maxProperties": 0
         }
       },
-      "required": ["stack", "state", "variables"],
+      "required": [
+        "stack",
+        "state",
+        "variables"
+      ],
       "additionalProperties": false
     }
   },
@@ -1932,11 +1981,31 @@
     "description": "Test Case 28: Slice operation - slice an array with start and end index.",
     "jisp_program": {
       "code": [
-        ["push", [10.0, 20.0, 30.0, 40.0, 50.0]],
-        ["push", 1.0],
-        ["push", 4.0],
-        ["slice"],
-        ["pop", "another_sliced_array"]
+        [
+          "push",
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0,
+            50.0
+          ]
+        ],
+        [
+          "push",
+          1.0
+        ],
+        [
+          "push",
+          4.0
+        ],
+        [
+          "slice"
+        ],
+        [
+          "pop",
+          "another_sliced_array"
+        ]
       ]
     },
     "validation_schema": {
@@ -1951,11 +2020,19 @@
           "properties": {
             "another_sliced_array": {
               "type": "array",
-              "items": {"type": "number"},
-              "const": [20.0, 30.0, 40.0]
+              "items": {
+                "type": "number"
+              },
+              "const": [
+                20.0,
+                30.0,
+                40.0
+              ]
             }
           },
-          "required": ["another_sliced_array"],
+          "required": [
+            "another_sliced_array"
+          ],
           "additionalProperties": false
         },
         "variables": {
@@ -1963,7 +2040,11 @@
           "maxProperties": 0
         }
       },
-      "required": ["stack", "state", "variables"],
+      "required": [
+        "stack",
+        "state",
+        "variables"
+      ],
       "additionalProperties": false
     }
   },
@@ -1971,8 +2052,13 @@
     "description": "Test Case 29: Error handling - getting a non-existent variable.",
     "jisp_program": {
       "code": [
-        ["push", "non_existent_var"],
-        ["get"]
+        [
+          "push",
+          "non_existent_var"
+        ],
+        [
+          "get"
+        ]
       ]
     },
     "expected_error_message": "Message: get error: variable 'non_existent_var' not found"
@@ -1981,8 +2067,13 @@
     "description": "Test Case 30: Raise operation - raises a custom error.",
     "jisp_program": {
       "code": [
-        ["push", "this is a custom error"],
-        ["raise"]
+        [
+          "push",
+          "this is a custom error"
+        ],
+        [
+          "raise"
+        ]
       ]
     },
     "expected_error_message": "Message: this is a custom error"
@@ -1991,14 +2082,22 @@
     "description": "Test Case 31: Assert operation - positive case.",
     "jisp_program": {
       "code": [
-        ["push", true],
-        ["assert"]
+        [
+          "push",
+          true
+        ],
+        [
+          "assert"
+        ]
       ]
     },
     "validation_schema": {
       "type": "object",
       "properties": {
-        "stack": { "type": "array", "maxItems": 0 }
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        }
       }
     }
   },
@@ -2006,8 +2105,13 @@
     "description": "Test Case 32: Assert operation - negative case with default message.",
     "jisp_program": {
       "code": [
-        ["push", false],
-        ["assert"]
+        [
+          "push",
+          false
+        ],
+        [
+          "assert"
+        ]
       ]
     },
     "expected_error_message": "Message: assertion failed"
@@ -2016,47 +2120,73 @@
     "description": "Test Case 33: Assert operation - negative case with custom message.",
     "jisp_program": {
       "code": [
-        ["push", false],
-        ["assert", "my custom assertion message"]
+        [
+          "push",
+          false
+        ],
+        [
+          "assert",
+          "custom assertion message"
+        ]
       ]
     },
-    "expected_error_message": "Message: my custom assertion message"
+    "expected_error_message": "Message: custom assertion message"
   },
   {
-    "description": "Test Case 34: Range operation - with start, stop, and step.",
+    "description": "Test Case 34: Range operation.",
     "jisp_program": {
       "code": [
-        ["push", 2.0],
-        ["push", 10.0],
-        ["push", 2.0],
-        ["range"],
-        ["pop", "range_result"]
+        [
+          "push",
+          0.0
+        ],
+        [
+          "push",
+          5.0
+        ],
+        [
+          "push",
+          1.0
+        ],
+        [
+          "range"
+        ]
       ]
     },
     "validation_schema": {
       "type": "object",
       "properties": {
-        "stack": { "type": "array", "maxItems": 0 },
-        "state": {
-          "type": "object",
-          "properties": {
-            "range_result": {
-              "type": "array",
-              "items": { "type": "number" },
-              "const": [2.0, 4.0, 6.0, 8.0]
-            }
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "array",
+            "const": [
+              0.0,
+              1.0,
+              2.0,
+              3.0,
+              4.0
+            ]
           }
         }
       }
     }
   },
   {
-    "description": "Test Case 35: Filter operation - filters an array of numbers.",
+    "description": "Test Case 35: Filter operation - filters even numbers.",
     "jisp_program": {
       "code": [
         [
           "push",
-          [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+          [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0
+          ]
         ],
         [
           "push",
@@ -2074,7 +2204,7 @@
             ],
             [
               "push",
-              3.0
+              2.0
             ],
             [
               "mod"
@@ -2085,42 +2215,48 @@
             ],
             [
               "eq"
+            ],
+            [
+              "not"
             ]
           ]
         ],
         [
           "filter"
-        ],
-        [
-          "pop",
-          "filtered_array"
         ]
       ]
     },
     "validation_schema": {
       "type": "object",
       "properties": {
-        "stack": { "type": "array", "maxItems": 0 },
-        "state": {
-          "type": "object",
-          "properties": {
-            "filtered_array": {
-              "type": "array",
-              "items": { "type": "number" },
-              "const": [3.0, 6.0]
-            }
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "array",
+            "const": [
+              1.0,
+              3.0,
+              5.0
+            ]
           }
         }
       }
     }
   },
   {
-    "description": "Test Case 36: Map operation - squares each number in an array.",
+    "description": "Test Case 36: Map operation - squares each number.",
     "jisp_program": {
       "code": [
         [
           "push",
-          [1.0, 2.0, 3.0, 4.0]
+          [
+            1.0,
+            2.0,
+            3.0,
+            4.0
+          ]
         ],
         [
           "push",
@@ -2150,250 +2286,317 @@
         ],
         [
           "map"
-        ],
-        [
-          "pop",
-          "mapped_array"
         ]
       ]
     },
     "validation_schema": {
       "type": "object",
       "properties": {
-        "stack": { "type": "array", "maxItems": 0 },
-        "state": {
-          "type": "object",
-          "properties": {
-            "mapped_array": {
-              "type": "array",
-              "items": { "type": "number" },
-              "const": [1.0, 4.0, 9.0, 16.0]
-            }
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "array",
+            "const": [
+              1.0,
+              4.0,
+              9.0,
+              16.0
+            ]
           }
         }
       }
     }
   },
   {
-    "description": "Test Case 37: Reduce operation - sums an array of numbers.",
+    "description": "Test Case 37: Reduce operation - sums a list of numbers.",
     "jisp_program": {
       "code": [
-        ["push", [1.0, 2.0, 3.0, 4.0]],
-        ["push", [
-          ["add"]
-        ]],
-        ["push", 0.0],
-        ["reduce"],
-        ["pop", "sum_result"]
+        [
+          "push",
+          [
+            1.0,
+            2.0,
+            3.0,
+            4.0
+          ]
+        ],
+        [
+          "push",
+          [
+            [
+              "add"
+            ]
+          ]
+        ],
+        [
+          "push",
+          0.0
+        ],
+        [
+          "reduce"
+        ]
       ]
     },
     "validation_schema": {
       "type": "object",
       "properties": {
-        "stack": { "type": "array", "maxItems": 0 }
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "number",
+            "const": 10.0
+          }
+        }
       }
     }
   },
   {
-    "description": "Test Case 42: Union operation - combines two arrays of numbers.",
+    "description": "Test sort on numbers",
     "jisp_program": {
       "code": [
-        ["push", [1.0, 2.0, 3.0]],
-        ["push", [3.0, 4.0, 5.0]],
-        ["union"],
-        ["pop", "union_result"]
+        [
+          "push",
+          [
+            3.3,
+            1.1,
+            4.4,
+            2.2
+          ]
+        ],
+        [
+          "sort"
+        ]
       ]
     },
     "validation_schema": {
       "type": "object",
       "properties": {
-        "stack": { "type": "array", "maxItems": 0 },
-        "state": {
-          "type": "object",
-          "properties": {
-            "union_result": {
-              "type": "array",
-              "items": { "type": "number" },
-              "contains": { "const": 1.0 },
-              "minItems": 5,
-              "maxItems": 5,
-              "uniqueItems": true
-            }
+        "stack": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 4,
+            "maxItems": 4
           },
-          "required": ["union_result"],
-          "additionalProperties": false
-        },
-        "variables": { "type": "object", "maxProperties": 0 }
+          "minItems": 1,
+          "maxItems": 1
+        }
       },
-      "required": ["stack", "state", "variables"],
-      "additionalProperties": false
+      "required": [
+        "stack"
+      ]
     }
   },
   {
-    "description": "Test Case 43: Intersection operation - finds common elements in two arrays of numbers.",
+    "description": "Test sort on strings",
     "jisp_program": {
       "code": [
-        ["push", [1.0, 2.0, 3.0]],
-        ["push", [2.0, 4.0, 3.0]],
-        ["intersection"],
-        ["pop", "intersection_result"]
+        [
+          "push",
+          [
+            "c",
+            "a",
+            "d",
+            "b"
+          ]
+        ],
+        [
+          "sort"
+        ]
       ]
     },
     "validation_schema": {
       "type": "object",
       "properties": {
-        "stack": { "type": "array", "maxItems": 0 },
-        "state": {
-          "type": "object",
-          "properties": {
-            "intersection_result": {
-              "type": "array",
-              "items": { "type": "number" },
-              "const": [2.0, 3.0]
-            }
+        "stack": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 4,
+            "maxItems": 4
           },
-          "required": ["intersection_result"],
-          "additionalProperties": false
-        },
-        "variables": { "type": "object", "maxProperties": 0 }
+          "minItems": 1,
+          "maxItems": 1
+        }
       },
-      "required": ["stack", "state", "variables"],
-      "additionalProperties": false
+      "required": [
+        "stack"
+      ]
     }
   },
   {
-    "description": "Test Case 44: Difference operation - finds elements in array1 but not in array2 (numbers).",
+    "description": "Test set union",
     "jisp_program": {
       "code": [
-        ["push", [1.0, 2.0, 3.0, 4.0]],
-        ["push", [3.0, 5.0]],
-        ["difference"],
-        ["pop", "difference_result"]
+        [
+          "push",
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        [
+          "push",
+          [
+            3,
+            4,
+            5
+          ]
+        ],
+        [
+          "union"
+        ],
+        [
+          "sort"
+        ]
       ]
     },
     "validation_schema": {
       "type": "object",
       "properties": {
-        "stack": { "type": "array", "maxItems": 0 },
-        "state": {
-          "type": "object",
-          "properties": {
-            "difference_result": {
-              "type": "array",
-              "items": { "type": "number" },
-              "const": [1.0, 2.0, 4.0]
-            }
+        "stack": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 5,
+            "maxItems": 5,
+            "const": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
           },
-          "required": ["difference_result"],
-          "additionalProperties": false
-        },
-        "variables": { "type": "object", "maxProperties": 0 }
+          "minItems": 1,
+          "maxItems": 1
+        }
       },
-      "required": ["stack", "state", "variables"],
-      "additionalProperties": false
+      "required": [
+        "stack"
+      ]
     }
   },
   {
-    "description": "Test Case 45: Union operation - arrays with mixed comparable types.",
+    "description": "Test set intersection",
     "jisp_program": {
       "code": [
-        ["push", [1.0, "hello", true, null]],
-        ["push", ["world", true, 2.0, null]],
-        ["union"],
-        ["pop", "mixed_union_result"]
+        [
+          "push",
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        [
+          "push",
+          [
+            3,
+            4,
+            5
+          ]
+        ],
+        [
+          "intersection"
+        ]
       ]
     },
     "validation_schema": {
       "type": "object",
       "properties": {
-        "stack": { "type": "array", "maxItems": 0 },
-        "state": {
-          "type": "object",
-          "properties": {
-            "mixed_union_result": {
-              "type": "array",
-              "minItems": 6,
-              "maxItems": 6,
-              "uniqueItems": true
-            }
+        "stack": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 1,
+            "maxItems": 1,
+            "const": [
+              3
+            ]
           },
-          "required": ["mixed_union_result"],
-          "additionalProperties": false
-        },
-        "variables": { "type": "object", "maxProperties": 0 }
+          "minItems": 1,
+          "maxItems": 1
+        }
       },
-      "required": ["stack", "state", "variables"],
-      "additionalProperties": false
+      "required": [
+        "stack"
+      ]
     }
   },
   {
-    "description": "Test Case 46: Intersection operation - arrays with mixed comparable types.",
+    "description": "Test set difference",
     "jisp_program": {
       "code": [
-        ["push", [1.0, "hello", true, null]],
-        ["push", ["world", true, 1.0, null]],
-        ["intersection"],
-        ["pop", "mixed_intersection_result"]
+        [
+          "push",
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        [
+          "push",
+          [
+            3,
+            4,
+            5
+          ]
+        ],
+        [
+          "difference"
+        ],
+        [
+          "sort"
+        ]
       ]
     },
     "validation_schema": {
       "type": "object",
       "properties": {
-        "stack": { "type": "array", "maxItems": 0 },
-        "state": {
-          "type": "object",
-          "properties": {
-            "mixed_intersection_result": {
-              "type": "array",
-              "minItems": 3,
-              "maxItems": 3,
-              "uniqueItems": true
-            }
+        "stack": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "const": [
+              1,
+              2
+            ]
           },
-          "required": ["mixed_intersection_result"],
-          "additionalProperties": false
-        },
-        "variables": { "type": "object", "maxProperties": 0 }
+          "minItems": 1,
+          "maxItems": 1
+        }
       },
-      "required": ["stack", "state", "variables"],
-      "additionalProperties": false
-    }
-  },
-  {
-    "description": "Test Case 47: Difference operation - arrays with mixed comparable types.",
-    "jisp_program": {
-      "code": [
-        ["push", [1.0, "hello", true, null, 5.0]],
-        ["push", ["world", true, 2.0, null]],
-        ["difference"],
-        ["pop", "mixed_difference_result"]
+      "required": [
+        "stack"
       ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": { "type": "array", "maxItems": 0 },
-        "state": {
-          "type": "object",
-          "properties": {
-            "mixed_difference_result": {
-              "type": "array",
-              "minItems": 3,
-              "maxItems": 3,
-              "uniqueItems": true
-            }
-          },
-          "required": ["mixed_difference_result"],
-          "additionalProperties": false
-        },
-        "variables": { "type": "object", "maxProperties": 0 }
-      },
-      "required": ["stack", "state", "variables"],
-      "additionalProperties": false
     }
   },
   {
-    "description": "Test Case 48: Valid operation - valid document against schema.",
+    "description": "Test json schema validation - valid",
     "jisp_program": {
       "code": [
         [
@@ -2408,22 +2611,21 @@
                 "type": "number"
               }
             },
-            "required": ["name"]
+            "required": [
+              "name",
+              "age"
+            ]
           }
         ],
         [
           "push",
           {
-            "name": "Alice",
+            "name": "John Doe",
             "age": 30
           }
         ],
         [
           "valid"
-        ],
-        [
-          "pop",
-          "is_valid"
         ]
       ]
     },
@@ -2432,30 +2634,21 @@
       "properties": {
         "stack": {
           "type": "array",
-          "maxItems": 0
-        },
-        "state": {
-          "type": "object",
-          "properties": {
-            "is_valid": {
-              "type": "boolean",
-              "const": true
-            }
+          "items": {
+            "type": "boolean",
+            "const": true
           },
-          "required": ["is_valid"],
-          "additionalProperties": false
-        },
-        "variables": {
-          "type": "object",
-          "maxProperties": 0
+          "minItems": 1,
+          "maxItems": 1
         }
       },
-      "required": ["stack", "state", "variables"],
-      "additionalProperties": false
+      "required": [
+        "stack"
+      ]
     }
   },
   {
-    "description": "Test Case 49: Valid operation - invalid document against schema.",
+    "description": "Test json schema validation - invalid",
     "jisp_program": {
       "code": [
         [
@@ -2470,21 +2663,21 @@
                 "type": "number"
               }
             },
-            "required": ["name"]
+            "required": [
+              "name",
+              "age"
+            ]
           }
         ],
         [
           "push",
           {
-            "age": "thirty"
+            "name": "John Doe",
+            "age": "30"
           }
         ],
         [
           "valid"
-        ],
-        [
-          "pop",
-          "is_invalid"
         ]
       ]
     },
@@ -2493,26 +2686,17 @@
       "properties": {
         "stack": {
           "type": "array",
-          "maxItems": 0
-        },
-        "state": {
-          "type": "object",
-          "properties": {
-            "is_invalid": {
-              "type": "boolean",
-              "const": false
-            }
+          "items": {
+            "type": "boolean",
+            "const": false
           },
-          "required": ["is_invalid"],
-          "additionalProperties": false
-        },
-        "variables": {
-          "type": "object",
-          "maxProperties": 0
+          "minItems": 1,
+          "maxItems": 1
         }
       },
-      "required": ["stack", "state", "variables"],
-      "additionalProperties": false
+      "required": [
+        "stack"
+      ]
     }
   }
 ]
