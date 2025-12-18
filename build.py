@@ -74,9 +74,11 @@ def run_checks_from_json():
                     console.print(f"[bold red]❌ Test '{description}' FAILED: Error message mismatch.[/bold red]")
                     console.print(f"  Expected to find: '{expected_error_message}'")
                     console.print(f"  Actual Stderr:    '{process.stderr.strip()}'")
+                    console.print(f"  Stdout: {process.stdout.strip()}")
 
             except Exception as e:
                 console.print(f"[bold red]❌ Test '{description}' FAILED: Unexpected error during test execution: {e}[/bold red]")
+                console.print(f"  Stdout: {process.stdout.strip()}")
         else:
             # This test expects success
             try:
@@ -90,6 +92,7 @@ def run_checks_from_json():
             except subprocess.CalledProcessError as e:
                 console.print(f"[bold red]❌ Test '{description}' FAILED: JISP program execution error.[/bold red]")
                 console.print(f"  Stderr: {e.stderr.strip()}")
+                console.print(f"  Stdout: {process.stdout.strip()}")
             except json.JSONDecodeError as e:
                 console.print(f"[bold red]❌ Test '{description}' FAILED: Invalid JSON output from JISP binary: {e}[/bold red]")
                 console.print(f"  JISP Output: {process.stdout.strip()}")
