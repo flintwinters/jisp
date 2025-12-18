@@ -73,7 +73,7 @@ Not happy with this explicit variable declaration.
 - [ ] `join`
 - [x] `range`
 - [x] `noop`
-- [ ] `valid`
+- [x] `valid`
 - [x] `raise`
 - [x] `assert`
 
