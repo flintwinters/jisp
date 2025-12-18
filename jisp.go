@@ -56,8 +56,11 @@ func parseRawOperation(rawOp []interface{}) (JispOperation, error) {
 	return JispOperation{Name: opName, Args: args}, nil
 }
 
-// CallFrame represents a single frame on the call stack.
+// CallFrame represents a single frame on the call stack, holding the instruction
+// pointer and the operations for its execution context.
 type CallFrame struct {
+	ip  int
+	ops []JispOperation
 }
 
 // JispProgram represents the entire state of a JISP program, including the
@@ -67,17 +70,30 @@ type JispProgram struct {
 	Variables  map[string]interface{} `json:"variables"`
 	State      map[string]interface{} `json:"state"` // For pop operation target
 	Code       []JispOperation        `json:"-"`     // The main program code
-	ip         int                    // Instruction pointer
-	callStack  []CallFrame            // Stack for function calls
+	callStack  []*CallFrame           // Stack for function calls
+}
+
+// currentFrame returns the currently executing frame from the call stack.
+func (jp *JispProgram) currentFrame() *CallFrame {
+	if len(jp.callStack) == 0 {
+		return nil
+	}
+	return jp.callStack[len(jp.callStack)-1]
 }
 
 // newError creates a new JispError with the current program state.
 func (jp *JispProgram) newError(op *JispOperation, message string) *JispError {
 	stackCopy := make([]interface{}, len(jp.Stack))
 	copy(stackCopy, jp.Stack)
+
+	ip := -1
+	if frame := jp.currentFrame(); frame != nil {
+		ip = frame.ip
+	}
+
 	return &JispError{
 		OperationName:      op.Name,
-		InstructionPointer: jp.ip,
+		InstructionPointer: ip,
 		Message:            message,
 		StackSnapshot:      stackCopy,
 	}
@@ -670,14 +686,31 @@ type sliceSlicer []interface{}
 func (s sliceSlicer) Len() int                   { return len(s) }
 func (s sliceSlicer) Slice(i, j int) interface{} { return s[i:j] }
 
-// ExecuteOperations iterates and executes a slice of JispOperations.
+// ExecuteOperations pushes a new call frame for the given operations and executes them.
+// It manages the instruction pointer within this frame and handles control flow.
 func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
-	for i, op := range ops {
-		jp.ip = i
+	if len(ops) == 0 {
+		return nil
+	}
+	frame := &CallFrame{ops: ops, ip: 0}
+	jp.callStack = append(jp.callStack, frame)
+
+	// Defer popping the frame. This ensures that the call stack is cleaned up
+	// correctly, whether the function returns normally or due to an error.
+	defer func() {
+		if len(jp.callStack) > 0 && jp.callStack[len(jp.callStack)-1] == frame {
+			jp.callStack = jp.callStack[:len(jp.callStack)-1]
+		}
+	}()
+
+	for frame.ip < len(frame.ops) {
+		op := frame.ops[frame.ip]
+
 		handler, found := operations[op.Name]
 		if !found {
 			return jp.newError(&op, fmt.Sprintf("unknown operation: %s", op.Name))
 		}
+
 		if err := handler(jp, &op); err != nil {
 			var jispErr *JispError
 			switch {
@@ -690,6 +723,7 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
 				return jp.newError(&op, err.Error())
 			}
 		}
+		frame.ip++
 	}
 	return nil
 }
@@ -1124,28 +1158,28 @@ func (jp *JispProgram) Gt() error {
 
 // Add pops two numbers, adds them, and pushes the result.
 func (jp *JispProgram) Add() error {
-	return jp.applyNumericBinaryOp("add", func(a, b float64) (interface{}, error) {
+	return applyBinaryOp[float64](jp, "add", func(a, b float64) (interface{}, error) {
 		return a + b, nil
 	})
 }
 
 // Sub pops two numbers, subtracts them, and pushes the result.
 func (jp *JispProgram) Sub() error {
-	return jp.applyNumericBinaryOp("sub", func(a, b float64) (interface{}, error) {
+	return applyBinaryOp[float64](jp, "sub", func(a, b float64) (interface{}, error) {
 		return a - b, nil
 	})
 }
 
 // Mul pops two numbers, multiplies them, and pushes the result.
 func (jp *JispProgram) Mul() error {
-	return jp.applyNumericBinaryOp("mul", func(a, b float64) (interface{}, error) {
+	return applyBinaryOp[float64](jp, "mul", func(a, b float64) (interface{}, error) {
 		return a * b, nil
 	})
 }
 
 // Div pops two numbers, divides them, and pushes the result.
 func (jp *JispProgram) Div() error {
-	return jp.applyNumericBinaryOp("div", func(a, b float64) (interface{}, error) {
+	return applyBinaryOp[float64](jp, "div", func(a, b float64) (interface{}, error) {
 		if b == 0 {
 			return nil, fmt.Errorf("division by zero")
 		}
@@ -1155,7 +1189,7 @@ func (jp *JispProgram) Div() error {
 
 // Mod pops two numbers, performs modulo, and pushes the result.
 func (jp *JispProgram) Mod() error {
-	return jp.applyNumericBinaryOp("mod", func(a, b float64) (interface{}, error) {
+	return applyBinaryOp[float64](jp, "mod", func(a, b float64) (interface{}, error) {
 		if b == 0 {
 			return nil, fmt.Errorf("modulo by zero")
 		}
@@ -1165,12 +1199,16 @@ func (jp *JispProgram) Mod() error {
 
 // And pops two booleans, performs logical AND, and pushes the result.
 func (jp *JispProgram) And() error {
-	return jp.applyBooleanBinaryOp("and", func(a, b bool) bool { return a && b })
+	return applyBinaryOp[bool](jp, "and", func(a, b bool) (interface{}, error) {
+		return a && b, nil
+	})
 }
 
 // Or pops two booleans, performs logical OR, and pushes the result.
 func (jp *JispProgram) Or() error {
-	return jp.applyBooleanBinaryOp("or", func(a, b bool) bool { return a || b })
+	return applyBinaryOp[bool](jp, "or", func(a, b bool) (interface{}, error) {
+		return a || b, nil
+	})
 }
 
 // Not pops a boolean, performs logical NOT, and pushes the result.
@@ -1397,8 +1435,8 @@ func (jp *JispProgram) applyStringUnaryOp(opName string, op func(string) string)
 	return nil
 }
 
-func (jp *JispProgram) applyNumericBinaryOp(opName string, op func(float64, float64) (interface{}, error)) error {
-	a, b, err := popTwo[float64](jp, opName)
+func applyBinaryOp[T any](jp *JispProgram, opName string, op func(T, T) (interface{}, error)) error {
+	a, b, err := popTwo[T](jp, opName)
 	if err != nil {
 		return err
 	}
@@ -1407,15 +1445,6 @@ func (jp *JispProgram) applyNumericBinaryOp(opName string, op func(float64, floa
 		return fmt.Errorf("%s error: %w", opName, err)
 	}
 	jp.Push(res)
-	return nil
-}
-
-func (jp *JispProgram) applyBooleanBinaryOp(opName string, op func(bool, bool) bool) error {
-	a, b, err := popTwo[bool](jp, opName)
-	if err != nil {
-		return err
-	}
-	jp.Push(op(a, b))
 	return nil
 }
 
