@@ -67,7 +67,10 @@ Not happy with this explicit variable declaration.
 - [x] `sort`
 - [x] `keys`
 - [x] `values`
-- [ ] `merge`
+- [x] `union`
+- [x] `intersection`
+- [x] `difference`
+- [ ] `join`
 - [x] `range`
 - [x] `noop`
 - [ ] `valid`
