@@ -145,7 +145,142 @@ func init() {
 		"map":       mapOp,
 		"reduce":    reduceOp,
 		"sort":      sortOp,
+		"union":     unionOp,
+		"intersection": intersectionOp,
+		"difference": differenceOp,
 	}
+}
+
+// Helper to convert []interface{} to []comparable for set operations
+func toComparableSlice(input []interface{}, opName string) ([]interface{}, error) {
+	for _, item := range input {
+		switch item.(type) {
+		case float64, string, bool:
+			// These are comparable types
+		case nil:
+			// nil is also comparable
+		default:
+			return nil, fmt.Errorf("%s error: unsupported type %T in array, expected number, string, boolean or null", opName, item)
+		}
+	}
+	return input, nil
+}
+
+// Helper to get unique elements from a slice
+func unique(slice []interface{}) []interface{} {
+	allKeys := make(map[interface{}]bool)
+	list := []interface{}{}
+	for _, entry := range slice {
+		if _, value := allKeys[entry]; !value {
+			allKeys[entry] = true
+			list = append(list, entry)
+		}
+	}
+	return list
+}
+
+// unionOp performs the union of two arrays on the stack.
+func unionOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("union error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	a2, err := pop[[]interface{}](jp, "union")
+	if err != nil {
+		return err
+	}
+	a1, err := pop[[]interface{}](jp, "union")
+	if err != nil {
+		return err
+	}
+
+	// Ensure elements are comparable
+	if _, err := toComparableSlice(a1, "union"); err != nil {
+		return err
+	}
+	if _, err := toComparableSlice(a2, "union"); err != nil {
+		return err	}
+
+	combined := append(a1, a2...)
+	jp.Push(unique(combined))
+	return nil
+}
+
+// intersectionOp performs the intersection of two arrays on the stack.
+func intersectionOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("intersection error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	a2, err := pop[[]interface{}](jp, "intersection")
+	if err != nil {
+		return err
+	}
+	a1, err := pop[[]interface{}](jp, "intersection")
+	if err != nil {
+		return err
+	}
+
+	// Ensure elements are comparable
+	if _, err := toComparableSlice(a1, "intersection"); err != nil {
+		return err
+	}
+	if _, err := toComparableSlice(a2, "intersection"); err != nil {
+		return err
+	}
+
+	hashSet := make(map[interface{}]bool)
+	for _, x := range a1 {
+		hashSet[x] = true
+	}
+
+	var result []interface{}
+	for _, x := range a2 {
+		if hashSet[x] {
+			result = append(result, x)
+			delete(hashSet, x) // Ensure unique elements in intersection
+		}
+	}
+	jp.Push(result)
+	return nil
+}
+
+// differenceOp performs the set difference (a1 - a2) of two arrays on the stack.
+func differenceOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("difference error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	a2, err := pop[[]interface{}](jp, "difference")
+	if err != nil {
+		return err
+	}
+	a1, err := pop[[]interface{}](jp, "difference")
+	if err != nil {
+		return err
+	}
+
+	// Ensure elements are comparable
+	if _, err := toComparableSlice(a1, "difference"); err != nil {
+		return err
+	}
+	if _, err := toComparableSlice(a2, "difference"); err != nil {
+		return err
+	}
+
+	hashSet := make(map[interface{}]bool)
+	for _, x := range a2 {
+		hashSet[x] = true
+	}
+
+	var result []interface{}
+	for _, x := range a1 {
+		if !hashSet[x] {
+			result = append(result, x)
+		}
+	}
+	jp.Push(unique(result))
+	return nil
 }
 
 func sortOp(jp *JispProgram, op *JispOperation) error {
