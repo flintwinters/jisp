@@ -747,7 +747,6 @@ func continueOp(jp *JispProgram, _ *JispOperation) error {
 }
 
 func setOp(jp *JispProgram, _ *JispOperation) error    { return jp.Set() }
-func getOp(jp *JispProgram, _ *JispOperation) error    { return jp.Get() }
 func existsOp(jp *JispProgram, _ *JispOperation) error { return jp.Exists() }
 func deleteOp(jp *JispProgram, _ *JispOperation) error { return jp.Delete() }
 func eqOp(jp *JispProgram, _ *JispOperation) error     { return jp.Eq() }
@@ -894,16 +893,12 @@ func whileOp(jp *JispProgram, op *JispOperation) error {
 	}
 
 	for {
-		// Push the condition path and get its value
-		jp.Push(conditionPath)
-		if err := jp.Get(); err != nil {
+		// Get the value of the condition variable
+		conditionVal, err := jp.getValueForPath(conditionPath)
+		if err != nil {
 			return fmt.Errorf("while error: failed to get condition variable '%s': %w", conditionPath, err)
 		}
 
-		conditionVal, err := jp.popValue("while condition check")
-		if err != nil {
-			return fmt.Errorf("while error: %w", err)
-		}
 
 		condition, ok := conditionVal.(bool)
 		if !ok {
@@ -1094,31 +1089,50 @@ func (jp *JispProgram) getValueByPath(path []interface{}) (interface{}, error) {
 
 // Get retrieves a value from the Variables map and pushes it onto the stack.
 // The key can be a string for a top-level variable, or an array for a nested value.
-func (jp *JispProgram) Get() error {
-	pathVal, err := jp.popValue("get")
-	if err != nil {
-		return err
-	}
-
+func (jp *JispProgram) getValueForPath(pathVal interface{}) (interface{}, error) {
 	switch path := pathVal.(type) {
 	case string:
 		val, found := jp.Variables[path]
 		if !found {
-			return fmt.Errorf("get error: variable '%s' not found", path)
+			return nil, fmt.Errorf("get error: variable '%s' not found", path)
 		}
-		jp.Push(val)
-		return nil
+		return val, nil
 	case []interface{}:
-		val, err := jp.getValueByPath(path)
+		return jp.getValueByPath(path)
+	default:
+		return nil, fmt.Errorf("get error: expected a string or an array path, got %T", pathVal)
+	}
+}
+
+// Get retrieves a value from the Variables map and pushes it onto the stack.
+// The key can be a string for a top-level variable, or an array for a nested value.
+func getOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) == 0 {
+		// No args: use the string or array at the top of the stack as a path.
+		pathVal, err := jp.popValue("get")
+		if err != nil {
+			return err
+		}
+
+		val, err := jp.getValueForPath(pathVal)
 		if err != nil {
 			return err
 		}
 		jp.Push(val)
 		return nil
-	default:
-		return fmt.Errorf("get error: expected a string or an array path on stack, got %T", pathVal)
 	}
+
+	// one or multi args: get each of the provided paths in order.
+	for _, pathVal := range op.Args {
+		val, err := jp.getValueForPath(pathVal)
+		if err != nil {
+			return err
+		}
+		jp.Push(val)
+	}
+	return nil
 }
+
 
 // Exists checks if a variable exists and pushes the boolean result onto the stack.
 func (jp *JispProgram) Exists() error {
