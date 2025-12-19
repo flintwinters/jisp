@@ -205,15 +205,12 @@ func validOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("valid error: expected 0 arguments, got %d", len(op.Args))
 	}
 
-	docValue, err := jp.popValue("valid")
+	values, err := jp.popx("valid", 2)
 	if err != nil {
 		return fmt.Errorf("valid error: %w", err)
 	}
-
-	schemaValue, err := jp.popValue("valid")
-	if err != nil {
-		return fmt.Errorf("valid error: %w", err)
-	}
+	schemaValue := values[0]
+	docValue := values[1]
 
 	// Convert schema and document to gojsonschema Loaders
 	schemaLoader := gojsonschema.NewGoLoader(schemaValue)
@@ -257,11 +254,7 @@ func unique(slice []interface{}) []interface{} {
 }
 
 func popTwoComparableSlices(jp *JispProgram, opName string) ([]interface{}, []interface{}, error) {
-	a2, err := pop[[]interface{}](jp, opName)
-	if err != nil {
-		return nil, nil, err
-	}
-	a1, err := pop[[]interface{}](jp, opName)
+	a1, a2, err := popTwo[[]interface{}](jp, opName)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -488,17 +481,20 @@ func mapOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("map error: invalid operations block: %w", err)
 	}
 
-	var result []interface{}
-	for _, item := range input {
-		jp.Variables[varName] = item
-		if err := jp.executeOperationsWithPathSegment(mapOps, "map_ops_from_stack"); err != nil {
-			return err
-		}
-		res, err := jp.popValue("map")
-		if err != nil {
-			return err
-		}
-		result = append(result, res)
+	result, err := applyCollectionLoop(jp, "map", input, varName, mapOps, "map_ops_from_stack",
+		func(jp *JispProgram, item interface{}, varName string, bodyOps []JispOperation, pathSegment string) (interface{}, error) {
+			jp.Variables[varName] = item
+			if err := jp.executeOperationsWithPathSegment(bodyOps, pathSegment); err != nil {
+				return nil, err
+			}
+			res, err := jp.popValue("map")
+			if err != nil {
+				return nil, err
+			}
+			return res, nil
+		})
+	if err != nil {
+		return err
 	}
 
 	jp.Push(result)
@@ -530,22 +526,34 @@ func filterOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("filter error: invalid condition block: %w", err)
 	}
 
-	var result []interface{}
-	for _, item := range input {
-		jp.Variables[varName] = item
-		if err := jp.executeOperationsWithPathSegment(conditionOps, "filter_ops_from_stack"); err != nil {
-			return err
-		}
-		condition, err := pop[bool](jp, "filter")
-		if err != nil {
-			return err
-		}
-		if condition {
-			result = append(result, item)
+	result, err := applyCollectionLoop(jp, "filter", input, varName, conditionOps, "filter_ops_from_stack",
+		func(jp *JispProgram, item interface{}, varName string, bodyOps []JispOperation, pathSegment string) (interface{}, error) {
+			jp.Variables[varName] = item
+			if err := jp.executeOperationsWithPathSegment(bodyOps, pathSegment); err != nil {
+				return nil, err
+			}
+			condition, err := pop[bool](jp, "filter")
+			if err != nil {
+				return nil, err
+			}
+			if condition {
+				return item, nil
+			}
+			return nil, nil // Return nil if condition is false, to be filtered out later
+		})
+	if err != nil {
+		return err
+	}
+
+	// Filter out nil values from the result slice (from items that didn't meet the condition)
+	var filteredResult []interface{}
+	for _, item := range result {
+		if item != nil {
+			filteredResult = append(filteredResult, item)
 		}
 	}
 
-	jp.Push(result)
+	jp.Push(filteredResult)
 	return nil
 }
 
@@ -576,7 +584,7 @@ func rangeOp(jp *JispProgram, op *JispOperation) error {
 }
 
 func raiseOp(jp *JispProgram, _ *JispOperation) error {
-	errMsg, err := jp.popString("raise")
+	errMsg, err := pop[string](jp, "raise")
 	if err != nil {
 		return err
 	}
@@ -880,15 +888,11 @@ func toStringOp(jp *JispProgram, _ *JispOperation) error {
 }
 
 func concatOp(jp *JispProgram, _ *JispOperation) error {
-	val2, err := jp.popString("concat")
+	v1, v2, err := popTwo[string](jp, "concat")
 	if err != nil {
 		return err
 	}
-	val1, err := jp.popString("concat")
-	if err != nil {
-		return err
-	}
-	jp.Push(val1 + val2)
+	jp.Push(v1 + v2)
 	return nil
 }
 
@@ -1035,6 +1039,29 @@ func applyCollectionOp(jp *JispProgram, opName string, op *JispOperation, handle
 
 	jp.Push(result)
 	return nil
+}
+
+// applyCollectionLoop is a helper for map and filter operations.
+// It iterates over an input array, sets a loop variable, executes body operations,
+// and collects results based on a provided handler.
+func applyCollectionLoop(
+	jp *JispProgram,
+	opName string,
+	input []interface{},
+	varName string,
+	bodyOps []JispOperation,
+	pathSegment string,
+	handler func(jp *JispProgram, item interface{}, varName string, bodyOps []JispOperation, pathSegment string) (interface{}, error),
+) ([]interface{}, error) {
+	var result []interface{}
+	for _, item := range input {
+		res, err := handler(jp, item, varName, bodyOps, pathSegment)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, res)
+	}
+	return result, nil
 }
 
 // --- Core JISP Logic ---
@@ -1542,15 +1569,7 @@ func (jp *JispProgram) popValue(opName string) (interface{}, error) {
 	return val, nil
 }
 
-func (jp *JispProgram) popTwoValues(opName string) (interface{}, interface{}, error) {
-	if len(jp.Stack) < 2 {
-		return nil, nil, fmt.Errorf("stack underflow for %s: expected 2 values", opName)
-	}
-	b := jp.Stack[len(jp.Stack)-1]
-	a := jp.Stack[len(jp.Stack)-2]
-	jp.Stack = jp.Stack[:len(jp.Stack)-2]
-	return a, b, nil
-}
+
 
 // popTwo pops two values of the same type T from the stack.
 func popTwo[T any](jp *JispProgram, opName string) (T, T, error) {
@@ -1600,7 +1619,7 @@ func (jp *JispProgram) popKeyValue(opName string) (string, interface{}, error) {
 }
 
 func (jp *JispProgram) applyStringUnaryOp(opName string, op func(string) string) error {
-	val, err := jp.popString(opName)
+	val, err := pop[string](jp, opName)
 	if err != nil {
 		return err
 	}
