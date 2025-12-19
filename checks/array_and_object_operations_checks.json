@@ -1,0 +1,799 @@
+[
+  {
+    "description": "Len operation - string, array, and object.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "hello"
+        ],
+        [
+          "len"
+        ],
+        [
+          "pop",
+          "string_length"
+        ],
+        [
+          "push",
+          [
+            1.0,
+            2.0,
+            3.0,
+            4.0
+          ]
+        ],
+        [
+          "len"
+        ],
+        [
+          "pop",
+          "array_length"
+        ],
+        [
+          "push",
+          {
+            "a": 1.0,
+            "b": 2.0
+          }
+        ],
+        [
+          "len"
+        ],
+        [
+          "pop",
+          "object_length"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "string_length": {
+              "type": "number",
+              "const": 5.0
+            },
+            "array_length": {
+              "type": "number",
+              "const": 4.0
+            },
+            "object_length": {
+              "type": "number",
+              "const": 2.0
+            }
+          },
+          "required": [
+            "string_length",
+            "array_length",
+            "object_length"
+          ]
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "state",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Keys operation - retrieves keys from an object.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "name": "Alice",
+            "age": 30,
+            "city": "New York"
+          }
+        ],
+        [
+          "keys"
+        ],
+        [
+          "pop",
+          "object_keys"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "object_keys": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "object_keys"
+          ]
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "state",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Values operation - retrieves values from an object.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "name": "Bob",
+            "age": 25,
+            "city": "Los Angeles"
+          }
+        ],
+        [
+          "values"
+        ],
+        [
+          "pop",
+          "object_values"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "object_values": {
+              "type": "array",
+              "items": {},
+              "minItems": 3,
+              "maxItems": 3,
+              "uniqueItems": false
+            }
+          },
+          "required": [
+            "object_values"
+          ]
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "state",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Slice operation - slice an array with start index only.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0
+          ]
+        ],
+        [
+          "push",
+          2.0
+        ],
+        [
+          "slice"
+        ],
+        [
+          "pop",
+          "sliced_array"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "sliced_array": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "const": [
+                3.0,
+                4.0,
+                5.0
+              ]
+            }
+          },
+          "required": [
+            "sliced_array"
+          ]
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "state",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Slice operation - slice an array with start and end index.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          [
+            10.0,
+            20.0,
+            30.0,
+            40.0,
+            50.0
+          ]
+        ],
+        [
+          "push",
+          1.0
+        ],
+        [
+          "push",
+          4.0
+        ],
+        [
+          "slice"
+        ],
+        [
+          "pop",
+          "another_sliced_array"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "another_sliced_array": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "const": [
+                20.0,
+                30.0,
+                40.0
+              ]
+            }
+          },
+          "required": [
+            "another_sliced_array"
+          ]
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "state",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Range operation.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          0.0
+        ],
+        [
+          "push",
+          5.0
+        ],
+        [
+          "push",
+          1.0
+        ],
+        [
+          "range"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "array",
+            "const": [
+              0.0,
+              1.0,
+              2.0,
+              3.0,
+              4.0
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "description": "Filter operation - filters even numbers.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0
+          ]
+        ],
+        [
+          "push",
+          "item"
+        ],
+        [
+          "push",
+          [
+            [
+              "push",
+              "item"
+            ],
+            [
+              "get"
+            ],
+            [
+              "push",
+              2.0
+            ],
+            [
+              "mod"
+            ],
+            [
+              "push",
+              0.0
+            ],
+            [
+              "eq"
+            ],
+            [
+              "not"
+            ]
+          ]
+        ],
+        [
+          "filter"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "array",
+            "const": [
+              1.0,
+              3.0,
+              5.0
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "description": "Map operation - squares each number.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          [
+            1.0,
+            2.0,
+            3.0,
+            4.0
+          ]
+        ],
+        [
+          "push",
+          "item"
+        ],
+        [
+          "push",
+          [
+            [
+              "push",
+              "item"
+            ],
+            [
+              "get"
+            ],
+            [
+              "push",
+              "item"
+            ],
+            [
+              "get"
+            ],
+            [
+              "mul"
+            ]
+          ]
+        ],
+        [
+          "map"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "array",
+            "const": [
+              1.0,
+              4.0,
+              9.0,
+              16.0
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "description": "Reduce operation - sums a list of numbers.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          [
+            1.0,
+            2.0,
+            3.0,
+            4.0
+          ]
+        ],
+        [
+          "push",
+          [
+            [
+              "add"
+            ]
+          ]
+        ],
+        [
+          "push",
+          0.0
+        ],
+        [
+          "reduce"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "number",
+            "const": 10.0
+          }
+        }
+      }
+    }
+  },
+  {
+    "description": "Test sort on numbers",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          [
+            3.3,
+            1.1,
+            4.4,
+            2.2
+          ]
+        ],
+        [
+          "sort"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "stack"
+      ]
+    }
+  },
+  {
+    "description": "Test sort on strings",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          [
+            "c",
+            "a",
+            "d",
+            "b"
+          ]
+        ],
+        [
+          "sort"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 4,
+            "maxItems": 4
+          },
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "stack"
+      ]
+    }
+  },
+  {
+    "description": "Test set union",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        [
+          "push",
+          [
+            3,
+            4,
+            5
+          ]
+        ],
+        [
+          "union"
+        ],
+        [
+          "sort"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 5,
+            "maxItems": 5,
+            "const": [
+              1,
+              2,
+              3,
+              4,
+              5
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "stack"
+      ]
+    }
+  },
+  {
+    "description": "Test set intersection",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        [
+          "push",
+          [
+            3,
+            4,
+            5
+          ]
+        ],
+        [
+          "intersection"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 1,
+            "maxItems": 1,
+            "const": [
+              3
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "stack"
+      ]
+    }
+  },
+  {
+    "description": "Test set difference",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        [
+          "push",
+          [
+            3,
+            4,
+            5
+          ]
+        ],
+        [
+          "difference"
+        ],
+        [
+          "sort"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "const": [
+              1,
+              2
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "stack"
+      ]
+    }
+  }
+]

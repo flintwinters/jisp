@@ -1,0 +1,217 @@
+[
+  {
+    "description": "Variable assignment and retrieval.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "Hello, JISP!"
+        ],
+        [
+          "push",
+          "my_variable"
+        ],
+        [
+          "set"
+        ],
+        [
+          "push",
+          "my_variable"
+        ],
+        [
+          "get"
+        ],
+        [
+          "pop",
+          "retrieved_message"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "my_variable": {
+              "type": "string",
+              "const": "Hello, JISP!"
+            }
+          },
+          "required": [
+            "my_variable"
+          ]
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "retrieved_message": {
+              "type": "string",
+              "const": "Hello, JISP!"
+            }
+          },
+          "required": [
+            "retrieved_message"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables",
+        "state"
+      ]
+    }
+  },
+  {
+    "description": "Exists operation - variable exists.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "some_value"
+        ],
+        [
+          "push",
+          "existing_var"
+        ],
+        [
+          "set"
+        ],
+        [
+          "push",
+          "existing_var"
+        ],
+        [
+          "exists"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "existing_var": {
+              "type": "string",
+              "const": "some_value"
+            }
+          },
+          "required": [
+            "existing_var"
+          ]
+        },
+        "state": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "variables",
+        "state"
+      ]
+    }
+  },
+  {
+    "description": "Exists operation - variable does not exist.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "non_existent_var"
+        ],
+        [
+          "exists"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "boolean",
+            "const": false
+          }
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        },
+        "state": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "variables",
+        "state"
+      ]
+    }
+  },
+  {
+    "description": "Delete operation.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "value_to_delete"
+        ],
+        [
+          "push",
+          "var_to_delete"
+        ],
+        [
+          "set"
+        ],
+        [
+          "push",
+          "var_to_delete"
+        ],
+        [
+          "delete"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        },
+        "state": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "variables",
+        "state"
+      ]
+    }
+  }
+]

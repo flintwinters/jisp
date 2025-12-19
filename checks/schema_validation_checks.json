@@ -1,0 +1,106 @@
+[
+  {
+    "description": "Test json schema validation - valid",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "age": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "name",
+              "age"
+            ]
+          }
+        ],
+        [
+          "push",
+          {
+            "name": "John Doe",
+            "age": 30
+          }
+        ],
+        [
+          "valid"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {
+            "type": "boolean",
+            "const": true
+          },
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "stack"
+      ]
+    }
+  },
+  {
+    "description": "Test json schema validation - invalid",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "age": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "name",
+              "age"
+            ]
+          }
+        ],
+        [
+          "push",
+          {
+            "name": "John Doe",
+            "age": "30"
+          }
+        ],
+        [
+          "valid"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {
+            "type": "boolean",
+            "const": false
+          },
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": [
+        "stack"
+      ]
+    }
+  }
+]

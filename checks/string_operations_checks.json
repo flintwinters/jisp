@@ -1,0 +1,358 @@
+[
+  {
+    "description": "Trim operation - removes leading/trailing spaces.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "  hello world  "
+        ],
+        [
+          "trim"
+        ],
+        [
+          "pop",
+          "trimmed_string"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "trimmed_string": {
+              "type": "string",
+              "const": "hello world"
+            }
+          },
+          "required": [
+            "trimmed_string"
+          ]
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "state",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Lower operation - converts string to lowercase.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "Hello World"
+        ],
+        [
+          "lower"
+        ],
+        [
+          "pop",
+          "lowercased_string"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "lowercased_string": {
+              "type": "string",
+              "const": "hello world"
+            }
+          },
+          "required": [
+            "lowercased_string"
+          ]
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "state",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Upper operation - converts string to uppercase.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "Hello World"
+        ],
+        [
+          "upper"
+        ],
+        [
+          "pop",
+          "uppercased_string"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "uppercased_string": {
+              "type": "string",
+              "const": "HELLO WORLD"
+            }
+          },
+          "required": [
+            "uppercased_string"
+          ]
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "state",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "ToString operation - converts integer to string.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          123.0
+        ],
+        [
+          "to_string"
+        ],
+        [
+          "pop",
+          "string_from_int"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "string_from_int": {
+              "type": "string",
+              "const": "123"
+            }
+          },
+          "required": [
+            "string_from_int"
+          ]
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "state",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Concat operation - concatenates two strings.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "hello "
+        ],
+        [
+          "push",
+          "world"
+        ],
+        [
+          "concat"
+        ],
+        [
+          "pop",
+          "concatenated_string"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "concatenated_string": {
+              "type": "string",
+              "const": "hello world"
+            }
+          },
+          "required": [
+            "concatenated_string"
+          ]
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "state",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Replace operation - replaces all occurrences of a substring.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "hello world hello"
+        ],
+        [
+          "push",
+          "hello"
+        ],
+        [
+          "push",
+          "hi"
+        ],
+        [
+          "replace"
+        ],
+        [
+          "pop",
+          "replaced_string"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "replaced_string": {
+              "type": "string",
+              "const": "hi world hi"
+            }
+          },
+          "required": [
+            "replaced_string"
+          ]
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "state",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Slice operation - slice a string with start and end index.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "hello world"
+        ],
+        [
+          "push",
+          0.0
+        ],
+        [
+          "push",
+          5.0
+        ],
+        [
+          "slice"
+        ],
+        [
+          "pop",
+          "sliced_string"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "sliced_string": {
+              "type": "string",
+              "const": "hello"
+            }
+          },
+          "required": [
+            "sliced_string"
+          ]
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "state",
+        "variables"
+      ]
+    }
+  }
+]

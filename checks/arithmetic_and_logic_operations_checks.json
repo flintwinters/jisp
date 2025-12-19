@@ -1,0 +1,144 @@
+[
+  {
+    "description": "Simple stack-based addition.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          5.0
+        ],
+        [
+          "push",
+          3.0
+        ],
+        [
+          "add"
+        ],
+        [
+          "pop",
+          "result_of_addition"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "result_of_addition": {
+              "type": "number",
+              "const": 8.0
+            }
+          },
+          "required": [
+            "result_of_addition"
+          ]
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "state",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Eq operation - equal values.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          10.0
+        ],
+        [
+          "push",
+          10.0
+        ],
+        [
+          "eq"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        },
+        "state": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "variables",
+        "state"
+      ]
+    }
+  },
+  {
+    "description": "Eq operation - unequal values.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          10.0
+        ],
+        [
+          "push",
+          20.0
+        ],
+        [
+          "eq"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "boolean",
+            "const": false
+          }
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        },
+        "state": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "variables",
+        "state"
+      ]
+    }
+  }
+]
