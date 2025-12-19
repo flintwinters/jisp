@@ -1046,18 +1046,78 @@ func (jp *JispProgram) Set() error {
 	return nil
 }
 
+func (jp *JispProgram) getValueByPath(path []interface{}) (interface{}, error) {
+	if len(path) == 0 {
+		return nil, fmt.Errorf("get error: path array cannot be empty")
+	}
+
+	rootKey, ok := path[0].(string)
+	if !ok {
+		return nil, fmt.Errorf("get error: first element of path must be a string variable name, got %T", path[0])
+	}
+
+	currentVal, found := jp.Variables[rootKey]
+	if !found {
+		return nil, fmt.Errorf("get error: variable '%s' not found", rootKey)
+	}
+
+	for i := 1; i < len(path); i++ {
+		segment := path[i]
+		switch key := segment.(type) {
+		case string:
+			if m, ok := currentVal.(map[string]interface{}); ok {
+				if val, found := m[key]; found {
+					currentVal = val
+				} else {
+					return nil, fmt.Errorf("get error: key '%s' not found in path %v", key, path)
+				}
+			} else {
+				return nil, fmt.Errorf("get error: trying to access non-map with string key '%s' in path %v", key, path)
+			}
+		case float64:
+			index := int(key)
+			if a, ok := currentVal.([]interface{}); ok {
+				if index >= 0 && index < len(a) {
+					currentVal = a[index]
+				} else {
+					return nil, fmt.Errorf("get error: index %d out of bounds for path %v", index, path)
+				}
+			} else {
+				return nil, fmt.Errorf("get error: trying to access non-array with numeric index %d in path %v", index, path)
+			}
+		default:
+			return nil, fmt.Errorf("get error: invalid path segment type %T in path %v", segment, path)
+		}
+	}
+	return currentVal, nil
+}
+
 // Get retrieves a value from the Variables map and pushes it onto the stack.
+// The key can be a string for a top-level variable, or an array for a nested value.
 func (jp *JispProgram) Get() error {
-	key, err := pop[string](jp, "get")
+	pathVal, err := jp.popValue("get")
 	if err != nil {
 		return err
 	}
-	val, found := jp.Variables[key]
-	if !found {
-		return fmt.Errorf("get error: variable '%s' not found", key)
+
+	switch path := pathVal.(type) {
+	case string:
+		val, found := jp.Variables[path]
+		if !found {
+			return fmt.Errorf("get error: variable '%s' not found", path)
+		}
+		jp.Push(val)
+		return nil
+	case []interface{}:
+		val, err := jp.getValueByPath(path)
+		if err != nil {
+			return err
+		}
+		jp.Push(val)
+		return nil
+	default:
+		return fmt.Errorf("get error: expected a string or an array path on stack, got %T", pathVal)
 	}
-	jp.Push(val)
-	return nil
 }
 
 // Exists checks if a variable exists and pushes the boolean result onto the stack.
