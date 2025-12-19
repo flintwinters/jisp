@@ -1,6 +1,6 @@
 [
   {
-    "description": "Sanity Check 1: Simple stack-based addition.",
+    "description": "Simple stack-based addition.",
     "jisp_program": {
       "code": [
         [
@@ -37,8 +37,7 @@
           },
           "required": [
             "result_of_addition"
-          ],
-          "additionalProperties": false
+          ]
         },
         "variables": {
           "type": "object",
@@ -49,12 +48,11 @@
         "stack",
         "state",
         "variables"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Sanity Check 2: Variable assignment and retrieval.",
+    "description": "Variable assignment and retrieval.",
     "jisp_program": {
       "code": [
         [
@@ -98,8 +96,7 @@
           },
           "required": [
             "my_variable"
-          ],
-          "additionalProperties": false
+          ]
         },
         "state": {
           "type": "object",
@@ -111,20 +108,18 @@
           },
           "required": [
             "retrieved_message"
-          ],
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
         "stack",
         "variables",
         "state"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 3: Exists operation - variable exists.",
+    "description": "Exists operation - variable exists.",
     "jisp_program": {
       "code": [
         [
@@ -169,8 +164,7 @@
           },
           "required": [
             "existing_var"
-          ],
-          "additionalProperties": false
+          ]
         },
         "state": {
           "type": "object",
@@ -181,12 +175,11 @@
         "stack",
         "variables",
         "state"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 4: Exists operation - variable does not exist.",
+    "description": "Exists operation - variable does not exist.",
     "jisp_program": {
       "code": [
         [
@@ -223,12 +216,11 @@
         "stack",
         "variables",
         "state"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 5: Delete operation.",
+    "description": "Delete operation.",
     "jisp_program": {
       "code": [
         [
@@ -271,12 +263,11 @@
         "stack",
         "variables",
         "state"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 6: Eq operation - equal values.",
+    "description": "Eq operation - equal values.",
     "jisp_program": {
       "code": [
         [
@@ -317,12 +308,11 @@
         "stack",
         "variables",
         "state"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 7: Eq operation - unequal values.",
+    "description": "Eq operation - unequal values.",
     "jisp_program": {
       "code": [
         [
@@ -363,12 +353,11 @@
         "stack",
         "variables",
         "state"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 8: If operation - true condition, then block executes.",
+    "description": "If operation - true condition, then block executes.",
     "jisp_program": {
       "code": [
         [
@@ -407,8 +396,7 @@
           },
           "required": [
             "if_result"
-          ],
-          "additionalProperties": false
+          ]
         },
         "variables": {
           "type": "object",
@@ -419,12 +407,11 @@
         "stack",
         "state",
         "variables"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 9: If operation - false condition, else block executes.",
+    "description": "If operation - false condition, else block executes.",
     "jisp_program": {
       "code": [
         [
@@ -473,8 +460,7 @@
           },
           "required": [
             "if_result_else"
-          ],
-          "additionalProperties": false
+          ]
         },
         "variables": {
           "type": "object",
@@ -485,12 +471,11 @@
         "stack",
         "state",
         "variables"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 10: If operation - false condition, no else block.",
+    "description": "If operation - false condition, no else block.",
     "jisp_program": {
       "code": [
         [
@@ -532,12 +517,11 @@
         "stack",
         "state",
         "variables"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 11: Trim operation - removes leading/trailing spaces.",
+    "description": "Trim operation - removes leading/trailing spaces.",
     "jisp_program": {
       "code": [
         [
@@ -570,8 +554,7 @@
           },
           "required": [
             "trimmed_string"
-          ],
-          "additionalProperties": false
+          ]
         },
         "variables": {
           "type": "object",
@@ -582,12 +565,11 @@
         "stack",
         "state",
         "variables"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 12: Lower operation - converts string to lowercase.",
+    "description": "Lower operation - converts string to lowercase.",
     "jisp_program": {
       "code": [
         [
@@ -620,8 +602,7 @@
           },
           "required": [
             "lowercased_string"
-          ],
-          "additionalProperties": false
+          ]
         },
         "variables": {
           "type": "object",
@@ -632,12 +613,11 @@
         "stack",
         "state",
         "variables"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 13: Upper operation - converts string to uppercase.",
+    "description": "Upper operation - converts string to uppercase.",
     "jisp_program": {
       "code": [
         [
@@ -670,8 +650,7 @@
           },
           "required": [
             "uppercased_string"
-          ],
-          "additionalProperties": false
+          ]
         },
         "variables": {
           "type": "object",
@@ -682,12 +661,11 @@
         "stack",
         "state",
         "variables"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 14: ToString operation - converts integer to string.",
+    "description": "ToString operation - converts integer to string.",
     "jisp_program": {
       "code": [
         [
@@ -720,8 +698,7 @@
           },
           "required": [
             "string_from_int"
-          ],
-          "additionalProperties": false
+          ]
         },
         "variables": {
           "type": "object",
@@ -732,12 +709,11 @@
         "stack",
         "state",
         "variables"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 15: Concat operation - concatenates two strings.",
+    "description": "Concat operation - concatenates two strings.",
     "jisp_program": {
       "code": [
         [
@@ -774,8 +750,7 @@
           },
           "required": [
             "concatenated_string"
-          ],
-          "additionalProperties": false
+          ]
         },
         "variables": {
           "type": "object",
@@ -786,12 +761,11 @@
         "stack",
         "state",
         "variables"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 16: While operation - decrements counter.",
+    "description": "While operation - decrements counter.",
     "jisp_program": {
       "code": [
         [
@@ -908,8 +882,7 @@
           "required": [
             "counter",
             "loop_condition"
-          ],
-          "additionalProperties": false
+          ]
         },
         "state": {
           "type": "object",
@@ -921,20 +894,18 @@
           },
           "required": [
             "final_counter_value"
-          ],
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
         "stack",
         "variables",
         "state"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 17: Break in While loop - breaks when counter reaches 2.",
+    "description": "Break in While loop - breaks when counter reaches 2.",
     "jisp_program": {
       "code": [
         [
@@ -1073,8 +1044,7 @@
           "required": [
             "counter",
             "loop_condition"
-          ],
-          "additionalProperties": false
+          ]
         },
         "state": {
           "type": "object",
@@ -1086,20 +1056,18 @@
           },
           "required": [
             "final_counter_value_break"
-          ],
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
         "stack",
         "variables",
         "state"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 18: Continue in While loop - skips even numbers.",
+    "description": "Continue in While loop - skips even numbers.",
     "jisp_program": {
       "code": [
         [
@@ -1285,8 +1253,7 @@
             "i",
             "sum_of_odd_numbers",
             "loop_condition"
-          ],
-          "additionalProperties": false
+          ]
         },
         "state": {
           "type": "object",
@@ -1298,20 +1265,18 @@
           },
           "required": [
             "final_sum_of_odd_numbers"
-          ],
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
         "stack",
         "variables",
         "state"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 19: Len operation - string, array, and object.",
+    "description": "Len operation - string, array, and object.",
     "jisp_program": {
       "code": [
         [
@@ -1384,8 +1349,7 @@
             "string_length",
             "array_length",
             "object_length"
-          ],
-          "additionalProperties": false
+          ]
         },
         "variables": {
           "type": "object",
@@ -1396,12 +1360,11 @@
         "stack",
         "state",
         "variables"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 20: Keys operation - retrieves keys from an object.",
+    "description": "Keys operation - retrieves keys from an object.",
     "jisp_program": {
       "code": [
         [
@@ -1443,8 +1406,7 @@
           },
           "required": [
             "object_keys"
-          ],
-          "additionalProperties": false
+          ]
         },
         "variables": {
           "type": "object",
@@ -1455,12 +1417,11 @@
         "stack",
         "state",
         "variables"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 21: Values operation - retrieves values from an object.",
+    "description": "Values operation - retrieves values from an object.",
     "jisp_program": {
       "code": [
         [
@@ -1500,8 +1461,7 @@
           },
           "required": [
             "object_values"
-          ],
-          "additionalProperties": false
+          ]
         },
         "variables": {
           "type": "object",
@@ -1512,12 +1472,11 @@
         "stack",
         "state",
         "variables"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 22: Try operation - catches an error.",
+    "description": "Try operation - catches an error.",
     "jisp_program": {
       "code": [
         [
@@ -1573,8 +1532,7 @@
           },
           "required": [
             "caught_error"
-          ],
-          "additionalProperties": false
+          ]
         },
         "state": {
           "type": "object",
@@ -1591,20 +1549,18 @@
           "required": [
             "status",
             "error_message"
-          ],
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
         "stack",
         "variables",
         "state"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 23: Try operation - no error, try block completes.",
+    "description": "Try operation - no error, try block completes.",
     "jisp_program": {
       "code": [
         [
@@ -1664,8 +1620,7 @@
           },
           "required": [
             "successful_result"
-          ],
-          "additionalProperties": false
+          ]
         },
         "state": {
           "type": "object",
@@ -1677,20 +1632,18 @@
           },
           "required": [
             "final_status"
-          ],
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
         "stack",
         "variables",
         "state"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 24: Replace operation - replaces all occurrences of a substring.",
+    "description": "Replace operation - replaces all occurrences of a substring.",
     "jisp_program": {
       "code": [
         [
@@ -1731,8 +1684,7 @@
           },
           "required": [
             "replaced_string"
-          ],
-          "additionalProperties": false
+          ]
         },
         "variables": {
           "type": "object",
@@ -1743,12 +1695,11 @@
         "stack",
         "state",
         "variables"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 25: For operation - iterates over an array and sums values.",
+    "description": "For operation - iterates over an array and sums values.",
     "jisp_program": {
       "code": [
         [
@@ -1840,20 +1791,18 @@
           },
           "required": [
             "final_sum"
-          ],
-          "additionalProperties": false
+          ]
         }
       },
       "required": [
         "stack",
         "variables",
         "state"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 26: Slice operation - slice a string with start and end index.",
+    "description": "Slice operation - slice a string with start and end index.",
     "jisp_program": {
       "code": [
         [
@@ -1894,8 +1843,7 @@
           },
           "required": [
             "sliced_string"
-          ],
-          "additionalProperties": false
+          ]
         },
         "variables": {
           "type": "object",
@@ -1906,12 +1854,11 @@
         "stack",
         "state",
         "variables"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 27: Slice operation - slice an array with start index only.",
+    "description": "Slice operation - slice an array with start index only.",
     "jisp_program": {
       "code": [
         [
@@ -1961,8 +1908,7 @@
           },
           "required": [
             "sliced_array"
-          ],
-          "additionalProperties": false
+          ]
         },
         "variables": {
           "type": "object",
@@ -1973,12 +1919,11 @@
         "stack",
         "state",
         "variables"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 28: Slice operation - slice an array with start and end index.",
+    "description": "Slice operation - slice an array with start and end index.",
     "jisp_program": {
       "code": [
         [
@@ -2032,8 +1977,7 @@
           },
           "required": [
             "another_sliced_array"
-          ],
-          "additionalProperties": false
+          ]
         },
         "variables": {
           "type": "object",
@@ -2044,12 +1988,11 @@
         "stack",
         "state",
         "variables"
-      ],
-      "additionalProperties": false
+      ]
     }
   },
   {
-    "description": "Test Case 29: Error handling - getting a non-existent variable.",
+    "description": "Error handling - getting a non-existent variable.",
     "jisp_program": {
       "code": [
         [
@@ -2064,7 +2007,7 @@
     "expected_error_message": "Message: get error: variable 'non_existent_var' not found"
   },
   {
-    "description": "Test Case 30: Raise operation - raises a custom error.",
+    "description": "Raise operation - raises a custom error.",
     "jisp_program": {
       "code": [
         [
@@ -2079,7 +2022,7 @@
     "expected_error_message": "Message: this is a custom error"
   },
   {
-    "description": "Test Case 31: Assert operation - positive case.",
+    "description": "Assert operation - positive case.",
     "jisp_program": {
       "code": [
         [
@@ -2102,7 +2045,7 @@
     }
   },
   {
-    "description": "Test Case 32: Assert operation - negative case with default message.",
+    "description": "Assert operation - negative case with default message.",
     "jisp_program": {
       "code": [
         [
@@ -2117,7 +2060,7 @@
     "expected_error_message": "Message: assertion failed"
   },
   {
-    "description": "Test Case 33: Assert operation - negative case with custom message.",
+    "description": "Assert operation - negative case with custom message.",
     "jisp_program": {
       "code": [
         [
@@ -2133,7 +2076,7 @@
     "expected_error_message": "Message: custom assertion message"
   },
   {
-    "description": "Test Case 34: Range operation.",
+    "description": "Range operation.",
     "jisp_program": {
       "code": [
         [
@@ -2175,7 +2118,7 @@
     }
   },
   {
-    "description": "Test Case 35: Filter operation - filters even numbers.",
+    "description": "Filter operation - filters even numbers.",
     "jisp_program": {
       "code": [
         [
@@ -2246,7 +2189,7 @@
     }
   },
   {
-    "description": "Test Case 36: Map operation - squares each number.",
+    "description": "Map operation - squares each number.",
     "jisp_program": {
       "code": [
         [
@@ -2310,7 +2253,7 @@
     }
   },
   {
-    "description": "Test Case 37: Reduce operation - sums a list of numbers.",
+    "description": "Reduce operation - sums a list of numbers.",
     "jisp_program": {
       "code": [
         [
