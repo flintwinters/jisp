@@ -26,13 +26,13 @@ This approach makes it easier to debug, integrate with other tools, and eliminat
 
 Jisp offers powerful debugging features thanks to its use of JSON for the entire program state—code, heap, stack, and environment. Since everything is encapsulated as a single JSON object, you can:
 
-* **Step Forward and Backward**: Log the program state at different points and jump between them, replaying specific steps in the execution flow.
+* **Step Forward and Backward**: Log the program state at different points and jump between them.
 
-* **Time Travel with Diffs**: Track program changes using simple diffs, allowing you to easily revert to previous states or inspect a specific moment by applying inverse diffs.
+* **Time Travel with Diffs**: Track program changes using simple diffs, allowing you to revert to previous execution states or apply inverse diffs.
 
 * **Full Inspection**: Inspect and manipulate any part of the program (variables, functions, memory) at any time, all through the transparent structure of JSON.
 
-* **Automated Debugging**: Scripts and LLMs can programmatically inspect program states, enabling automated debugging.
+* ***Automated* Debugging**: Scripts and LLMs can programmatically inspect program states, enabling automated debugging.
 
 #### 2. Easy Integration:
 Jisp’s use of JSON makes it easy to work with other systems and tools, such as APIs or language models. JSON is a common format for data exchange, so connecting Jisp with external tools is seamless.
