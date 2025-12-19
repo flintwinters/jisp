@@ -5,6 +5,8 @@ The strict, simple, universally understandable grammar is perfect for LLM output
 
 ### Why JSON?
 
+The core philosophy of Jisp is to maintain all program state (including the stack, variables, and execution flow) entirely within a single, self-contained JSON object. This design ensures that every aspect of a running Jisp program can be effortlessly exported, imported, saved, and restored at any point during execution, providing unparalleled transparency and control over the program.
+
 #### 1. Advanced Debugging
 
 Jisp offers powerful debugging features thanks to its use of JSON for the entire program state—code, heap, stack, and environment. Since everything is encapsulated as a single JSON object, you can:
