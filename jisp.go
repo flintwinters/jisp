@@ -1760,10 +1760,21 @@ func parseJispOps(raw interface{}) ([]JispOperation, error) {
 }
 
 func main() {
+	if len(os.Args) < 2 {
+		log.Fatalf("Usage: %s <file.json>", os.Args[0])
+	}
+	filename := os.Args[1]
+
+	file, err := os.Open(filename)
+	if err != nil {
+		log.Fatalf("Error opening file %s: %v", filename, err)
+	}
+	defer file.Close()
+
 	var programData map[string]interface{}
-	decoder := json.NewDecoder(os.Stdin)
+	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(&programData); err != nil {
-		log.Fatalf("Error reading JISP program from stdin: %v", err)
+		log.Fatalf("Error reading JISP program from %s: %v", filename, err)
 	}
 
 	// Extract code
