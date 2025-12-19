@@ -24,10 +24,10 @@ var (
 // JispError is a custom error type for JISP program errors.
 // It allows the 'try' operation to catch and handle runtime errors gracefully.
 type JispError struct {
-	OperationName      string
-	InstructionPointer int
-	Message            string
-	StackSnapshot      []interface{}
+	OperationName      string        `json:"operation_name"`
+	InstructionPointer int           `json:"instruction_pointer"`
+	Message            string        `json:"message"`
+	StackSnapshot      []interface{} `json:"stack_snapshot"`
 }
 
 func (e *JispError) Error() string {
@@ -1559,9 +1559,7 @@ func main() {
 	}
 	programData["call_stack"] = jp.CallStack
 
-	if err := jp.ExecuteOperations(jp.Code); err != nil {
-		log.Fatalf("Error during program execution: %v", err)
-	}
+	executionErr := jp.ExecuteOperations(jp.Code)
 
 	// Update the map with the final state of mutable fields
 	programData["stack"] = jp.Stack
@@ -1569,10 +1567,23 @@ func main() {
 	programData["state"] = jp.State
 	programData["call_stack"] = jp.CallStack
 
+	if executionErr != nil {
+		var jispErr *JispError
+		if errors.As(executionErr, &jispErr) {
+			programData["error"] = jispErr
+		} else {
+			programData["error"] = map[string]string{"message": executionErr.Error()}
+		}
+	}
+
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
 	if err := encoder.Encode(programData); err != nil {
 		log.Fatalf("Error encoding JISP program state to stdout: %v", err)
+	}
+
+	if executionErr != nil {
+		os.Exit(1)
 	}
 	os.Exit(0)
 }
