@@ -25,15 +25,16 @@ var (
 // It allows the 'try' operation to catch and handle runtime errors gracefully.
 type JispError struct {
 	OperationName      string        `json:"operation_name"`
-	InstructionPointer int           `json:"instruction_pointer"`
+	InstructionPointer []interface{} `json:"instruction_pointer"`
 	Message            string        `json:"message"`
 	StackSnapshot      []interface{} `json:"stack_snapshot"`
 }
 
 func (e *JispError) Error() string {
 	stackJSON, _ := json.MarshalIndent(e.StackSnapshot, "", "  ")
-	return fmt.Sprintf("Jisp Execution Error:\n  Operation: '%s'\n  Instruction: %d\n  Message: %s\n  Stack: %s",
-		e.OperationName, e.InstructionPointer, e.Message, stackJSON)
+	ipJSON, _ := json.Marshal(e.InstructionPointer)
+	return fmt.Sprintf("Jisp Execution Error:\n  Operation: '%s'\n  Instruction: %s\n  Message: %s\n  Stack: %s",
+		e.OperationName, ipJSON, e.Message, stackJSON)
 }
 
 // parseRawOperation parses a single operation from a raw array of interfaces.
@@ -59,8 +60,22 @@ func parseRawOperation(rawOp []interface{}) (JispOperation, error) {
 // CallFrame represents a single frame on the call stack, holding the instruction
 // pointer and the operations for its execution context.
 type CallFrame struct {
-	Ip  int             `json:"Ip"`
-	Ops []JispOperation `json:"Ops"`
+	Ip       int             `json:"-"`
+	Ops      []JispOperation `json:"Ops"`
+	basePath []interface{}
+}
+
+func (cf *CallFrame) MarshalJSON() ([]byte, error) {
+	// To prevent recursion, we define a type alias that doesn't have MarshalJSON.
+	type Alias CallFrame
+	// We create a new struct for marshaling that has the desired 'Ip' type.
+	return json.Marshal(&struct {
+		Ip []interface{} `json:"Ip"`
+		*Alias
+	}{
+		Ip:    append(cf.basePath, cf.Ip),
+		Alias: (*Alias)(cf),
+	})
 }
 
 // JispProgram represents the entire state of a JISP program, including the
@@ -86,14 +101,9 @@ func (jp *JispProgram) newError(op *JispOperation, message string) *JispError {
 	stackCopy := make([]interface{}, len(jp.Stack))
 	copy(stackCopy, jp.Stack)
 
-	Ip := -1
-	if frame := jp.currentFrame(); frame != nil {
-		Ip = frame.Ip
-	}
-
 	return &JispError{
 		OperationName:      op.Name,
-		InstructionPointer: Ip,
+		InstructionPointer: jp.currentInstructionPath(),
 		Message:            message,
 		StackSnapshot:      stackCopy,
 	}
@@ -436,7 +446,7 @@ func reduceOp(jp *JispProgram, op *JispOperation) error {
 
 		previousStackLen := len(jp.Stack) // Store stack length before executing reduceOps
 
-		if err := jp.ExecuteOperations(reduceOps); err != nil {
+		if err := jp.executeOperationsWithPathSegment(reduceOps, "reduce_ops_from_stack"); err != nil {
 			return err
 		}
 
@@ -481,7 +491,7 @@ func mapOp(jp *JispProgram, op *JispOperation) error {
 	var result []interface{}
 	for _, item := range input {
 		jp.Variables[varName] = item
-		if err := jp.ExecuteOperations(mapOps); err != nil {
+		if err := jp.executeOperationsWithPathSegment(mapOps, "map_ops_from_stack"); err != nil {
 			return err
 		}
 		res, err := jp.popValue("map")
@@ -523,7 +533,7 @@ func filterOp(jp *JispProgram, op *JispOperation) error {
 	var result []interface{}
 	for _, item := range input {
 		jp.Variables[varName] = item
-		if err := jp.ExecuteOperations(conditionOps); err != nil {
+		if err := jp.executeOperationsWithPathSegment(conditionOps, "filter_ops_from_stack"); err != nil {
 			return err
 		}
 		condition, err := pop[bool](jp, "filter")
@@ -675,13 +685,35 @@ type sliceSlicer []interface{}
 func (s sliceSlicer) Len() int                   { return len(s) }
 func (s sliceSlicer) Slice(i, j int) interface{} { return s[i:j] }
 
+// currentInstructionPath returns the JSON path to the currently executing instruction.
+func (jp *JispProgram) currentInstructionPath() []interface{} {
+	frame := jp.currentFrame()
+	if frame == nil {
+		return nil
+	}
+	// The full path is the base path of the current operation list plus the instruction pointer.
+	return append(frame.basePath, frame.Ip)
+}
+
+// executeOperationsWithPathSegment is a helper to execute operations with a derived JSON path.
+// It takes a path segment (string or int) and appends it to the current instruction path
+// before executing the given operations.
+func (jp *JispProgram) executeOperationsWithPathSegment(ops []JispOperation, segment interface{}) error {
+	parentPath := jp.currentInstructionPath()
+	// It's crucial to copy the parentPath to avoid mutations across different branches of execution.
+	path := make([]interface{}, len(parentPath)+1)
+	copy(path, parentPath)
+	path[len(parentPath)] = segment
+	return jp.ExecuteOperations(ops, path)
+}
+
 // ExecuteOperations pushes a new call frame for the given operations and executes them.
 // It manages the instruction pointer within this frame and handles control flow.
-func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
+func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interface{}) error {
 	if len(ops) == 0 {
 		return nil
 	}
-	frame := &CallFrame{Ops: ops, Ip: 0}
+	frame := &CallFrame{Ops: ops, Ip: 0, basePath: basePath}
 	jp.CallStack = append(jp.CallStack, frame)
 
 	// Defer popping the frame. This ensures that the call stack is cleaned up
@@ -823,7 +855,7 @@ func forOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("for error in 'body_operations': %w", err)
 	}
 
-	return jp.For(loopVar, collection, bodyOps)
+	return jp.For(loopVar, collection, bodyOps, 2)
 }
 
 func trimOp(jp *JispProgram, _ *JispOperation) error {
@@ -882,45 +914,45 @@ func whileOp(jp *JispProgram, op *JispOperation) error {
 
 	conditionPathRaw := op.Args[0]
 	conditionPath, ok := conditionPathRaw.(string)
-	if !ok {
-		return fmt.Errorf("while error: expected condition path to be a string, got %T", conditionPathRaw)
-	}
-
-	bodyOps, err := parseJispOps(op.Args[1])
-	if err != nil {
-		return fmt.Errorf("while error in 'body' operations: %w", err)
-	}
-
-	for {
-		// Get the value of the condition variable
-		conditionVal, err := jp.getValueForPath(conditionPath)
-		if err != nil {
-			return fmt.Errorf("while error: failed to get condition variable '%s': %w", conditionPath, err)
-		}
-
-
-		condition, ok := conditionVal.(bool)
 		if !ok {
-			return fmt.Errorf("while error: expected boolean condition at '%s', got %T", conditionPath, conditionVal)
+			return fmt.Errorf("while error: expected condition path to be a string, got %T", conditionPathRaw)
 		}
-
-		if !condition {
-			break
-		}
-
-		if err := jp.ExecuteOperations(bodyOps); err != nil {
-			// Handle break and continue signals
-			if errors.Is(err, ErrBreak) {
-				break // Exit the while loop
+	
+		bodyOps, err := parseJispOps(op.Args[1])
+		if err != nil {
+					return fmt.Errorf("while error in 'body' operations: %w", err)
+				}
+			
+				for {
+					// Get the value of the condition variable
+					conditionVal, err := jp.getValueForPath(conditionPath)
+					if err != nil {
+						return fmt.Errorf("while error: failed to get condition variable '%s': %w", conditionPath, err)
+					}
+			
+			
+					condition, ok := conditionVal.(bool)
+					if !ok {
+						return fmt.Errorf("while error: expected boolean condition at '%s', got %T", conditionPath, conditionVal)
+					}
+			
+					if !condition {
+						break
+					}
+			
+					if err := jp.executeOperationsWithPathSegment(bodyOps, 1); err != nil {
+						// Handle break and continue signals
+						if errors.Is(err, ErrBreak) {
+							break // Exit the while loop
+						}
+						if errors.Is(err, ErrContinue) {
+							continue // Skip to the next iteration of the while loop
+						}
+						return fmt.Errorf("while error during body execution: %w", err)
+					}
+				}
+				return nil
 			}
-			if errors.Is(err, ErrContinue) {
-				continue // Skip to the next iteration of the while loop
-			}
-			return fmt.Errorf("while error during body execution: %w", err)
-		}
-	}
-	return nil
-}
 
 func lenOp(jp *JispProgram, op *JispOperation) error {
 	return applyCollectionOp(jp, "len", op, collectionHandlers{
@@ -1377,9 +1409,9 @@ func (jp *JispProgram) If(thenBody, elseBody []JispOperation) error {
 	}
 
 	if condition {
-		return jp.ExecuteOperations(thenBody)
+		return jp.executeOperationsWithPathSegment(thenBody, 0)
 	} else if elseBody != nil {
-		return jp.ExecuteOperations(elseBody)
+		return jp.executeOperationsWithPathSegment(elseBody, 1)
 	}
 	return nil
 }
@@ -1395,15 +1427,15 @@ func (jp *JispProgram) Try(tryBody []JispOperation, catchVar string, catchBody [
 				panic(r)
 			}
 			// If it's a JispError and catchBody exists, handle it.
-			err = jp.handleCaughtError(r, catchVar, catchBody)
+			err = jp.handleCaughtError(r, catchVar, catchBody, 2)
 		}
 	}()
 
 	// Execute tryBody
-	if tryErr := jp.ExecuteOperations(tryBody); tryErr != nil {
+	if tryErr := jp.executeOperationsWithPathSegment(tryBody, 0); tryErr != nil {
 		if jispErr, ok := tryErr.(*JispError); ok {
 			// JispError occurred, handle it with the catch block
-			return jp.handleCaughtError(jispErr, catchVar, catchBody)
+			return jp.handleCaughtError(jispErr, catchVar, catchBody, 2)
 		}
 		return tryErr // Propagate other types of errors
 	}
@@ -1413,7 +1445,7 @@ func (jp *JispProgram) Try(tryBody []JispOperation, catchVar string, catchBody [
 // For iterates over a collection (array or object).
 // For arrays, it binds each element to loopVar and executes bodyOps.
 // For objects, it binds each key to loopVar and executes bodyOps.
-func (jp *JispProgram) For(loopVar string, collection interface{}, bodyOps []JispOperation) error {
+func (jp *JispProgram) For(loopVar string, collection interface{}, bodyOps []JispOperation, bodyOpsPathSegment interface{}) error {
 	if jp.Variables == nil {
 		jp.Variables = make(map[string]interface{})
 	}
@@ -1422,7 +1454,7 @@ func (jp *JispProgram) For(loopVar string, collection interface{}, bodyOps []Jis
 	case []interface{}:
 		for _, item := range c {
 			jp.Variables[loopVar] = item
-			if err := jp.executeLoopBody(bodyOps); err != nil {
+			if err := jp.executeLoopBody(bodyOps, bodyOpsPathSegment); err != nil {
 				if errors.Is(err, ErrBreak) {
 					return nil // Break from loop
 				}
@@ -1432,7 +1464,7 @@ func (jp *JispProgram) For(loopVar string, collection interface{}, bodyOps []Jis
 	case map[string]interface{}:
 		for key := range c {
 			jp.Variables[loopVar] = key
-			if err := jp.executeLoopBody(bodyOps); err != nil {
+			if err := jp.executeLoopBody(bodyOps, bodyOpsPathSegment); err != nil {
 				if errors.Is(err, ErrBreak) {
 					return nil // Break from loop
 				}
@@ -1446,8 +1478,8 @@ func (jp *JispProgram) For(loopVar string, collection interface{}, bodyOps []Jis
 }
 
 // executeLoopBody runs the operations in a loop's body and handles break/continue.
-func (jp *JispProgram) executeLoopBody(bodyOps []JispOperation) error {
-	err := jp.ExecuteOperations(bodyOps)
+func (jp *JispProgram) executeLoopBody(bodyOps []JispOperation, bodyOpsPathSegment interface{}) error {
+	err := jp.executeOperationsWithPathSegment(bodyOps, bodyOpsPathSegment)
 	if err != nil {
 		if errors.Is(err, ErrContinue) {
 			return nil // Signal to continue to next iteration
@@ -1457,7 +1489,7 @@ func (jp *JispProgram) executeLoopBody(bodyOps []JispOperation) error {
 	return nil
 }
 
-func (jp *JispProgram) handleCaughtError(caught interface{}, catchVar string, catchBody []JispOperation) error {
+func (jp *JispProgram) handleCaughtError(caught interface{}, catchVar string, catchBody []JispOperation, catchBodyPathSegment interface{}) error {
 	var errMsg string
 	if jispErr, ok := caught.(*JispError); ok {
 		errMsg = jispErr.Message
@@ -1475,7 +1507,7 @@ func (jp *JispProgram) handleCaughtError(caught interface{}, catchVar string, ca
 
 	// Execute catchBody
 	if catchBody != nil {
-		return jp.ExecuteOperations(catchBody)
+		return jp.executeOperationsWithPathSegment(catchBody, catchBodyPathSegment)
 	}
 	return nil // If no catchBody, just absorb the error
 }
@@ -1690,7 +1722,7 @@ func main() {
 	}
 	programData["call_stack"] = jp.CallStack
 
-	executionErr := jp.ExecuteOperations(jp.Code)
+	executionErr := jp.ExecuteOperations(jp.Code, []interface{}{"code"})
 
 	// Update the map with the final state of mutable fields
 	programData["stack"] = jp.Stack
