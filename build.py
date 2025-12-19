@@ -2,6 +2,7 @@ import subprocess
 import sys
 import os
 import json
+import tempfile
 from rich.console import Console
 from jsonschema import validate, ValidationError
 
@@ -100,60 +101,67 @@ def run_all_checks():
                 console.print(SKIPPING_TEST_MISSING_SCHEMA_OR_ERROR.format(description=description, filepath=checks_filepath))
                 continue
 
-            if expected_error_message:
-                try:
-                    run_command = [f"./{BINARY_NAME}"]
-                    process = subprocess.run(run_command, input=json.dumps(jisp_program), 
-                                             capture_output=True, text=True)
-                    
-                    if process.returncode == 0:
-                        _print_test_failure(description, checks_filepath, TEST_FAILED_EXPECTED_ERROR)
-                        console.print(f"    Stdout: {process.stdout.strip()}")
-                        continue
+            temp_prog_filepath = None
+            try:
+                with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix=".json") as temp_f:
+                    json.dump(jisp_program, temp_f)
+                    temp_prog_filepath = temp_f.name
 
+                run_command = [f"./{BINARY_NAME}", temp_prog_filepath]
+
+                if expected_error_message:
                     try:
-                        output_json = json.loads(process.stdout)
-                        error_details = output_json.get("error", {})
-                        actual_message = error_details.get("message", "")
-                        
-                        if expected_error_message in actual_message:
-                            passed_tests += 1
-                        else:
-                            _print_test_failure(description, checks_filepath, TEST_FAILED_MSG_MISMATCH)
-                            console.print(f"    Expected to find: '{expected_error_message}'")
-                            console.print(f"    Actual message:   '{actual_message}'")
-                            console.print(f"    Full stdout: {process.stdout.strip()}")
-                    except json.JSONDecodeError:
-                        _print_test_failure(description, checks_filepath, TEST_FAILED_EXPECTED_JSON)
-                        console.print(f"    Stdout: {process.stdout.strip()}")
+                        process = subprocess.run(run_command, capture_output=True, text=True)
 
-                except Exception as e:
-                    _print_test_failure(description, checks_filepath, TEST_FAILED_UNEXPECTED_EXEC_ERROR.format(e))
-            else:
-                try:
-                    run_command = [f"./{BINARY_NAME}"]
-                    process = subprocess.run(run_command, input=json.dumps(jisp_program), 
-                                             capture_output=True, text=True, check=True)
-                    
-                    program_state = json.loads(process.stdout)
-                    validate(instance=program_state, schema=validation_schema)
-                    passed_tests += 1
-                except subprocess.CalledProcessError as e:
-                    _print_test_failure(description, checks_filepath, TEST_FAILED_JISP_EXEC_ERROR)
-                    console.print(f"    Stderr: {e.stderr.strip()}")
-                    console.print(f"    Stdout: {process.stdout.strip()}")
-                except json.JSONDecodeError as e:
-                    _print_test_failure(description, checks_filepath, TEST_FAILED_INVALID_JISP_JSON.format(e))
-                    console.print(f"    JISP Output: {process.stdout.strip()}")
-                except ValidationError as e:
-                    _print_test_failure(description, checks_filepath, TEST_FAILED_VALIDATION_ERROR)
-                    console.print(f"    Error: {e.message}")
-                    console.print(f"    Path: {list(e.path)}")
-                    console.print(f"    Expected: {e.schema}")
-                    console.print(f"    Actual State: {json.dumps(program_state, indent=2)}")
-                except Exception as e:
-                    _print_test_failure(description, checks_filepath, TEST_FAILED_UNEXPECTED_EXEC_ERROR.format(e))
-    
+                        if process.returncode == 0:
+                            _print_test_failure(description, checks_filepath, TEST_FAILED_EXPECTED_ERROR)
+                            console.print(f"    Stdout: {process.stdout.strip()}")
+                            continue
+
+                        try:
+                            output_json = json.loads(process.stdout)
+                            error_details = output_json.get("error", {})
+                            actual_message = error_details.get("message", "")
+
+                            if expected_error_message in actual_message:
+                                passed_tests += 1
+                            else:
+                                _print_test_failure(description, checks_filepath, TEST_FAILED_MSG_MISMATCH)
+                                console.print(f"    Expected to find: '{expected_error_message}'")
+                                console.print(f"    Actual message:   '{actual_message}'")
+                                console.print(f"    Full stdout: {process.stdout.strip()}")
+                        except json.JSONDecodeError:
+                            _print_test_failure(description, checks_filepath, TEST_FAILED_EXPECTED_JSON)
+                            console.print(f"    Stdout: {process.stdout.strip()}")
+
+                    except Exception as e:
+                        _print_test_failure(description, checks_filepath, TEST_FAILED_UNEXPECTED_EXEC_ERROR.format(e))
+                else:
+                    try:
+                        process = subprocess.run(run_command, capture_output=True, text=True, check=True)
+
+                        program_state = json.loads(process.stdout)
+                        validate(instance=program_state, schema=validation_schema)
+                        passed_tests += 1
+                    except subprocess.CalledProcessError as e:
+                        _print_test_failure(description, checks_filepath, TEST_FAILED_JISP_EXEC_ERROR)
+                        console.print(f"    Stderr: {e.stderr.strip()}")
+                        console.print(f"    Stdout: {e.stdout.strip()}")
+                    except json.JSONDecodeError as e:
+                        _print_test_failure(description, checks_filepath, TEST_FAILED_INVALID_JISP_JSON.format(e))
+                        console.print(f"    JISP Output: {process.stdout.strip()}")
+                    except ValidationError as e:
+                        _print_test_failure(description, checks_filepath, TEST_FAILED_VALIDATION_ERROR)
+                        console.print(f"    Error: {e.message}")
+                        console.print(f"    Path: {list(e.path)}")
+                        console.print(f"    Expected: {e.schema}")
+                        console.print(f"    Actual State: {json.dumps(program_state, indent=2)}")
+                    except Exception as e:
+                        _print_test_failure(description, checks_filepath, TEST_FAILED_UNEXPECTED_EXEC_ERROR.format(e))
+            finally:
+                if temp_prog_filepath and os.path.exists(temp_prog_filepath):
+                    os.remove(temp_prog_filepath)
+
     if passed_tests == total_tests and total_tests > 0:
         console.print(ALL_TESTS_PASSED.format(passed_tests=passed_tests))
         return True
