@@ -68,7 +68,7 @@ Make a decision on the ergonomics of map, filter, and reduce operations:
 
 Not happy with this explicit variable declaration.
 
-#### Not Implemented
+#### Implementation TODOs:
 - [ ] `call`
 - [ ] `return`
 - [x] `for`
