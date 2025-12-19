@@ -1,4 +1,18 @@
+
+<div align="center">
+<img src="https://qforj.com/jisp.png" height="64px">
+
 # JISP
+
+![Discord](https://img.shields.io/discord/1392579835012055131?logo=discord&logoColor=white&color=red)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![GitHub Repo stars](https://img.shields.io/github/stars/flintwinters/jisp)
+<!-- ![Web Demo](https://img.shields.io/website?url=https%3A%2F%2Fqforj.com) -->
+<!-- ![Read the Docs](https://img.shields.io/readthedocs/:jisp) -->
+
+
+</div>
+
 Jisp is a stack-based programming system which uses the JSON data model as its underlying atomic fabric. All arguments for operations are implicitly taken from the stack. The program, including the code, variables, and execution state, are all represented directly in a single JSON object. This approach makes it easier to debug, integrate with other tools, and eliminates LLM syntax errors.
 
 The strict, simple, universally understandable grammar is perfect for LLM outputs and toolcalls, eliminating syntax errors.
