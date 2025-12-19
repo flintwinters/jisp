@@ -68,12 +68,20 @@ def run_checks_from_json():
                     console.print(f"  Stdout: {process.stdout.strip()}")
                     continue
 
-                if expected_error_message in process.stderr:
-                    passed_tests += 1
-                else:
-                    console.print(f"[bold red]❌ Test '{description}' FAILED: Error message mismatch.[/bold red]")
-                    console.print(f"  Expected to find: '{expected_error_message}'")
-                    console.print(f"  Actual Stderr:    '{process.stderr.strip()}'")
+                try:
+                    output_json = json.loads(process.stdout)
+                    error_details = output_json.get("error", {})
+                    actual_message = error_details.get("message", "")
+                    
+                    if expected_error_message in actual_message:
+                        passed_tests += 1
+                    else:
+                        console.print(f"[bold red]❌ Test '{description}' FAILED: Error message mismatch in JSON output.[/bold red]")
+                        console.print(f"  Expected to find: '{expected_error_message}'")
+                        console.print(f"  Actual message:   '{actual_message}'")
+                        console.print(f"  Full stdout: {process.stdout.strip()}")
+                except json.JSONDecodeError:
+                    console.print(f"[bold red]❌ Test '{description}' FAILED: Expected JSON output on stdout, but failed to decode.[/bold red]")
                     console.print(f"  Stdout: {process.stdout.strip()}")
 
             except Exception as e:
