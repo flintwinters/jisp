@@ -59,8 +59,8 @@ func parseRawOperation(rawOp []interface{}) (JispOperation, error) {
 // CallFrame represents a single frame on the call stack, holding the instruction
 // pointer and the operations for its execution context.
 type CallFrame struct {
-	ip  int
-	ops []JispOperation
+	Ip  int             `json:"Ip"`
+	Ops []JispOperation `json:"Ops"`
 }
 
 // JispProgram represents the entire state of a JISP program, including the
@@ -68,17 +68,17 @@ type CallFrame struct {
 type JispProgram struct {
 	Stack      []interface{}          `json:"stack"`
 	Variables  map[string]interface{} `json:"variables"`
-	State      map[string]interface{} `json:"state"` // For pop operation target
-	Code       []JispOperation        `json:"-"`     // The main program code
-	callStack  []*CallFrame           // Stack for function calls
+	State      map[string]interface{} `json:"state"`      // For pop operation target
+	Code       []JispOperation        `json:"-"`          // The main program code
+	CallStack  []*CallFrame           `json:"call_stack"` // Stack for function calls
 }
 
 // currentFrame returns the currently executing frame from the call stack.
 func (jp *JispProgram) currentFrame() *CallFrame {
-	if len(jp.callStack) == 0 {
+	if len(jp.CallStack) == 0 {
 		return nil
 	}
-	return jp.callStack[len(jp.callStack)-1]
+	return jp.CallStack[len(jp.CallStack)-1]
 }
 
 // newError creates a new JispError with the current program state.
@@ -86,14 +86,14 @@ func (jp *JispProgram) newError(op *JispOperation, message string) *JispError {
 	stackCopy := make([]interface{}, len(jp.Stack))
 	copy(stackCopy, jp.Stack)
 
-	ip := -1
+	Ip := -1
 	if frame := jp.currentFrame(); frame != nil {
-		ip = frame.ip
+		Ip = frame.Ip
 	}
 
 	return &JispError{
 		OperationName:      op.Name,
-		InstructionPointer: ip,
+		InstructionPointer: Ip,
 		Message:            message,
 		StackSnapshot:      stackCopy,
 	}
@@ -104,6 +104,13 @@ func (jp *JispProgram) newError(op *JispOperation, message string) *JispError {
 type JispOperation struct {
 	Name string        `json:"op_name"`   // Not directly from JSON, but will be set by UnmarshalJSON
 	Args []interface{} `json:"args_list"` // Not directly from JSON, but will be set by UnmarshalJSON
+}
+
+func (op *JispOperation) MarshalJSON() ([]byte, error) {
+	raw := make([]interface{}, 0, 1+len(op.Args))
+	raw = append(raw, op.Name)
+	raw = append(raw, op.Args...)
+	return json.Marshal(raw)
 }
 
 func (op *JispOperation) UnmarshalJSON(data []byte) error {
@@ -239,27 +246,36 @@ func unique(slice []interface{}) []interface{} {
 	return list
 }
 
+func popTwoComparableSlices(jp *JispProgram, opName string) ([]interface{}, []interface{}, error) {
+	a2, err := pop[[]interface{}](jp, opName)
+	if err != nil {
+		return nil, nil, err
+	}
+	a1, err := pop[[]interface{}](jp, opName)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if _, err := toComparableSlice(a1, opName); err != nil {
+		return nil, nil, err
+	}
+	if _, err := toComparableSlice(a2, opName); err != nil {
+		return nil, nil, err
+	}
+
+	return a1, a2, nil
+}
+
 // unionOp performs the union of two arrays on the stack.
 func unionOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) != 0 {
 		return fmt.Errorf("union error: expected 0 arguments, got %d", len(op.Args))
 	}
 
-	a2, err := pop[[]interface{}](jp, "union")
+	a1, a2, err := popTwoComparableSlices(jp, "union")
 	if err != nil {
 		return err
 	}
-	a1, err := pop[[]interface{}](jp, "union")
-	if err != nil {
-		return err
-	}
-
-	// Ensure elements are comparable
-	if _, err := toComparableSlice(a1, "union"); err != nil {
-		return err
-	}
-	if _, err := toComparableSlice(a2, "union"); err != nil {
-		return err	}
 
 	combined := append(a1, a2...)
 	jp.Push(unique(combined))
@@ -272,20 +288,8 @@ func intersectionOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("intersection error: expected 0 arguments, got %d", len(op.Args))
 	}
 
-	a2, err := pop[[]interface{}](jp, "intersection")
+	a1, a2, err := popTwoComparableSlices(jp, "intersection")
 	if err != nil {
-		return err
-	}
-	a1, err := pop[[]interface{}](jp, "intersection")
-	if err != nil {
-		return err
-	}
-
-	// Ensure elements are comparable
-	if _, err := toComparableSlice(a1, "intersection"); err != nil {
-		return err
-	}
-	if _, err := toComparableSlice(a2, "intersection"); err != nil {
 		return err
 	}
 
@@ -311,20 +315,8 @@ func differenceOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("difference error: expected 0 arguments, got %d", len(op.Args))
 	}
 
-	a2, err := pop[[]interface{}](jp, "difference")
+	a1, a2, err := popTwoComparableSlices(jp, "difference")
 	if err != nil {
-		return err
-	}
-	a1, err := pop[[]interface{}](jp, "difference")
-	if err != nil {
-		return err
-	}
-
-	// Ensure elements are comparable
-	if _, err := toComparableSlice(a1, "difference"); err != nil {
-		return err
-	}
-	if _, err := toComparableSlice(a2, "difference"); err != nil {
 		return err
 	}
 
@@ -419,25 +411,22 @@ func reduceOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("reduce error: expected 0 arguments, got %d", len(op.Args))
 	}
 
-	// Pop arguments from stack (top to bottom): initialValue, reduceOps, array
-	initialValue, err := jp.popValue("reduce")
+	args, err := jp.popx("reduce", 3)
 	if err != nil {
 		return err
 	}
 
-	reduceRaw, err := jp.popValue("reduce")
-	if err != nil {
-		return err
+	input, ok := args[0].([]interface{})
+	if !ok {
+		return fmt.Errorf("reduce error: expected an array on stack for input, got %T", args[0])
 	}
-	reduceOps, err := parseJispOps(reduceRaw)
+
+	reduceOps, err := parseJispOps(args[1])
 	if err != nil {
 		return fmt.Errorf("reduce error: invalid operations block: %w", err)
 	}
 
-	input, err := pop[[]interface{}](jp, "reduce")
-	if err != nil {
-		return err
-	}
+	initialValue := args[2]
 
 	accumulator := initialValue
 
@@ -469,24 +458,24 @@ func mapOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("map error: expected 0 arguments, got %d", len(op.Args))
 	}
 
-	// Pop arguments from stack: condition, varName, array
-	mapRaw, err := jp.popValue("map")
-	if err != nil {
-		return err
-	}
-	mapOps, err := parseJispOps(mapRaw)
-	if err != nil {
-		return fmt.Errorf("map error: invalid condition block: %w", err)
-	}
-
-	varName, err := pop[string](jp, "map")
+	args, err := jp.popx("map", 3)
 	if err != nil {
 		return err
 	}
 
-	input, err := pop[[]interface{}](jp, "map")
+	input, ok := args[0].([]interface{})
+	if !ok {
+		return fmt.Errorf("map error: expected an array on stack for input, got %T", args[0])
+	}
+
+	varName, ok := args[1].(string)
+	if !ok {
+		return fmt.Errorf("map error: expected a string on stack for varName, got %T", args[1])
+	}
+
+	mapOps, err := parseJispOps(args[2])
 	if err != nil {
-		return err
+		return fmt.Errorf("map error: invalid operations block: %w", err)
 	}
 
 	var result []interface{}
@@ -511,24 +500,24 @@ func filterOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("filter error: expected 0 arguments, got %d", len(op.Args))
 	}
 
-	// Pop arguments from stack: condition, varName, array
-	conditionRaw, err := jp.popValue("filter")
+	args, err := jp.popx("filter", 3)
 	if err != nil {
 		return err
 	}
-	conditionOps, err := parseJispOps(conditionRaw)
+
+	input, ok := args[0].([]interface{})
+	if !ok {
+		return fmt.Errorf("filter error: expected an array on stack for input, got %T", args[0])
+	}
+
+	varName, ok := args[1].(string)
+	if !ok {
+		return fmt.Errorf("filter error: expected a string on stack for varName, got %T", args[1])
+	}
+
+	conditionOps, err := parseJispOps(args[2])
 	if err != nil {
 		return fmt.Errorf("filter error: invalid condition block: %w", err)
-	}
-
-	varName, err := pop[string](jp, "filter")
-	if err != nil {
-		return err
-	}
-
-	input, err := pop[[]interface{}](jp, "filter")
-	if err != nil {
-		return err
 	}
 
 	var result []interface{}
@@ -692,19 +681,19 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
 	if len(ops) == 0 {
 		return nil
 	}
-	frame := &CallFrame{ops: ops, ip: 0}
-	jp.callStack = append(jp.callStack, frame)
+	frame := &CallFrame{Ops: ops, Ip: 0}
+	jp.CallStack = append(jp.CallStack, frame)
 
 	// Defer popping the frame. This ensures that the call stack is cleaned up
 	// correctly, whether the function returns normally or due to an error.
 	defer func() {
-		if len(jp.callStack) > 0 && jp.callStack[len(jp.callStack)-1] == frame {
-			jp.callStack = jp.callStack[:len(jp.callStack)-1]
+		if len(jp.CallStack) > 0 && jp.CallStack[len(jp.CallStack)-1] == frame {
+			jp.CallStack = jp.CallStack[:len(jp.CallStack)-1]
 		}
 	}()
 
-	for frame.ip < len(frame.ops) {
-		op := frame.ops[frame.ip]
+	for frame.Ip < len(frame.Ops) {
+		op := frame.Ops[frame.Ip]
 
 		handler, found := operations[op.Name]
 		if !found {
@@ -723,7 +712,7 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation) error {
 				return jp.newError(&op, err.Error())
 			}
 		}
-		frame.ip++
+		frame.Ip++
 	}
 	return nil
 }
@@ -940,77 +929,41 @@ func whileOp(jp *JispProgram, op *JispOperation) error {
 }
 
 func lenOp(jp *JispProgram, op *JispOperation) error {
-	if len(op.Args) != 0 { // len operation takes its argument from the stack, not from op.Args
-		return fmt.Errorf("len error: expected 0 arguments, got %d", len(op.Args))
-	}
-
-	val, err := jp.popValue("len")
-	if err != nil {
-		return fmt.Errorf("len error: %w", err)
-	}
-
-	var length float64
-	switch v := val.(type) {
-	case string:
-		length = float64(len(v))
-	case []interface{}: // Array
-		length = float64(len(v))
-	case map[string]interface{}: // Object
-		length = float64(len(v))
-	default:
-		return fmt.Errorf("len error: unsupported type %T", val)
-	}
-
-	jp.Push(length)
-	return nil
+	return applyCollectionOp(jp, "len", op, collectionHandlers{
+		stringHandler: func(s string) (interface{}, error) {
+			return float64(len(s)), nil
+		},
+		arrayHandler: func(a []interface{}) (interface{}, error) {
+			return float64(len(a)), nil
+		},
+		objectHandler: func(m map[string]interface{}) (interface{}, error) {
+			return float64(len(m)), nil
+		},
+	})
 }
 
 func valuesOp(jp *JispProgram, op *JispOperation) error {
-	if len(op.Args) != 0 { // values operation takes its argument from the stack, not from op.Args
-		return fmt.Errorf("values error: expected 0 arguments, got %d", len(op.Args))
-	}
-
-	val, err := jp.popValue("values")
-	if err != nil {
-		return fmt.Errorf("values error: %w", err)
-	}
-
-	var values []interface{}
-	switch v := val.(type) {
-	case map[string]interface{}: // Object
-		for _, val := range v {
-			values = append(values, val)
-		}
-	default:
-		return fmt.Errorf("values error: unsupported type %T, expected object", val)
-	}
-
-	jp.Push(values)
-	return nil
+	return applyCollectionOp(jp, "values", op, collectionHandlers{
+		objectHandler: func(m map[string]interface{}) (interface{}, error) {
+			values := make([]interface{}, 0, len(m))
+			for _, val := range m {
+				values = append(values, val)
+			}
+			return values, nil
+		},
+	})
 }
 
 func keysOp(jp *JispProgram, op *JispOperation) error {
-	if len(op.Args) != 0 { // keys operation takes its argument from the stack, not from op.Args
-		return fmt.Errorf("keys error: expected 0 arguments, got %d", len(op.Args))
-	}
-
-	val, err := jp.popValue("keys")
-	if err != nil {
-		return fmt.Errorf("keys error: %w", err)
-	}
-
-	var keys []string
-	switch v := val.(type) {
-	case map[string]interface{}: // Object
-		for k := range v {
-			keys = append(keys, k)
-		}
-	default:
-		return fmt.Errorf("keys error: unsupported type %T, expected object", val)
-	}
-
-	jp.Push(keys)
-	return nil
+	return applyCollectionOp(jp, "keys", op, collectionHandlers{
+		objectHandler: func(m map[string]interface{}) (interface{}, error) {
+			keys := make([]string, 0, len(m))
+			for k := range m {
+				keys = append(keys, k)
+			}
+			return keys, nil
+		},
+	})
 }
 
 type collectionHandlers struct {
@@ -1411,17 +1364,14 @@ func (jp *JispProgram) popString(opName string) (string, error) {
 }
 
 func (jp *JispProgram) popKeyValue(opName string) (string, interface{}, error) {
-	if len(jp.Stack) < 2 {
-		return "", nil, fmt.Errorf("stack underflow for %s: expected value and key on stack", opName)
-	}
-	// The key is popped first because it's on top of the value.
-	key, err := pop[string](jp, opName)
+	values, err := jp.popx(opName, 2)
 	if err != nil {
 		return "", nil, err
 	}
-	value, err := jp.popValue(opName)
-	if err != nil {
-		return "", nil, err
+	value := values[0]
+	key, ok := values[1].(string)
+	if !ok {
+		return "", nil, fmt.Errorf("%s error: expected a string key on stack, got %T", opName, values[1])
 	}
 	return key, value, nil
 }
@@ -1479,7 +1429,7 @@ func parseJispOps(raw interface{}) ([]JispOperation, error) {
 	if !ok {
 		return nil, fmt.Errorf("expected body to be an array of operations, got %T", raw)
 	}
-	ops := make([]JispOperation, len(bodyArr))
+	Ops := make([]JispOperation, len(bodyArr))
 	for i, rawOp := range bodyArr {
 		opArr, ok := rawOp.([]interface{}) // Expecting each operation to be an array like [opName, arg1, ...]
 		if !ok {
@@ -1489,33 +1439,79 @@ func parseJispOps(raw interface{}) ([]JispOperation, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error parsing operation at index %d: %w", i, err)
 		}
-		ops[i] = parsedOp
+		Ops[i] = parsedOp
 	}
-	return ops, nil
+	return Ops, nil
 }
 
 func main() {
-	jp := &JispProgram{
-		Stack:     []interface{}{},
-		Variables: make(map[string]interface{}),
-		State:     make(map[string]interface{}),
-	}
-
-	var jispCode JispCode
+	var programData map[string]interface{}
 	decoder := json.NewDecoder(os.Stdin)
-	if err := decoder.Decode(&jispCode); err != nil {
+	if err := decoder.Decode(&programData); err != nil {
 		log.Fatalf("Error reading JISP program from stdin: %v", err)
 	}
 
-	jp.Code = jispCode.Code
+	// Extract code
+	rawCode, ok := programData["code"]
+	if !ok {
+		log.Fatalf("Input JSON must have a 'code' field.")
+	}
+	codeOps, err := parseJispOps(rawCode)
+	if err != nil {
+		log.Fatalf("Error parsing 'code' field: %v", err)
+	}
+
+	// Initialize JispProgram with references to the programData map
+	jp := &JispProgram{
+		Code: codeOps,
+	}
+
+	// Initialize stack
+	if stack, ok := programData["stack"].([]interface{}); ok {
+		jp.Stack = stack
+	} else {
+		jp.Stack = []interface{}{}
+		programData["stack"] = jp.Stack
+	}
+
+	// Initialize variables
+	if variables, ok := programData["variables"].(map[string]interface{}); ok {
+		jp.Variables = variables
+	} else {
+		jp.Variables = make(map[string]interface{})
+		programData["variables"] = jp.Variables
+	}
+
+	// Initialize state
+	if state, ok := programData["state"].(map[string]interface{}); ok {
+		jp.State = state
+	} else {
+		jp.State = make(map[string]interface{})
+		programData["state"] = jp.State
+	}
+
+	// Initialize call stack
+	jp.CallStack = []*CallFrame{
+		{
+			Ip:  0,
+			Ops: jp.Code,
+		},
+	}
+	programData["call_stack"] = jp.CallStack
 
 	if err := jp.ExecuteOperations(jp.Code); err != nil {
 		log.Fatalf("Error during program execution: %v", err)
 	}
 
+	// Update the map with the final state of mutable fields
+	programData["stack"] = jp.Stack
+	programData["variables"] = jp.Variables
+	programData["state"] = jp.State
+	programData["call_stack"] = jp.CallStack
+
 	encoder := json.NewEncoder(os.Stdout)
 	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(jp); err != nil {
+	if err := encoder.Encode(programData); err != nil {
 		log.Fatalf("Error encoding JISP program state to stdout: %v", err)
 	}
 	os.Exit(0)
