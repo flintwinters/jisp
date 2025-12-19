@@ -518,7 +518,7 @@
       "code": [
         [
           "push",
-          1.0
+          1
         ],
         [
           "push",
@@ -529,7 +529,7 @@
         ],
         [
           "push",
-          2.0
+          2
         ],
         [
           "push",
@@ -540,7 +540,7 @@
         ],
         [
           "push",
-          3.0
+          3
         ],
         [
           "push",
@@ -581,15 +581,15 @@
           "properties": {
             "val_a": {
               "type": "number",
-              "const": 1.0
+              "const": 1
             },
             "val_b": {
               "type": "number",
-              "const": 2.0
+              "const": 2
             },
             "val_c": {
               "type": "number",
-              "const": 3.0
+              "const": 3
             }
           },
           "required": [
@@ -603,15 +603,15 @@
           "properties": {
             "a_val": {
               "type": "number",
-              "const": 1.0
+              "const": 1
             },
             "b_val": {
               "type": "number",
-              "const": 2.0
+              "const": 2
             },
             "c_val": {
               "type": "number",
-              "const": 3.0
+              "const": 3
             }
           },
           "required": [
@@ -725,6 +725,314 @@
         "stack",
         "variables",
         "state"
+      ]
+    }
+  },
+  {
+    "description": "Set operation - no arguments, path from stack (string).",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "new_value"
+        ],
+        [
+          "push",
+          "new_var"
+        ],
+        [
+          "set"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "new_var": {
+              "type": "string",
+              "const": "new_value"
+            }
+          },
+          "required": [
+            "new_var"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Set operation - no arguments, path from stack (array).",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "deeply_nested"
+        ],
+        [
+          "push",
+          [
+            "a",
+            "b",
+            "c"
+          ]
+        ],
+        [
+          "set"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "object",
+                  "properties": {
+                    "c": {
+                      "type": "string",
+                      "const": "deeply_nested"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": [
+            "a"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Set operation - one argument (hardcoded string path).",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          42
+        ],
+        [
+          "set",
+          "the_answer"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "the_answer": {
+              "type": "number",
+              "const": 42
+            }
+          },
+          "required": [
+            "the_answer"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Set operation - one argument (hardcoded array path).",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "a_chair"
+        ],
+        [
+          "set",
+          [
+            "home",
+            "room",
+            "furniture"
+          ]
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "home": {
+              "type": "object",
+              "properties": {
+                "room": {
+                  "type": "object",
+                  "properties": {
+                    "furniture": {
+                      "type": "string",
+                      "const": "a_chair"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": [
+            "home"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Set operation - multiple arguments (hardcoded string paths).",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "value1"
+        ],
+        [
+          "push",
+          "value2"
+        ],
+        [
+          "set",
+          "key1",
+          "key2"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "key1": {
+              "type": "string",
+              "const": "value1"
+            },
+            "key2": {
+              "type": "string",
+              "const": "value2"
+            }
+          },
+          "required": [
+            "key1",
+            "key2"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Set operation - multiple arguments (mixed string and array paths).",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          "simple"
+        ],
+        [
+          "push",
+          "complex"
+        ],
+        [
+          "set",
+          "simple_var",
+          [
+            "path",
+            "to",
+            "complex_var"
+          ]
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "simple_var": {
+              "type": "string",
+              "const": "simple"
+            },
+            "path": {
+              "type": "object",
+              "properties": {
+                "to": {
+                  "type": "object",
+                  "properties": {
+                    "complex_var": {
+                      "type": "string",
+                      "const": "complex"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": [
+            "simple_var",
+            "path"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
       ]
     }
   }

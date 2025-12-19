@@ -746,7 +746,6 @@ func continueOp(jp *JispProgram, _ *JispOperation) error {
 	return ErrContinue
 }
 
-func setOp(jp *JispProgram, _ *JispOperation) error    { return jp.Set() }
 func existsOp(jp *JispProgram, _ *JispOperation) error { return jp.Exists() }
 func deleteOp(jp *JispProgram, _ *JispOperation) error { return jp.Delete() }
 func eqOp(jp *JispProgram, _ *JispOperation) error     { return jp.Eq() }
@@ -1027,19 +1026,137 @@ func (jp *JispProgram) Pop(fieldName string) error {
 }
 
 // Set stores a value from the stack into the Variables map using a key from the stack.
-func (jp *JispProgram) Set() error {
-	key, val, err := jp.popKeyValue("set")
-	if err != nil {
-		return err
-	}
+func (jp *JispProgram) setValueForPath(pathVal interface{}, value interface{}) error {
 	if jp.Variables == nil {
 		jp.Variables = make(map[string]interface{})
 	}
-	// Note: In `popKeyValue`, the key is popped first, then the value,
-	// which matches the expected stack order `[..., value, key]`.
-	jp.Variables[key] = val
+
+	switch path := pathVal.(type) {
+	case string:
+		jp.Variables[path] = value
+		return nil
+	case []interface{}:
+		if len(path) == 0 {
+			return fmt.Errorf("set error: path array cannot be empty")
+		}
+		rootKey, ok := path[0].(string)
+		if !ok {
+			return fmt.Errorf("set error: first element of path must be a string variable name, got %T", path[0])
+		}
+
+		if len(path) == 1 {
+			jp.Variables[rootKey] = value
+			return nil
+		}
+
+		// Traverse the path to the second-to-last element
+		var current interface{} = jp.Variables
+		for i := 0; i < len(path)-1; i++ {
+			segment := path[i]
+			switch key := segment.(type) {
+			case string:
+				if m, ok := current.(map[string]interface{}); ok {
+					if next, found := m[key]; found {
+						current = next
+					} else {
+						// Auto-vivify the next level
+						newMap := make(map[string]interface{})
+						m[key] = newMap
+						current = newMap
+					}
+				} else {
+					return fmt.Errorf("set error: trying to access non-map with string key '%s' in path %v", key, path)
+				}
+			case float64:
+				index := int(key)
+				if a, ok := current.([]interface{}); ok {
+					if index >= 0 && index < len(a) {
+						current = a[index]
+					} else {
+						return fmt.Errorf("set error: index %d out of bounds for path %v", index, path)
+					}
+				} else {
+					return fmt.Errorf("set error: trying to access non-array with numeric index %d in path %v", index, path)
+				}
+			default:
+				return fmt.Errorf("set error: invalid path segment type %T in path %v", segment, path)
+			}
+		}
+
+		// Set the value at the final path segment
+		lastSegment := path[len(path)-1]
+		switch key := lastSegment.(type) {
+		case string:
+			if m, ok := current.(map[string]interface{}); ok {
+				m[key] = value
+			} else {
+				return fmt.Errorf("set error: final segment of path is a string key '%s' but the target is not a map in path %v", key, path)
+			}
+		case float64:
+			index := int(key)
+			if a, ok := current.([]interface{}); ok {
+				if index >= 0 && index < len(a) {
+					a[index] = value
+				} else {
+					return fmt.Errorf("set error: final index %d is out of bounds for path %v", index, path)
+				}
+			} else {
+				return fmt.Errorf("set error: final segment of path is a numeric index %d but the target is not an array in path %v", index, path)
+			}
+		default:
+			return fmt.Errorf("set error: invalid final path segment type %T in path %v", lastSegment, path)
+		}
+		return nil
+	default:
+		return fmt.Errorf("set error: expected a string or an array path, got %T", pathVal)
+	}
+}
+
+// setOp stores a value in the Variables map.
+// It supports multiple formats for specifying the path, similar to the getOp.
+func setOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) == 0 {
+		// No args: pop value, then pop path from the stack.
+		values, err := jp.popx("set", 2)
+		if err != nil {
+			return err
+		}
+		// The stack order is [..., value, path], so path is at the top.
+		path := values[1]
+		val := values[0]
+		return jp.setValueForPath(path, val)
+	}
+
+	if len(op.Args) == 1 {
+		// One arg: pop value from stack, use arg as path.
+		pathVal := op.Args[0]
+		value, err := jp.popValue("set")
+		if err != nil {
+			return err
+		}
+		return jp.setValueForPath(pathVal, value)
+	}
+
+	// Multi-args: pop a value for each path argument and set them.
+	// The number of values must match the number of paths.
+	numArgs := len(op.Args)
+	values, err := jp.popx("set", numArgs)
+	if err != nil {
+		return err
+	}
+
+	// Assign values to paths in the correct LIFO order.
+	// The last path gets the last popped value (which was at the top of the stack).
+	for i := 0; i < numArgs; i++ {
+		pathVal := op.Args[i]
+		value := values[i]
+		if err := jp.setValueForPath(pathVal, value); err != nil {
+			return err
+		}
+	}
 	return nil
 }
+
 
 func (jp *JispProgram) getValueByPath(path []interface{}) (interface{}, error) {
 	if len(path) == 0 {
