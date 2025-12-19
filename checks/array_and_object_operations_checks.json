@@ -796,4 +796,102 @@
       ]
     }
   }
+  ,
+  {
+    "description": "Join operation - joins two arrays of objects.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          [
+            {
+              "id": 1.0,
+              "val": "A"
+            },
+            {
+              "id": 2.0,
+              "val": "B"
+            }
+          ]
+        ],
+        [
+          "push",
+          [
+            {
+              "id": 2.0,
+              "data": "C"
+            },
+            {
+              "id": 3.0,
+              "data": "D"
+            }
+          ]
+        ],
+        [
+          "push",
+          "left"
+        ],
+        [
+          "push",
+          "right"
+        ],
+        [
+          "push",
+          [
+            [
+              "push",
+              [
+                "left",
+                "id"
+              ]
+            ],
+            [
+              "get"
+            ],
+            [
+              "push",
+              [
+                "right",
+                "id"
+              ]
+            ],
+            [
+              "get"
+            ],
+            [
+              "eq"
+            ]
+          ]
+        ],
+        [
+          "join"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "array",
+            "const": [
+              {
+                "left": {
+                  "id": 2.0,
+                  "val": "B"
+                },
+                "right": {
+                  "id": 2.0,
+                  "data": "C"
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }
 ]

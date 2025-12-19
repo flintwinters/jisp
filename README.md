@@ -87,7 +87,7 @@ Not happy with this explicit variable declaration.
 - [x] `union`
 - [x] `intersection`
 - [x] `difference`
-- [ ] `join`
+- [x] `join`
 - [x] `range`
 - [x] `noop`
 - [x] `valid`

@@ -194,6 +194,7 @@ func init() {
 		"union":     	unionOp,
 		"intersection": intersectionOp,
 		"difference":   differenceOp,
+		"join":         joinOp,
 		"valid":        validOp,
 	}
 }
@@ -335,6 +336,78 @@ func differenceOp(jp *JispProgram, op *JispOperation) error {
 		}
 	}
 	jp.Push(unique(result))
+	return nil
+}
+
+// joinOp performs a relational-style join on two arrays.
+// It pops five values from the stack:
+// 1. The left array to join.
+// 2. The right array to join.
+// 3. The name to assign to elements from the left array.
+// 4. The name to assign to elements from the right array.
+// 5. The join condition operations.
+// It iterates through the Cartesian product of the two arrays, and for each pair
+// of elements, it executes the condition. If the condition evaluates to true,
+// a new object containing both elements is added to the result array.
+func joinOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("join error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	args, err := jp.popx("join", 5)
+	if err != nil {
+		return err
+	}
+
+	leftArray, ok := args[0].([]interface{})
+	if !ok {
+		return fmt.Errorf("join error: expected an array on stack for left array, got %T", args[0])
+	}
+	rightArray, ok := args[1].([]interface{})
+	if !ok {
+		return fmt.Errorf("join error: expected an array on stack for right array, got %T", args[1])
+	}
+
+	leftName, ok := args[2].(string)
+	if !ok {
+		return fmt.Errorf("join error: expected a string on stack for left name, got %T", args[2])
+	}
+	rightName, ok := args[3].(string)
+	if !ok {
+		return fmt.Errorf("join error: expected a string on stack for right name, got %T", args[3])
+	}
+
+	joinOps, err := parseJispOps(args[4])
+	if err != nil {
+		return fmt.Errorf("join error: invalid operations block: %w", err)
+	}
+
+	var result []interface{}
+
+	for _, leftItem := range leftArray {
+		for _, rightItem := range rightArray {
+			jp.Variables[leftName] = leftItem
+			jp.Variables[rightName] = rightItem
+
+			if err := jp.executeOperationsWithPathSegment(joinOps, "join_ops_from_stack"); err != nil {
+				return err
+			}
+
+			condition, err := pop[bool](jp, "join")
+			if err != nil {
+				return err
+			}
+
+			if condition {
+				result = append(result, map[string]interface{}{
+					leftName:  leftItem,
+					rightName: rightItem,
+				})
+			}
+		}
+	}
+
+	jp.Push(result)
 	return nil
 }
 
