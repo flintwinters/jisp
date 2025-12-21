@@ -1157,6 +1157,48 @@ func (jp *JispProgram) Pop(fieldName string) error {
 	return nil
 }
 
+// navigateToParent traverses a path up to the second-to-last element, returning the container
+// of what the last element of the path refers to. It handles auto-vivification for maps.
+func (jp *JispProgram) navigateToParent(path []interface{}, autoVivify bool, opName string) (interface{}, error) {
+	var current interface{} = jp.Variables
+	for i := 0; i < len(path)-1; i++ {
+		segment := path[i]
+		switch key := segment.(type) {
+		case string:
+			m, ok := current.(map[string]interface{})
+			if !ok {
+				return nil, fmt.Errorf("%s error: trying to access non-map with string key '%s' in path %v", opName, key, path)
+			}
+			if next, found := m[key]; found {
+				current = next
+			} else if autoVivify {
+				newMap := make(map[string]interface{})
+				m[key] = newMap
+				current = newMap
+			} else {
+				if i == 0 {
+					return nil, fmt.Errorf("%s error: variable '%s' not found", opName, key)
+				}
+				return nil, fmt.Errorf("%s error: key '%s' not found in path %v", opName, key, path)
+			}
+		case float64:
+			index := int(key)
+			a, ok := current.([]interface{})
+			if !ok {
+				return nil, fmt.Errorf("%s error: trying to access non-array with numeric index %d in path %v", opName, index, path)
+			}
+			if index >= 0 && index < len(a) {
+				current = a[index]
+			} else {
+				return nil, fmt.Errorf("%s error: index %d out of bounds for path %v", opName, index, path)
+			}
+		default:
+			return nil, fmt.Errorf("%s error: invalid path segment type %T in path %v", opName, segment, path)
+		}
+	}
+	return current, nil
+}
+
 // Set stores a value from the stack into the Variables map using a key from the stack.
 func (jp *JispProgram) setValueForPath(pathVal interface{}, value interface{}) error {
 	if jp.Variables == nil {
@@ -1171,62 +1213,27 @@ func (jp *JispProgram) setValueForPath(pathVal interface{}, value interface{}) e
 		if len(path) == 0 {
 			return fmt.Errorf("set error: path array cannot be empty")
 		}
-		rootKey, ok := path[0].(string)
-		if !ok {
+		if _, ok := path[0].(string); !ok {
 			return fmt.Errorf("set error: first element of path must be a string variable name, got %T", path[0])
 		}
 
-		if len(path) == 1 {
-			jp.Variables[rootKey] = value
-			return nil
-		}
-
-		// Traverse the path to the second-to-last element
-		var current interface{} = jp.Variables
-		for i := 0; i < len(path)-1; i++ {
-			segment := path[i]
-			switch key := segment.(type) {
-			case string:
-				if m, ok := current.(map[string]interface{}); ok {
-					if next, found := m[key]; found {
-						current = next
-					} else {
-						// Auto-vivify the next level
-						newMap := make(map[string]interface{})
-						m[key] = newMap
-						current = newMap
-					}
-				} else {
-					return fmt.Errorf("set error: trying to access non-map with string key '%s' in path %v", key, path)
-				}
-			case float64:
-				index := int(key)
-				if a, ok := current.([]interface{}); ok {
-					if index >= 0 && index < len(a) {
-						current = a[index]
-					} else {
-						return fmt.Errorf("set error: index %d out of bounds for path %v", index, path)
-					}
-				} else {
-					return fmt.Errorf("set error: trying to access non-array with numeric index %d in path %v", index, path)
-				}
-			default:
-				return fmt.Errorf("set error: invalid path segment type %T in path %v", segment, path)
-			}
+		parent, err := jp.navigateToParent(path, true, "set")
+		if err != nil {
+			return err
 		}
 
 		// Set the value at the final path segment
 		lastSegment := path[len(path)-1]
 		switch key := lastSegment.(type) {
 		case string:
-			if m, ok := current.(map[string]interface{}); ok {
+			if m, ok := parent.(map[string]interface{}); ok {
 				m[key] = value
 			} else {
 				return fmt.Errorf("set error: final segment of path is a string key '%s' but the target is not a map in path %v", key, path)
 			}
 		case float64:
 			index := int(key)
-			if a, ok := current.([]interface{}); ok {
+			if a, ok := parent.([]interface{}); ok {
 				if index >= 0 && index < len(a) {
 					a[index] = value
 				} else {
@@ -1295,45 +1302,42 @@ func (jp *JispProgram) getValueByPath(path []interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("get error: path array cannot be empty")
 	}
 
-	rootKey, ok := path[0].(string)
-	if !ok {
+	if _, ok := path[0].(string); !ok {
 		return nil, fmt.Errorf("get error: first element of path must be a string variable name, got %T", path[0])
 	}
 
-	currentVal, found := jp.Variables[rootKey]
-	if !found {
-		return nil, fmt.Errorf("get error: variable '%s' not found", rootKey)
+	parent, err := jp.navigateToParent(path, false, "get")
+	if err != nil {
+		return nil, err
 	}
 
-	for i := 1; i < len(path); i++ {
-		segment := path[i]
-		switch key := segment.(type) {
-		case string:
-			if m, ok := currentVal.(map[string]interface{}); ok {
-				if val, found := m[key]; found {
-					currentVal = val
-				} else {
-					return nil, fmt.Errorf("get error: key '%s' not found in path %v", key, path)
-				}
-			} else {
-				return nil, fmt.Errorf("get error: trying to access non-map with string key '%s' in path %v", key, path)
-			}
-		case float64:
-			index := int(key)
-			if a, ok := currentVal.([]interface{}); ok {
-				if index >= 0 && index < len(a) {
-					currentVal = a[index]
-				} else {
-					return nil, fmt.Errorf("get error: index %d out of bounds for path %v", index, path)
-				}
-			} else {
-				return nil, fmt.Errorf("get error: trying to access non-array with numeric index %d in path %v", index, path)
-			}
-		default:
-			return nil, fmt.Errorf("get error: invalid path segment type %T in path %v", segment, path)
+	lastSegment := path[len(path)-1]
+	switch key := lastSegment.(type) {
+	case string:
+		m, ok := parent.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("get error: trying to access non-map with string key '%s' in path %v", key, path)
 		}
+		if val, found := m[key]; found {
+			return val, nil
+		}
+		if len(path) == 1 {
+			return nil, fmt.Errorf("get error: variable '%s' not found", key)
+		}
+		return nil, fmt.Errorf("get error: key '%s' not found in path %v", key, path)
+	case float64:
+		index := int(key)
+		a, ok := parent.([]interface{})
+		if !ok {
+			return nil, fmt.Errorf("get error: trying to access non-array with numeric index %d in path %v", index, path)
+		}
+		if index >= 0 && index < len(a) {
+			return a[index], nil
+		}
+		return nil, fmt.Errorf("get error: index %d out of bounds for path %v", index, path)
+	default:
+		return nil, fmt.Errorf("get error: invalid final path segment type %T in path %v", lastSegment, path)
 	}
-	return currentVal, nil
 }
 
 // Get retrieves a value from the Variables map and pushes it onto the stack.
