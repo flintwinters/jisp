@@ -63,7 +63,7 @@ type CallFrame struct {
 	Ip       int                    `json:"-"`
 	Ops      []JispOperation        `json:"Ops"`
 	basePath []interface{}
-	Locals   map[string]interface{} `json:"locals,omitempty"`
+	Variables map[string]interface{} `json:"variables,omitempty"`
 }
 
 func (cf *CallFrame) MarshalJSON() ([]byte, error) {
@@ -801,7 +801,7 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interfa
 		Ops:      ops,
 		Ip:       0,
 		basePath: basePath,
-		Locals:   make(map[string]interface{}),
+		Variables: make(map[string]interface{}),
 	}
 	jp.CallStack = append(jp.CallStack, frame)
 
@@ -843,11 +843,40 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interfa
 // --- Operation Handlers ---
 
 func callOp(jp *JispProgram, op *JispOperation) error {
-	// Implementation deferred: This is a placeholder.
-	// The final implementation will pop a function or variable name from the stack,
-	// parse the associated operations, and execute them in a new call frame.
-	// It will need to handle the ErrReturn signal to manage control flow.
-	err := jp.executeOperationsWithPathSegment([]JispOperation{}, "function_call")
+	// Pop the function to be called from the stack.
+	funcVal, err := jp.popValue("call")
+	if err != nil {
+		return err
+	}
+
+	var funcOps []JispOperation
+
+	switch fn := funcVal.(type) {
+	case string:
+		// If it's a string, get the function code from variables.
+		// NOTE: This currently uses the old non-scoped getValueForPath.
+		// This will be updated later.
+		code, err := jp.getValueForPath(fn)
+		if err != nil {
+			return fmt.Errorf("call error: could not find function '%s': %w", fn, err)
+		}
+		funcOps, err = parseJispOps(code)
+		if err != nil {
+			return fmt.Errorf("call error: invalid operations block for function '%s': %w", fn, err)
+		}
+	case []interface{}:
+		// If it's raw code, parse it.
+		var err error
+		funcOps, err = parseJispOps(fn)
+		if err != nil {
+			return fmt.Errorf("call error: invalid raw operations block: %w", err)
+		}
+	default:
+		return fmt.Errorf("call error: expected a function name (string) or raw function code (array) on the stack, got %T", funcVal)
+	}
+
+	// Execute the function's operations.
+	err = jp.executeOperationsWithPathSegment(funcOps, "function_call")
 	if err != nil && !errors.Is(err, ErrReturn) {
 		return err // It was a real error, not a return.
 	}
