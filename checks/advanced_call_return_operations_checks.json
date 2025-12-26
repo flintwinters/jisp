@@ -81,7 +81,7 @@
             ["push", 5.0],
             ["get", "make_adder"],
             ["call"],
-            ["pop", "add5_func"],
+            ["set", "add5_func"],
 
             ["push", 10.0],
             ["get", "add5_func"],
