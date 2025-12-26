@@ -51,6 +51,60 @@
     }
   },
   {
+    "description": "Call and return - basic function call with argument and return value.",
+    "jisp_program": {
+      "variables": {
+        "add_one_func": [
+          ["set", "x"],
+          ["get", "x"],
+          ["push", 1.0],
+          ["add"],
+          ["return"]
+        ]
+      },
+      "code": [
+        ["push", 5.0],
+        ["push", "add_one_func"],
+        ["get"],
+        ["call"],
+        ["push", "add_one_func"],
+        ["get"],
+        ["call"],
+        ["pop", "result"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "add_one_func": {
+              "type": "array"
+            }
+          },
+          "required": ["add_one_func"],
+          "additionalProperties": false
+        },
+        "state": {
+          "type": "object",
+          "properties": {
+            "result": {
+              "type": "number",
+              "const": 7.0
+            }
+          },
+          "required": ["result"]
+        }
+      },
+      "required": ["stack", "variables", "state"]
+    }
+  },
+  {
     "description": "Call and return - nested function calls, demonstrating local scoping.",
     "jisp_program": {
       "variables": {
