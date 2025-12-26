@@ -392,7 +392,7 @@ func joinOp(jp *JispProgram, op *JispOperation) error {
 			jp.Variables[leftName] = leftItem
 			jp.Variables[rightName] = rightItem
 
-			if err := jp.executeOperationsWithPathSegment(joinOps, "join_ops_from_stack"); err != nil {
+			if err := jp.executeOperationsWithPathSegment(joinOps, "join_ops_from_stack", false); err != nil {
 				return err
 			}
 
@@ -515,7 +515,7 @@ func reduceOp(jp *JispProgram, op *JispOperation) error {
 
 		previousStackLen := len(jp.Stack) // Store stack length before executing reduceOps
 
-		if err := jp.executeOperationsWithPathSegment(reduceOps, "reduce_ops_from_stack"); err != nil {
+		if err := jp.executeOperationsWithPathSegment(reduceOps, "reduce_ops_from_stack", false); err != nil {
 			return err
 		}
 
@@ -560,7 +560,7 @@ func mapOp(jp *JispProgram, op *JispOperation) error {
 	result, err := applyCollectionLoop(jp, "map", input, varName, mapOps, "map_ops_from_stack",
 		func(jp *JispProgram, item interface{}, varName string, bodyOps []JispOperation, pathSegment string) (interface{}, error) {
 			jp.Variables[varName] = item
-			if err := jp.executeOperationsWithPathSegment(bodyOps, pathSegment); err != nil {
+			if err := jp.executeOperationsWithPathSegment(bodyOps, pathSegment, false); err != nil {
 				return nil, err
 			}
 			res, err := jp.popValue("map")
@@ -605,7 +605,7 @@ func filterOp(jp *JispProgram, op *JispOperation) error {
 	result, err := applyCollectionLoop(jp, "filter", input, varName, conditionOps, "filter_ops_from_stack",
 		func(jp *JispProgram, item interface{}, varName string, bodyOps []JispOperation, pathSegment string) (interface{}, error) {
 			jp.Variables[varName] = item
-			if err := jp.executeOperationsWithPathSegment(bodyOps, pathSegment); err != nil {
+			if err := jp.executeOperationsWithPathSegment(bodyOps, pathSegment, false); err != nil {
 				return nil, err
 			}
 			condition, err := pop[bool](jp, "filter")
@@ -782,26 +782,39 @@ func (jp *JispProgram) currentInstructionPath() []interface{} {
 // executeOperationsWithPathSegment is a helper to execute operations with a derived JSON path.
 // It takes a path segment (string or int) and appends it to the current instruction path
 // before executing the given operations.
-func (jp *JispProgram) executeOperationsWithPathSegment(ops []JispOperation, segment interface{}) error {
+func (jp *JispProgram) executeOperationsWithPathSegment(ops []JispOperation, segment interface{}, useParentScope bool) error {
 	parentPath := jp.currentInstructionPath()
 	// It's crucial to copy the parentPath to avoid mutations across different branches of execution.
 	path := make([]interface{}, len(parentPath)+1)
 	copy(path, parentPath)
 	path[len(parentPath)] = segment
-	return jp.ExecuteOperations(ops, path)
+	return jp.ExecuteOperations(ops, path, useParentScope)
 }
 
 // ExecuteOperations pushes a new call frame for the given operations and executes them.
 // It manages the instruction pointer within this frame and handles control flow.
-func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interface{}) error {
+func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interface{}, useParentScope bool) error {
 	if len(ops) == 0 {
 		return nil
 	}
+
+	var frameVars map[string]interface{}
+	parentFrame := jp.currentFrame() // Get parent *before* pushing new one
+
+	if useParentScope && parentFrame != nil {
+		frameVars = parentFrame.Variables
+	} else if parentFrame == nil {
+		// This is the first frame (global scope), so use the global variables map.
+		frameVars = jp.Variables
+	} else {
+		frameVars = make(map[string]interface{})
+	}
+
 	frame := &CallFrame{
-		Ops:      ops,
-		Ip:       0,
-		basePath: basePath,
-		Variables: make(map[string]interface{}),
+		Ops:       ops,
+		Ip:        0,
+		basePath:  basePath,
+		Variables: frameVars,
 	}
 	jp.CallStack = append(jp.CallStack, frame)
 
@@ -876,7 +889,7 @@ func callOp(jp *JispProgram, op *JispOperation) error {
 	}
 
 	// Execute the function's operations.
-	err = jp.executeOperationsWithPathSegment(funcOps, "function_call")
+	err = jp.executeOperationsWithPathSegment(funcOps, "function_call", false)
 	if err != nil && !errors.Is(err, ErrReturn) {
 		return err // It was a real error, not a return.
 	}
@@ -1074,7 +1087,7 @@ func whileOp(jp *JispProgram, op *JispOperation) error {
 			break
 		}
 
-		if err := jp.executeOperationsWithPathSegment(bodyOps, 1); err != nil {
+		if err := jp.executeOperationsWithPathSegment(bodyOps, 1, true); err != nil {
 			// Handle break and continue signals
 			if errors.Is(err, ErrBreak) {
 				break // Exit the while loop
@@ -1271,7 +1284,13 @@ func (jp *JispProgram) setValueForPath(pathVal interface{}, value interface{}) e
 
 	switch path := pathVal.(type) {
 	case string:
-		jp.Variables[path] = value
+		frame := jp.currentFrame()
+		if frame != nil {
+			frame.Variables[path] = value
+		} else {
+			// If no frame (global scope), set in global variables
+			jp.Variables[path] = value
+		}
 		return nil
 	case []interface{}:
 		if len(path) == 0 {
@@ -1406,12 +1425,16 @@ func (jp *JispProgram) getValueByPath(path []interface{}) (interface{}, error) {
 // Get retrieves a value from the Variables map and pushes it onto the stack.
 // The key can be a string for a top-level variable, or an array for a nested value.
 func (jp *JispProgram) getValueForPath(pathVal interface{}) (interface{}, error) {
-	// TODO: Implement lexical scoping.
-	// 1. Check the local variables of the current call frame.
-	// 2. If not found, traverse up the call stack, checking each frame's locals.
-	// 3. If still not found, check the global `jp.Variables`.
 	switch path := pathVal.(type) {
 	case string:
+		// 1. Search up the call stack.
+		for i := len(jp.CallStack) - 1; i >= 0; i-- {
+			frame := jp.CallStack[i]
+			if val, found := frame.Variables[path]; found {
+				return val, nil
+			}
+		}
+		// 2. If not found in any call frame, check global variables.
 		val, found := jp.Variables[path]
 		if !found {
 			return nil, fmt.Errorf("get error: variable '%s' not found", path)
@@ -1579,9 +1602,9 @@ func (jp *JispProgram) If(thenBody, elseBody []JispOperation) error {
 	}
 
 	if condition {
-		return jp.executeOperationsWithPathSegment(thenBody, 0)
+		return jp.executeOperationsWithPathSegment(thenBody, 0, true)
 	} else if elseBody != nil {
-		return jp.executeOperationsWithPathSegment(elseBody, 1)
+		return jp.executeOperationsWithPathSegment(elseBody, 1, true)
 	}
 	return nil
 }
@@ -1602,7 +1625,7 @@ func (jp *JispProgram) Try(tryBody []JispOperation, catchVar string, catchBody [
 	}()
 
 	// Execute tryBody
-	if tryErr := jp.executeOperationsWithPathSegment(tryBody, 0); tryErr != nil {
+	if tryErr := jp.executeOperationsWithPathSegment(tryBody, 0, true); tryErr != nil {
 		if jispErr, ok := tryErr.(*JispError); ok {
 			// JispError occurred, handle it with the catch block
 			return jp.handleCaughtError(jispErr, catchVar, catchBody, 2)
@@ -1649,7 +1672,7 @@ func (jp *JispProgram) For(loopVar string, collection interface{}, bodyOps []Jis
 
 // executeLoopBody runs the operations in a loop's body and handles break/continue.
 func (jp *JispProgram) executeLoopBody(bodyOps []JispOperation, bodyOpsPathSegment interface{}) error {
-	err := jp.executeOperationsWithPathSegment(bodyOps, bodyOpsPathSegment)
+	err := jp.executeOperationsWithPathSegment(bodyOps, bodyOpsPathSegment, true)
 	if err != nil {
 		if errors.Is(err, ErrContinue) {
 			return nil // Signal to continue to next iteration
@@ -1677,7 +1700,7 @@ func (jp *JispProgram) handleCaughtError(caught interface{}, catchVar string, ca
 
 	// Execute catchBody
 	if catchBody != nil {
-		return jp.executeOperationsWithPathSegment(catchBody, catchBodyPathSegment)
+		return jp.executeOperationsWithPathSegment(catchBody, catchBodyPathSegment, true)
 	}
 	return nil // If no catchBody, just absorb the error
 }
@@ -1885,15 +1908,10 @@ func main() {
 	}
 
 	// Initialize call stack
-	jp.CallStack = []*CallFrame{
-		{
-			Ip:  0,
-			Ops: jp.Code,
-		},
-	}
+	jp.CallStack = []*CallFrame{}
 	programData["call_stack"] = jp.CallStack
 
-	executionErr := jp.ExecuteOperations(jp.Code, []interface{}{"code"})
+	executionErr := jp.ExecuteOperations(jp.Code, []interface{}{"code"}, false)
 
 	// Update the map with the final state of mutable fields
 	programData["stack"] = jp.Stack

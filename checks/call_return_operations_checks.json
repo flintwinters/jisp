@@ -96,17 +96,10 @@
             },
             "inner_func": {
               "type": "array"
-            },
-            "outer_arg": {
-              "type": "number",
-              "const": 3.0
-            },
-            "inner_arg": {
-              "type": "number",
-              "const": 10.0
             }
           },
-          "required": ["outer_func", "inner_func", "outer_arg", "inner_arg"]
+          "required": ["outer_func", "inner_func"],
+          "additionalProperties": false
         },
         "state": {
           "type": "object",
@@ -224,10 +217,10 @@
             "variables": {
                 "type": "object",
                 "properties": {
-                    "factorial_code": { "type": "array" },
-                    "n": { "type": "number", "const": 1.0 }
+                    "factorial_code": { "type": "array" }
                 },
-                "required": ["factorial_code", "n"]
+                "required": ["factorial_code"],
+                "additionalProperties": false
             },
             "state": {
                 "type": "object",
