@@ -60,9 +60,10 @@ func parseRawOperation(rawOp []interface{}) (JispOperation, error) {
 // CallFrame represents a single frame on the call stack, holding the instruction
 // pointer and the operations for its execution context.
 type CallFrame struct {
-	Ip       int             `json:"-"`
-	Ops      []JispOperation `json:"Ops"`
+	Ip       int                    `json:"-"`
+	Ops      []JispOperation        `json:"Ops"`
 	basePath []interface{}
+	Locals   map[string]interface{} `json:"locals,omitempty"`
 }
 
 func (cf *CallFrame) MarshalJSON() ([]byte, error) {
@@ -149,53 +150,55 @@ var operations map[string]operationHandler
 
 func init() {
 	operations = map[string]operationHandler{
-		"push":      	pushOp,
-		"pop":       	popOp,
-		"set":       	setOp,
-		"get":       	getOp,
-		"exists":    	existsOp,
-		"delete":    	deleteOp,
-		"eq":        	eqOp,
-		"lt":        	ltOp,
-		"gt":        	gtOp,
-		"add":       	addOp,
-		"sub":       	subOp,
-		"mul":       	mulOp,
-		"div":       	divOp,
-		"mod":       	modOp,
-		"and":       	andOp,
-		"or":        	orOp,
-		"not":       	notOp,
-		"if":        	ifOp,
-		"while":     	whileOp,
-		"trim":      	trimOp,
-		"lower":     	lowerOp,
-		"upper":     	upperOp,
-		"to_string": 	toStringOp,
-		"concat":    	concatOp,
-		"break":     	breakOp,
-		"continue":  	continueOp,
-		"len":       	lenOp,
-		"keys":      	keysOp,
-		"values":    	valuesOp,
-		"noop":      	noopOp,
-		"try":       	tryOp,
-		"replace":   	replaceOp,
-		"for":       	forOp,
-		"slice":     	sliceOp,
-		"raise":     	raiseOp,
-		"assert":    	assertOp,
-		"range":     	rangeOp,
-		"foreach":   	forOp,
-		"filter":    	filterOp,
-		"map":       	mapOp,
-		"reduce":    	reduceOp,
-		"sort":      	sortOp,
-		"union":     	unionOp,
+		"push":         pushOp,
+		"pop":          popOp,
+		"set":          setOp,
+		"get":          getOp,
+		"exists":       existsOp,
+		"delete":       deleteOp,
+		"eq":           eqOp,
+		"lt":           ltOp,
+		"gt":           gtOp,
+		"add":          addOp,
+		"sub":          subOp,
+		"mul":          mulOp,
+		"div":          divOp,
+		"mod":          modOp,
+		"and":          andOp,
+		"or":           orOp,
+		"not":          notOp,
+		"if":           ifOp,
+		"while":        whileOp,
+		"trim":         trimOp,
+		"lower":        lowerOp,
+		"upper":        upperOp,
+		"to_string":    toStringOp,
+		"concat":       concatOp,
+		"break":        breakOp,
+		"continue":     continueOp,
+		"len":          lenOp,
+		"keys":         keysOp,
+		"values":       valuesOp,
+		"noop":         noopOp,
+		"try":          tryOp,
+		"replace":      replaceOp,
+		"for":          forOp,
+		"slice":        sliceOp,
+		"raise":        raiseOp,
+		"assert":       assertOp,
+		"range":        rangeOp,
+		"foreach":      forOp,
+		"filter":       filterOp,
+		"map":          mapOp,
+		"reduce":       reduceOp,
+		"sort":         sortOp,
+		"union":        unionOp,
 		"intersection": intersectionOp,
 		"difference":   differenceOp,
 		"join":         joinOp,
 		"valid":        validOp,
+		"call":         callOp,
+		"return":       returnOp,
 	}
 }
 
@@ -794,7 +797,12 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interfa
 	if len(ops) == 0 {
 		return nil
 	}
-	frame := &CallFrame{Ops: ops, Ip: 0, basePath: basePath}
+	frame := &CallFrame{
+		Ops:      ops,
+		Ip:       0,
+		basePath: basePath,
+		Locals:   make(map[string]interface{}),
+	}
 	jp.CallStack = append(jp.CallStack, frame)
 
 	// Defer popping the frame. This ensures that the call stack is cleaned up
@@ -816,8 +824,10 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interfa
 		if err := handler(jp, &op); err != nil {
 			var jispErr *JispError
 			switch {
-			case errors.Is(err, ErrBreak), errors.Is(err, ErrContinue), errors.Is(err, ErrReturn):
+			case errors.Is(err, ErrBreak), errors.Is(err, ErrContinue):
 				return err // Propagate control flow signals directly
+			case errors.Is(err, ErrReturn):
+				return err // Propagate return signal to be handled by callOp
 			case errors.As(err, &jispErr):
 				return err // Already a JispError, propagate
 			default:
@@ -831,6 +841,25 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interfa
 }
 
 // --- Operation Handlers ---
+
+func callOp(jp *JispProgram, op *JispOperation) error {
+	// Implementation deferred: This is a placeholder.
+	// The final implementation will pop a function or variable name from the stack,
+	// parse the associated operations, and execute them in a new call frame.
+	// It will need to handle the ErrReturn signal to manage control flow.
+	err := jp.executeOperationsWithPathSegment([]JispOperation{}, "function_call")
+	if err != nil && !errors.Is(err, ErrReturn) {
+		return err // It was a real error, not a return.
+	}
+	return nil // It was a normal return, so we continue.
+}
+
+func returnOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) > 0 {
+		return fmt.Errorf("return error: expected 0 arguments, got %d", len(op.Args))
+	}
+	return ErrReturn
+}
 
 func pushOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) == 0 {
@@ -991,45 +1020,44 @@ func whileOp(jp *JispProgram, op *JispOperation) error {
 
 	conditionPathRaw := op.Args[0]
 	conditionPath, ok := conditionPathRaw.(string)
-		if !ok {
-			return fmt.Errorf("while error: expected condition path to be a string, got %T", conditionPathRaw)
-		}
-	
-		bodyOps, err := parseJispOps(op.Args[1])
+	if !ok {
+		return fmt.Errorf("while error: expected condition path to be a string, got %T", conditionPathRaw)
+	}
+
+	bodyOps, err := parseJispOps(op.Args[1])
+	if err != nil {
+		return fmt.Errorf("while error in 'body' operations: %w", err)
+	}
+
+	for {
+		// Get the value of the condition variable
+		conditionVal, err := jp.getValueForPath(conditionPath)
 		if err != nil {
-					return fmt.Errorf("while error in 'body' operations: %w", err)
-				}
-			
-				for {
-					// Get the value of the condition variable
-					conditionVal, err := jp.getValueForPath(conditionPath)
-					if err != nil {
-						return fmt.Errorf("while error: failed to get condition variable '%s': %w", conditionPath, err)
-					}
-			
-			
-					condition, ok := conditionVal.(bool)
-					if !ok {
-						return fmt.Errorf("while error: expected boolean condition at '%s', got %T", conditionPath, conditionVal)
-					}
-			
-					if !condition {
-						break
-					}
-			
-					if err := jp.executeOperationsWithPathSegment(bodyOps, 1); err != nil {
-						// Handle break and continue signals
-						if errors.Is(err, ErrBreak) {
-							break // Exit the while loop
-						}
-						if errors.Is(err, ErrContinue) {
-							continue // Skip to the next iteration of the while loop
-						}
-						return fmt.Errorf("while error during body execution: %w", err)
-					}
-				}
-				return nil
+			return fmt.Errorf("while error: failed to get condition variable '%s': %w", conditionPath, err)
+		}
+
+		condition, ok := conditionVal.(bool)
+		if !ok {
+			return fmt.Errorf("while error: expected boolean condition at '%s', got %T", conditionPath, conditionVal)
+		}
+
+		if !condition {
+			break
+		}
+
+		if err := jp.executeOperationsWithPathSegment(bodyOps, 1); err != nil {
+			// Handle break and continue signals
+			if errors.Is(err, ErrBreak) {
+				break // Exit the while loop
 			}
+			if errors.Is(err, ErrContinue) {
+				continue // Skip to the next iteration of the while loop
+			}
+			return fmt.Errorf("while error during body execution: %w", err)
+		}
+	}
+	return nil
+}
 
 func lenOp(jp *JispProgram, op *JispOperation) error {
 	return applyCollectionOp(jp, "len", op, collectionHandlers{
@@ -1160,6 +1188,9 @@ func (jp *JispProgram) Pop(fieldName string) error {
 // navigateToParent traverses a path up to the second-to-last element, returning the container
 // of what the last element of the path refers to. It handles auto-vivification for maps.
 func (jp *JispProgram) navigateToParent(path []interface{}, autoVivify bool, opName string) (interface{}, error) {
+	// TODO: Implement lexical scoping for the root of the path.
+	// The first segment of the path should be resolved using the new scope-aware logic.
+	// Subsequent segments navigate within the retrieved object as before.
 	var current interface{} = jp.Variables
 	for i := 0; i < len(path)-1; i++ {
 		segment := path[i]
@@ -1201,6 +1232,10 @@ func (jp *JispProgram) navigateToParent(path []interface{}, autoVivify bool, opN
 
 // Set stores a value from the stack into the Variables map using a key from the stack.
 func (jp *JispProgram) setValueForPath(pathVal interface{}, value interface{}) error {
+	// TODO: Implement lexical scoping.
+	// 1. For a simple string path, set the variable in the current frame's locals.
+	// 2. For a complex path `["var", "key"]`, use the scoped `getValueForPath` to find "var"
+	//    and then modify it in place.
 	if jp.Variables == nil {
 		jp.Variables = make(map[string]interface{})
 	}
@@ -1296,7 +1331,6 @@ func setOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
-
 func (jp *JispProgram) getValueByPath(path []interface{}) (interface{}, error) {
 	if len(path) == 0 {
 		return nil, fmt.Errorf("get error: path array cannot be empty")
@@ -1343,6 +1377,10 @@ func (jp *JispProgram) getValueByPath(path []interface{}) (interface{}, error) {
 // Get retrieves a value from the Variables map and pushes it onto the stack.
 // The key can be a string for a top-level variable, or an array for a nested value.
 func (jp *JispProgram) getValueForPath(pathVal interface{}) (interface{}, error) {
+	// TODO: Implement lexical scoping.
+	// 1. Check the local variables of the current call frame.
+	// 2. If not found, traverse up the call stack, checking each frame's locals.
+	// 3. If still not found, check the global `jp.Variables`.
 	switch path := pathVal.(type) {
 	case string:
 		val, found := jp.Variables[path]
@@ -1385,7 +1423,6 @@ func getOp(jp *JispProgram, op *JispOperation) error {
 	}
 	return nil
 }
-
 
 // Exists checks if a variable exists and pushes the boolean result onto the stack.
 func (jp *JispProgram) Exists() error {
@@ -1645,8 +1682,6 @@ func (jp *JispProgram) popValue(opName string) (interface{}, error) {
 	jp.Stack = jp.Stack[:len(jp.Stack)-1]
 	return val, nil
 }
-
-
 
 // popTwo pops two values of the same type T from the stack.
 func popTwo[T any](jp *JispProgram, opName string) (T, T, error) {
