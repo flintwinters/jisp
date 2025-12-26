@@ -40,29 +40,21 @@
             "my_variable": {
               "type": "string",
               "const": "Hello, JISP!"
-            }
-          },
-          "required": [
-            "my_variable"
-          ]
-        },
-        "state": {
-          "type": "object",
-          "properties": {
+            },
             "retrieved_message": {
               "type": "string",
               "const": "Hello, JISP!"
             }
           },
           "required": [
+            "my_variable",
             "retrieved_message"
           ]
         }
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },
@@ -113,16 +105,11 @@
           "required": [
             "existing_var"
           ]
-        },
-        "state": {
-          "type": "object",
-          "maxProperties": 0
         }
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },
@@ -154,16 +141,11 @@
         "variables": {
           "type": "object",
           "maxProperties": 0
-        },
-        "state": {
-          "type": "object",
-          "maxProperties": 0
         }
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },
@@ -201,16 +183,11 @@
         "variables": {
           "type": "object",
           "maxProperties": 0
-        },
-        "state": {
-          "type": "object",
-          "maxProperties": 0
         }
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },
@@ -255,29 +232,21 @@
             "my_var": {
               "type": "string",
               "const": "stack_value"
-            }
-          },
-          "required": [
-            "my_var"
-          ]
-        },
-        "state": {
-          "type": "object",
-          "properties": {
+            },
             "retrieved_value": {
               "type": "string",
               "const": "stack_value"
             }
           },
           "required": [
+            "my_var",
             "retrieved_value"
           ]
         }
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },
@@ -340,29 +309,21 @@
                   }
                 }
               }
-            }
-          },
-          "required": [
-            "my_object"
-          ]
-        },
-        "state": {
-          "type": "object",
-          "properties": {
+            },
             "retrieved_nested_value": {
               "type": "string",
               "const": "nested_value"
             }
           },
           "required": [
+            "my_object",
             "retrieved_nested_value"
           ]
         }
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },
@@ -404,29 +365,21 @@
             "another_var": {
               "type": "string",
               "const": "arg_value"
-            }
-          },
-          "required": [
-            "another_var"
-          ]
-        },
-        "state": {
-          "type": "object",
-          "properties": {
+            },
             "retrieved_arg_value": {
               "type": "string",
               "const": "arg_value"
             }
           },
           "required": [
+            "another_var",
             "retrieved_arg_value"
           ]
         }
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },
@@ -486,29 +439,21 @@
                   }
                 }
               }
-            }
-          },
-          "required": [
-            "obj_var"
-          ]
-        },
-        "state": {
-          "type": "object",
-          "properties": {
+            },
             "retrieved_deep_value": {
               "type": "string",
               "const": "deep_value"
             }
           },
           "required": [
+            "obj_var",
             "retrieved_deep_value"
           ]
         }
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },
@@ -590,31 +535,24 @@
             "val_c": {
               "type": "number",
               "const": 3
-            }
-          },
-          "required": [
-            "val_a",
-            "val_b",
-            "val_c"
-          ]
-        },
-        "state": {
-          "type": "object",
-          "properties": {
-            "a_val": {
+            },
+            "c_val": {
               "type": "number",
-              "const": 1
+              "const": 3
             },
             "b_val": {
               "type": "number",
               "const": 2
             },
-            "c_val": {
+            "a_val": {
               "type": "number",
-              "const": 3
+              "const": 1
             }
           },
           "required": [
+            "val_a",
+            "val_b",
+            "val_c",
             "a_val",
             "b_val",
             "c_val"
@@ -623,8 +561,7 @@
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },
@@ -696,26 +633,19 @@
                   "const": "second"
                 }
               }
-            }
-          },
-          "required": [
-            "str_var",
-            "obj_var"
-          ]
-        },
-        "state": {
-          "type": "object",
-          "properties": {
-            "first_val": {
-              "type": "string",
-              "const": "first"
             },
             "second_val": {
               "type": "string",
               "const": "second"
+            },
+            "first_val": {
+              "type": "string",
+              "const": "first"
             }
           },
           "required": [
+            "str_var",
+            "obj_var",
             "first_val",
             "second_val"
           ]
@@ -723,8 +653,7 @@
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },

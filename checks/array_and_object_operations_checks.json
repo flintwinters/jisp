@@ -53,7 +53,7 @@
           "type": "array",
           "maxItems": 0
         },
-        "state": {
+        "variables": {
           "type": "object",
           "properties": {
             "string_length": {
@@ -74,15 +74,10 @@
             "array_length",
             "object_length"
           ]
-        },
-        "variables": {
-          "type": "object",
-          "maxProperties": 0
         }
       },
       "required": [
         "stack",
-        "state",
         "variables"
       ]
     }
@@ -115,7 +110,7 @@
           "type": "array",
           "maxItems": 0
         },
-        "state": {
+        "variables": {
           "type": "object",
           "properties": {
             "object_keys": {
@@ -131,15 +126,10 @@
           "required": [
             "object_keys"
           ]
-        },
-        "variables": {
-          "type": "object",
-          "maxProperties": 0
         }
       },
       "required": [
         "stack",
-        "state",
         "variables"
       ]
     }
@@ -172,7 +162,7 @@
           "type": "array",
           "maxItems": 0
         },
-        "state": {
+        "variables": {
           "type": "object",
           "properties": {
             "object_values": {
@@ -186,15 +176,10 @@
           "required": [
             "object_values"
           ]
-        },
-        "variables": {
-          "type": "object",
-          "maxProperties": 0
         }
       },
       "required": [
         "stack",
-        "state",
         "variables"
       ]
     }
@@ -233,7 +218,7 @@
           "type": "array",
           "maxItems": 0
         },
-        "state": {
+        "variables": {
           "type": "object",
           "properties": {
             "sliced_array": {
@@ -251,15 +236,10 @@
           "required": [
             "sliced_array"
           ]
-        },
-        "variables": {
-          "type": "object",
-          "maxProperties": 0
         }
       },
       "required": [
         "stack",
-        "state",
         "variables"
       ]
     }
@@ -302,7 +282,7 @@
           "type": "array",
           "maxItems": 0
         },
-        "state": {
+        "variables": {
           "type": "object",
           "properties": {
             "another_sliced_array": {
@@ -320,15 +300,10 @@
           "required": [
             "another_sliced_array"
           ]
-        },
-        "variables": {
-          "type": "object",
-          "maxProperties": 0
         }
       },
       "required": [
         "stack",
-        "state",
         "variables"
       ]
     }

@@ -49,16 +49,18 @@
         "type": "object",
         "properties": {
             "stack": { "type": "array", "maxItems": 0 },
-            "state": {
+            "variables": {
                 "type": "object",
                 "properties": {
+                    "is_even": { "type": "array" },
+                    "is_odd": { "type": "array" },
                     "is_5_odd": { "type": "boolean", "const": true },
                     "is_6_even": { "type": "boolean", "const": true }
                 },
-                "required": ["is_5_odd", "is_6_even"]
+                "required": ["is_even", "is_odd", "is_5_odd", "is_6_even"]
             }
         },
-        "required": ["stack", "state"]
+        "required": ["stack", "variables"]
     }
   },
   {
@@ -119,24 +121,18 @@
       "type": "object",
       "properties": {
         "stack": { "type": "array", "maxItems": 0 },
-        "state": {
-          "type": "object",
-          "properties": {
-            "func_result": { "type": "number", "const": 6.0 },
-            "global_x_after_call": { "type": "number", "const": 100.0 }
-          },
-          "required": ["func_result", "global_x_after_call"]
-        },
         "variables": {
           "type": "object",
           "properties": {
             "x": { "type": "number", "const": 100.0 },
-            "shadow_func": { "type": "array" }
+            "shadow_func": { "type": "array" },
+            "func_result": { "type": "number", "const": 6.0 },
+            "global_x_after_call": { "type": "number", "const": 100.0 }
           },
-          "required": ["x", "shadow_func"]
+          "required": ["x", "shadow_func", "func_result", "global_x_after_call"]
         }
       },
-      "required": ["stack", "state", "variables"]
+      "required": ["stack", "variables"]
     }
   }
 ]

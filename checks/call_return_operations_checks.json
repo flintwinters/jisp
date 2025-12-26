@@ -31,23 +31,17 @@
           "properties": {
             "add_one_func": {
               "type": "array"
-            }
-          },
-          "required": ["add_one_func"],
-          "additionalProperties": false
-        },
-        "state": {
-          "type": "object",
-          "properties": {
+            },
             "result": {
               "type": "number",
               "const": 6.0
             }
           },
-          "required": ["result"]
+          "required": ["add_one_func", "result"],
+          "additionalProperties": false
         }
       },
-      "required": ["stack", "variables", "state"]
+      "required": ["stack", "variables"]
     }
   },
   {
@@ -85,23 +79,17 @@
           "properties": {
             "add_one_func": {
               "type": "array"
-            }
-          },
-          "required": ["add_one_func"],
-          "additionalProperties": false
-        },
-        "state": {
-          "type": "object",
-          "properties": {
+            },
             "result": {
               "type": "number",
               "const": 7.0
             }
           },
-          "required": ["result"]
+          "required": ["add_one_func", "result"],
+          "additionalProperties": false
         }
       },
-      "required": ["stack", "variables", "state"]
+      "required": ["stack", "variables"]
     }
   },
   {
@@ -150,23 +138,17 @@
             },
             "inner_func": {
               "type": "array"
-            }
-          },
-          "required": ["outer_func", "inner_func"],
-          "additionalProperties": false
-        },
-        "state": {
-          "type": "object",
-          "properties": {
+            },
             "final_result": {
               "type": "number",
               "const": 23.0
             }
           },
-          "required": ["final_result"]
+          "required": ["outer_func", "inner_func", "final_result"],
+          "additionalProperties": false
         }
       },
-      "required": ["stack", "variables", "state"]
+      "required": ["stack", "variables"]
     }
   },
   {
@@ -217,22 +199,16 @@
             },
             "modify_func": {
               "type": "array"
-            }
-          },
-          "required": ["my_object", "modify_func"]
-        },
-        "state": {
-          "type": "object",
-          "properties": {
+            },
             "modified_data": {
               "type": "number",
               "const": 10.0
             }
           },
-          "required": ["modified_data"]
+          "required": ["my_object", "modify_func", "modified_data"]
         }
       },
-      "required": ["stack", "variables", "state"]
+      "required": ["stack", "variables"]
     }
   },
   {
@@ -271,20 +247,14 @@
             "variables": {
                 "type": "object",
                 "properties": {
-                    "factorial_code": { "type": "array" }
-                },
-                "required": ["factorial_code"],
-                "additionalProperties": false
-            },
-            "state": {
-                "type": "object",
-                "properties": {
+                    "factorial_code": { "type": "array" },
                     "result": { "type": "number", "const": 120.0 }
                 },
-                "required": ["result"]
+                "required": ["factorial_code", "result"],
+                "additionalProperties": false
             }
         },
-        "required": ["stack", "variables", "state"]
+        "required": ["stack", "variables"]
     }
   }
 ]

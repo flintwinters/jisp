@@ -84,7 +84,6 @@ func (cf *CallFrame) MarshalJSON() ([]byte, error) {
 type JispProgram struct {
 	Stack      []interface{}          `json:"stack"`
 	Variables  map[string]interface{} `json:"variables"`
-	State      map[string]interface{} `json:"state"`      // For pop operation target
 	Code       []JispOperation        `json:"-"`          // The main program code
 	CallStack  []*CallFrame           `json:"call_stack"` // Stack for function calls
 }
@@ -867,8 +866,7 @@ func callOp(jp *JispProgram, op *JispOperation) error {
 	switch fn := funcVal.(type) {
 	case string:
 		// If it's a string, get the function code from variables.
-		// NOTE: This currently uses the old non-scoped getValueForPath.
-		// This will be updated later.
+		// This will fetch from the current scope first, then global.
 		code, err := jp.getValueForPath(fn)
 		if err != nil {
 			return fmt.Errorf("call error: could not find function '%s': %w", fn, err)
@@ -1220,10 +1218,10 @@ func (jp *JispProgram) Pop(fieldName string) error {
 	if err != nil {
 		return err
 	}
-	if jp.State == nil {
-		jp.State = make(map[string]interface{})
+	if jp.Variables == nil {
+		jp.Variables = make(map[string]interface{})
 	}
-	jp.State[fieldName] = value
+	jp.Variables[fieldName] = value
 	return nil
 }
 
@@ -1899,14 +1897,6 @@ func main() {
 		programData["variables"] = jp.Variables
 	}
 
-	// Initialize state
-	if state, ok := programData["state"].(map[string]interface{}); ok {
-		jp.State = state
-	} else {
-		jp.State = make(map[string]interface{})
-		programData["state"] = jp.State
-	}
-
 	// Initialize call stack
 	jp.CallStack = []*CallFrame{}
 	programData["call_stack"] = jp.CallStack
@@ -1916,7 +1906,6 @@ func main() {
 	// Update the map with the final state of mutable fields
 	programData["stack"] = jp.Stack
 	programData["variables"] = jp.Variables
-	programData["state"] = jp.State
 	programData["call_stack"] = jp.CallStack
 
 	if executionErr != nil {

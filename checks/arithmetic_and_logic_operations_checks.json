@@ -27,7 +27,7 @@
           "type": "array",
           "maxItems": 0
         },
-        "state": {
+        "variables": {
           "type": "object",
           "properties": {
             "result_of_addition": {
@@ -38,15 +38,10 @@
           "required": [
             "result_of_addition"
           ]
-        },
-        "variables": {
-          "type": "object",
-          "maxProperties": 0
         }
       },
       "required": [
         "stack",
-        "state",
         "variables"
       ]
     }
@@ -83,16 +78,11 @@
         "variables": {
           "type": "object",
           "maxProperties": 0
-        },
-        "state": {
-          "type": "object",
-          "maxProperties": 0
         }
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },
@@ -128,16 +118,11 @@
         "variables": {
           "type": "object",
           "maxProperties": 0
-        },
-        "state": {
-          "type": "object",
-          "maxProperties": 0
         }
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   }

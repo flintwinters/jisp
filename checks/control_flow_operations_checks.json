@@ -29,7 +29,7 @@
           "type": "array",
           "maxItems": 0
         },
-        "state": {
+        "variables": {
           "type": "object",
           "properties": {
             "if_result": {
@@ -40,15 +40,10 @@
           "required": [
             "if_result"
           ]
-        },
-        "variables": {
-          "type": "object",
-          "maxProperties": 0
         }
       },
       "required": [
         "stack",
-        "state",
         "variables"
       ]
     }
@@ -93,7 +88,7 @@
           "type": "array",
           "maxItems": 0
         },
-        "state": {
+        "variables": {
           "type": "object",
           "properties": {
             "if_result_else": {
@@ -104,15 +99,10 @@
           "required": [
             "if_result_else"
           ]
-        },
-        "variables": {
-          "type": "object",
-          "maxProperties": 0
         }
       },
       "required": [
         "stack",
-        "state",
         "variables"
       ]
     }
@@ -147,10 +137,6 @@
           "type": "array",
           "maxItems": 0
         },
-        "state": {
-          "type": "object",
-          "maxProperties": 0
-        },
         "variables": {
           "type": "object",
           "maxProperties": 0
@@ -158,7 +144,6 @@
       },
       "required": [
         "stack",
-        "state",
         "variables"
       ]
     }
@@ -276,30 +261,22 @@
             "loop_condition": {
               "type": "boolean",
               "const": false
-            }
-          },
-          "required": [
-            "counter",
-            "loop_condition"
-          ]
-        },
-        "state": {
-          "type": "object",
-          "properties": {
+            },
             "final_counter_value": {
               "type": "number",
               "const": 0.0
             }
           },
           "required": [
+            "counter",
+            "loop_condition",
             "final_counter_value"
           ]
         }
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },
@@ -438,30 +415,22 @@
             "loop_condition": {
               "type": "boolean",
               "const": true
-            }
-          },
-          "required": [
-            "counter",
-            "loop_condition"
-          ]
-        },
-        "state": {
-          "type": "object",
-          "properties": {
+            },
             "final_counter_value_break": {
               "type": "number",
               "const": 2.0
             }
           },
           "required": [
+            "counter",
+            "loop_condition",
             "final_counter_value_break"
           ]
         }
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },
@@ -646,31 +615,23 @@
             "loop_condition": {
               "type": "boolean",
               "const": false
-            }
-          },
-          "required": [
-            "i",
-            "sum_of_odd_numbers",
-            "loop_condition"
-          ]
-        },
-        "state": {
-          "type": "object",
-          "properties": {
+            },
             "final_sum_of_odd_numbers": {
               "type": "number",
               "const": 9.0
             }
           },
           "required": [
+            "i",
+            "sum_of_odd_numbers",
+            "loop_condition",
             "final_sum_of_odd_numbers"
           ]
         }
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },
@@ -750,30 +711,22 @@
             "sum": {
               "type": "number",
               "const": 6.0
-            }
-          },
-          "required": [
-            "sum"
-          ],
-          "additionalProperties": true
-        },
-        "state": {
-          "type": "object",
-          "properties": {
+            },
             "final_sum": {
               "type": "number",
               "const": 6.0
             }
           },
           "required": [
+            "sum",
             "final_sum"
-          ]
+          ],
+          "additionalProperties": true
         }
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },
@@ -830,15 +783,7 @@
             "caught_error": {
               "type": "string",
               "pattern": "get error: variable 'non_existent_var' not found"
-            }
-          },
-          "required": [
-            "caught_error"
-          ]
-        },
-        "state": {
-          "type": "object",
-          "properties": {
+            },
             "status": {
               "type": "string",
               "const": "caught"
@@ -849,6 +794,7 @@
             }
           },
           "required": [
+            "caught_error",
             "status",
             "error_message"
           ]
@@ -856,8 +802,7 @@
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },
@@ -918,29 +863,21 @@
             "successful_result": {
               "type": "number",
               "const": 1.0
-            }
-          },
-          "required": [
-            "successful_result"
-          ]
-        },
-        "state": {
-          "type": "object",
-          "properties": {
+            },
             "final_status": {
               "type": "number",
               "const": 1.0
             }
           },
           "required": [
+            "successful_result",
             "final_status"
           ]
         }
       },
       "required": [
         "stack",
-        "variables",
-        "state"
+        "variables"
       ]
     }
   },
