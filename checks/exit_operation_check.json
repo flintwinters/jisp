@@ -36,5 +36,54 @@
       },
       "required": ["stack", "variables"]
     }
+  },
+  {
+    "description": "Exit operation from inner function - stops entire program execution.",
+    "jisp_program": {
+      "variables": {
+        "outer_var": "outer_value",
+        "inner_func": [
+          ["push", "inner_value"],
+          ["push", "temp_var"],
+          ["set"],
+          ["exit"],
+          ["push", "should_not_reach_in_func"]
+        ]
+      },
+      "code": [
+        ["push", 10.0],
+        ["push", 20.0],
+        ["set", "global_var"],
+        ["push", "inner_func"],
+        ["get"],
+        ["call"],
+        ["push", "should_not_reach_in_main"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {
+            "type": "number",
+            "const": 10.0
+          }
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "outer_var": { "type": "string", "const": "outer_value" },
+            "global_var": { "type": "number", "const": 20.0 }
+          },
+          "required": ["outer_var", "global_var"],
+          "additionalProperties": true
+        },
+        "code": { "type": "array" }
+      },
+      "required": ["stack", "variables", "code"]
+    }
   }
 ]
