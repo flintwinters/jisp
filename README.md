@@ -24,7 +24,7 @@ This approach makes it easier to debug, integrate with other tools, and eliminat
 
 #### 1. Advanced Debugging
 
-Jisp offers powerful debugging features thanks to its use of JSON for the entire program state—code, heap, stack, and environment. Since everything is encapsulated as a single JSON object, you can:
+Jisp offers powerful debugging features thanks to its use of JSON for the entire program state—code, heap, stack, and environment. It is imperative that all program state be captured by JSON to maintain this behavior. By encapsulating everything as a single JSON object, you can:
 
 * **Step Forward and Backward**: Log the program state at different points and jump between them.
 
@@ -70,8 +70,8 @@ Make a decision on the ergonomics of map, filter, and reduce operations:
 Not happy with this explicit variable declaration.
 
 #### Implementation TODOs:
-- [ ] `call`
-- [ ] `return`
+- [x] `call`
+- [x] `return`
 - [x] `for`
 - [x] `foreach`
 - [x] `try`
