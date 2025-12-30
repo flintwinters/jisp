@@ -911,6 +911,11 @@ func returnOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) > 0 {
 		return fmt.Errorf("return error: expected 0 arguments, got %d", len(op.Args))
 	}
+	// A call stack length of 1 means it's the global/main execution frame.
+	// Returning from the global scope is an error.
+	if len(jp.CallStack) == 1 {
+		return fmt.Errorf("return error: return can only be called within a function execution context")
+	}
 	return ErrReturn
 }
 
