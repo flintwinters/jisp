@@ -20,7 +20,16 @@ var (
 	ErrBreak    = errors.New("break")
 	ErrContinue = errors.New("continue")
 	ErrReturn   = errors.New("return")
+	ErrExit     = errors.New("exit")
 )
+
+// exitOp stops the program execution.
+func exitOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) > 0 {
+		return fmt.Errorf("exit error: expected 0 arguments, got %d", len(op.Args))
+	}
+	return ErrExit
+}
 
 // JispError is a custom error type for JISP program errors.
 // It allows the 'try' operation to catch and handle runtime errors gracefully.
@@ -85,7 +94,7 @@ func (cf *CallFrame) MarshalJSON() ([]byte, error) {
 type JispProgram struct {
 	Stack      []interface{}          `json:"stack"`
 	Variables  map[string]interface{} `json:"variables"`
-	Code       []JispOperation        `json:"-"`          // The main program code
+	Code       []JispOperation        `json:"code"`          // The main program code
 	CallStack  []*CallFrame           `json:"call_stack"` // Stack for function calls
 }
 
@@ -199,6 +208,7 @@ func init() {
 		"valid":        validOp,
 		"call":         callOp,
 		"return":       returnOp,
+		"exit":         exitOp,
 	}
 }
 
@@ -843,6 +853,8 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interfa
 				return err // Propagate return signal to be handled by callOp
 			case errors.As(err, &jispErr):
 				return err // Already a JispError, propagate
+			case errors.Is(err, ErrExit):
+				return err // Propagate exit signal to main
 			default:
 				// Wrap other errors as JispError for 'try' to catch
 				return jp.newError(&op, err.Error())
@@ -2008,7 +2020,6 @@ func main() {
 		jp.Stack = stack
 	} else {
 		jp.Stack = []interface{}{}
-		programData["stack"] = jp.Stack
 	}
 
 	// Initialize variables
@@ -2016,45 +2027,94 @@ func main() {
 		jp.Variables = variables
 	} else {
 		jp.Variables = make(map[string]interface{})
-		programData["variables"] = jp.Variables
 	}
 
-	// Initialize call stack
-	jp.CallStack = []*CallFrame{}
-	programData["call_stack"] = jp.CallStack
+	// Set up the initial call frame for the main code
+	// The basePath for the top-level code is simply "code"
+	executionErr := jp.ExecuteOperations(codeOps, []interface{}{"code"}, false)
 
-	executionErr := jp.ExecuteOperations(jp.Code, []interface{}{"code"}, false)
-
-	// Update the map with the final state of mutable fields
-	programData["stack"] = jp.Stack
-	programData["variables"] = jp.Variables
-	programData["call_stack"] = jp.CallStack
+	output := map[string]interface{}{
+		"stack":     jp.Stack,
+		"variables": jp.Variables,
+		"code":      jp.Code, // Include code in the output
+	}
 
 	if executionErr != nil {
+		if errors.Is(executionErr, ErrExit) {
+			// If ErrExit, output the current program state as JSON and exit cleanly
+			// Program state is already in 'output' map
+			outputJSON, marshalErr := json.MarshalIndent(output, "", "  ")
+			if marshalErr != nil {
+				log.Fatalf("Error marshaling program state on exit: %v", marshalErr)
+			}
+			if isTerminal(os.Stdout) {
+				os.Stdout.Write(colorizeJSON(outputJSON))
+				os.Stdout.WriteString("\n")
+			} else {
+				os.Stdout.Write(outputJSON)
+				os.Stdout.WriteString("\n")
+			}
+			os.Exit(0)
+		}
+
 		var jispErr *JispError
 		if errors.As(executionErr, &jispErr) {
-			programData["error"] = jispErr
+			// If it's a JispError, include it in the output and exit with error code
+			output["error"] = jispErr
+			outputJSON, marshalErr := json.MarshalIndent(output, "", "  ")
+			if marshalErr != nil {
+				log.Fatalf("Error marshaling program state with error: %v", marshalErr)
+			}
+			if isTerminal(os.Stdout) {
+				os.Stdout.Write(colorizeJSON(outputJSON))
+				os.Stdout.WriteString("\n")
+			} else {
+				os.Stdout.Write(outputJSON)
+				os.Stdout.WriteString("\n")
+			}
+			os.Exit(1)
 		} else {
-			programData["error"] = map[string]string{"message": executionErr.Error()}
+			// Other unexpected errors
+			log.Fatalf("Runtime error: %v", executionErr)
 		}
+	}
+
+	// If program executes to completion without an error or exit, print final state
+	outputJSON, marshalErr := json.MarshalIndent(output, "", "  ")
+	if marshalErr != nil {
+		log.Fatalf("Error marshaling final program state: %v", marshalErr)
+	}
+	if isTerminal(os.Stdout) {
+		os.Stdout.Write(colorizeJSON(outputJSON))
+		os.Stdout.WriteString("\n")
+	} else {
+		os.Stdout.Write(outputJSON)
+		os.Stdout.WriteString("\n")
+	}
+	os.Exit(0)
+}
+
+// printProgramState is a helper to marshal and print the current JispProgram state.
+// If an error is provided, it will be included in the output.
+func (jp *JispProgram) printProgramState(err *JispError) {
+	output := map[string]interface{}{
+		"stack":     jp.Stack,
+		"variables": jp.Variables,
+	}
+	if err != nil {
+		output["error"] = err
+	}
+
+	outputJSON, marshalErr := json.MarshalIndent(output, "", "  ")
+	if marshalErr != nil {
+		log.Fatalf("Error marshaling program state: %v", marshalErr)
 	}
 
 	if isTerminal(os.Stdout) {
-		data, err := json.MarshalIndent(programData, "", "  ")
-		if err != nil {
-			log.Fatalf("Error marshaling JISP program state: %v", err)
-		}
-		os.Stdout.Write(colorizeJSON(data))
+		os.Stdout.Write(colorizeJSON(outputJSON))
+		os.Stdout.WriteString("\n")
 	} else {
-		encoder := json.NewEncoder(os.Stdout)
-		encoder.SetIndent("", "  ")
-		if err := encoder.Encode(programData); err != nil {
-			log.Fatalf("Error encoding JISP program state to stdout: %v", err)
-		}
+		os.Stdout.Write(outputJSON)
+		os.Stdout.WriteString("\n")
 	}
-
-	if executionErr != nil {
-		os.Exit(1)
-	}
-	os.Exit(0)
 }
