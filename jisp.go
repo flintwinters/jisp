@@ -999,14 +999,23 @@ func forOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("for error: expected loop_var to be a string, got %T", op.Args[0])
 	}
 
-	collection := op.Args[1]
+	collectionVal := op.Args[1]
+
+	if collectionStr, ok := collectionVal.(string); ok {
+		// If collection is a string, treat it as a variable name and get its value
+		resolvedCollection, err := jp.getValueForPath(collectionStr)
+		if err != nil {
+			return fmt.Errorf("for error: failed to get collection variable '%s': %w", collectionStr, err)
+		}
+		collectionVal = resolvedCollection
+	}
 
 	bodyOps, err := parseJispOps(op.Args[2])
 	if err != nil {
 		return fmt.Errorf("for error in 'body_operations': %w", err)
 	}
 
-	return jp.For(loopVar, collection, bodyOps, 2)
+	return jp.For(loopVar, collectionVal, bodyOps, 2)
 }
 
 func trimOp(jp *JispProgram, _ *JispOperation) error {
@@ -1653,18 +1662,19 @@ func (jp *JispProgram) For(loopVar string, collection interface{}, bodyOps []Jis
 				return err // Propagate other errors
 			}
 		}
-	case map[string]interface{}:
-		for key := range c {
-			jp.Variables[loopVar] = key
-			if err := jp.executeLoopBody(bodyOps, bodyOpsPathSegment); err != nil {
-				if errors.Is(err, ErrBreak) {
-					return nil // Break from loop
+	    case map[string]interface{}:
+			for key := range c {
+				jp.Variables[loopVar] = key
+				jp.Variables[loopVar+"_value"] = c[key] // Expose the value
+				if err := jp.executeLoopBody(bodyOps, bodyOpsPathSegment); err != nil {
+					if errors.Is(err, ErrBreak) {
+						return nil // Break from loop
+					}
+					return err // Propagate other errors
 				}
-				return err // Propagate other errors
 			}
-		}
-	default:
-		return fmt.Errorf("for error: unsupported collection type %T", collection)
+		default:
+			return fmt.Errorf("for error: unsupported collection type %T", collection)
 	}
 	return nil
 }

@@ -964,5 +964,364 @@
       ]
     },
     "expected_error_message": "custom assertion message"
+  },
+  {
+    "description": "Break in For loop - breaks when item reaches 3.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          0.0
+        ],
+        [
+          "push",
+          "sum"
+        ],
+        [
+          "set"
+        ],
+        [
+          "for",
+          "item",
+          [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0
+          ],
+          [
+            [
+              "push",
+              "item"
+            ],
+            [
+              "get"
+            ],
+            [
+              "push",
+              3.0
+            ],
+            [
+              "eq"
+            ],
+            [
+              "if",
+              [
+                [
+                  "break"
+                ]
+              ]
+            ],
+            [
+              "push",
+              "sum"
+            ],
+            [
+              "get"
+            ],
+            [
+              "push",
+              "item"
+            ],
+            [
+              "get"
+            ],
+            [
+              "add"
+            ],
+            [
+              "push",
+              "sum"
+            ],
+            [
+              "set"
+            ]
+          ]
+        ],
+        [
+          "push",
+          "sum"
+        ],
+        [
+          "get"
+        ],
+        [
+          "pop",
+          "final_sum_break"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "sum": {
+              "type": "number",
+              "const": 3.0
+            },
+            "final_sum_break": {
+              "type": "number",
+              "const": 3.0
+            }
+          },
+          "required": [
+            "sum",
+            "final_sum_break"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "Continue in For loop - skips even numbers.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          0.0
+        ],
+        [
+          "push",
+          "sum"
+        ],
+        [
+          "set"
+        ],
+        [
+          "for",
+          "item",
+          [
+            1.0,
+            2.0,
+            3.0,
+            4.0,
+            5.0
+          ],
+          [
+            [
+              "push",
+              "item"
+            ],
+            [
+              "get"
+            ],
+            [
+              "push",
+              2.0
+            ],
+            [
+              "mod"
+            ],
+            [
+              "push",
+              0.0
+            ],
+            [
+              "eq"
+            ],
+            [
+              "if",
+              [
+                [
+                  "continue"
+                ]
+              ]
+            ],
+            [
+              "push",
+              "sum"
+            ],
+            [
+              "get"
+            ],
+            [
+              "push",
+              "item"
+            ],
+            [
+              "get"
+            ],
+            [
+              "add"
+            ],
+            [
+              "push",
+              "sum"
+            ],
+            [
+              "set"
+            ]
+          ]
+        ],
+        [
+          "push",
+          "sum"
+        ],
+        [
+          "get"
+        ],
+        [
+          "pop",
+          "final_sum_continue"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "sum": {
+              "type": "number",
+              "const": 9.0
+            },
+            "final_sum_continue": {
+              "type": "number",
+              "const": 9.0
+            }
+          },
+          "required": [
+            "sum",
+            "final_sum_continue"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
+    }
+  },
+  {
+    "description": "For operation - iterates over an object and sums values by key.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          0.0
+        ],
+        [
+          "push",
+          "sum_of_object_values"
+        ],
+        [
+          "set"
+        ],
+        [
+          "push",
+          {
+            "a": 10.0,
+            "b": 20.0,
+            "c": 30.0
+          }
+        ],
+        [
+          "push",
+          "my_object"
+        ],
+        [
+          "set"
+        ],
+        [
+          "for",
+          "key",
+          "my_object",
+          [
+            [
+              "push",
+              "sum_of_object_values"
+            ],
+            [
+              "get"
+            ],
+            [
+              "push",
+              "key_value"
+            ],
+            [
+              "get"
+            ],
+            [
+              "add"
+            ],
+            [
+              "push",
+              "sum_of_object_values"
+            ],
+            [
+              "set"
+            ]
+          ]
+        ],
+        [
+          "push",
+          "sum_of_object_values"
+        ],
+        [
+          "get"
+        ],
+        [
+          "pop",
+          "final_sum_of_object_values"
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "my_object": {
+              "type": "object",
+              "properties": {
+                "a": { "type": "number", "const": 10.0 },
+                "b": { "type": "number", "const": 20.0 },
+                "c": { "type": "number", "const": 30.0 }
+              },
+              "required": ["a", "b", "c"]
+            },
+            "sum_of_object_values": {
+              "type": "number",
+              "const": 60.0
+            },
+            "final_sum_of_object_values": {
+              "type": "number",
+              "const": 60.0
+            }
+          },
+          "required": [
+            "sum_of_object_values",
+            "final_sum_of_object_values",
+            "my_object"
+          ],
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
+    }
   }
 ]

@@ -868,5 +868,53 @@
         }
       }
     }
+  },
+  {
+    "description": "Keys operation - retrieves keys from an empty object.",
+    "jisp_program": {
+      "code": [
+        ["push", {}],
+        ["keys"],
+        ["pop", "empty_object_keys"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": { "type": "array", "maxItems": 0 },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "empty_object_keys": { "type": "array", "maxItems": 0 }
+          },
+          "required": ["empty_object_keys"]
+        }
+      },
+      "required": ["stack", "variables"]
+    }
+  },
+  {
+    "description": "Values operation - retrieves values from an empty object.",
+    "jisp_program": {
+      "code": [
+        ["push", {}],
+        ["values"],
+        ["pop", "empty_object_values"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": { "type": "array", "maxItems": 0 },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "empty_object_values": { "type": "array", "maxItems": 0 }
+          },
+          "required": ["empty_object_values"]
+        }
+      },
+      "required": ["stack", "variables"]
+    }
   }
 ]
