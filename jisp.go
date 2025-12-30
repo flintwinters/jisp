@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -1848,6 +1849,117 @@ func parseJispOps(raw interface{}) ([]JispOperation, error) {
 	return Ops, nil
 }
 
+// ANSI color codes
+const (
+	Reset   = "\033[0m"
+	Red     = "\033[31m"
+	Green   = "\033[32m"
+	Yellow  = "\033[33m"
+	Blue    = "\033[34m"
+	Magenta = "\033[35m"
+	Cyan    = "\033[36m"
+)
+
+func isTerminal(f *os.File) bool {
+	fileInfo, err := f.Stat()
+	if err != nil {
+		return false
+	}
+	return (fileInfo.Mode() & os.ModeCharDevice) != 0
+}
+
+func colorizeJSON(data []byte) []byte {
+	var result []byte
+	inString := false
+	for i := 0; i < len(data); i++ {
+		char := data[i]
+
+		if inString {
+			if char == '"' {
+				backslashes := 0
+				for k := i - 1; k > 0 && data[k] == '\\'; k-- {
+					backslashes++
+				}
+				if backslashes%2 == 0 {
+					inString = false
+					result = append(result, char)
+					result = append(result, []byte(Reset)...)
+					continue
+				}
+			}
+			result = append(result, char)
+			continue
+		}
+
+		// Not in a string
+		switch {
+		case char == '"':
+			inString = true
+			isKey := false
+			// lookahead for colon
+			j := i + 1
+			for j < len(data) {
+				if data[j] == '"' {
+					backslashes := 0
+					for k := j - 1; k > i && data[k] == '\\'; k-- {
+						backslashes++
+					}
+					if backslashes%2 == 0 {
+						j++
+						break
+					}
+				}
+				j++
+			}
+			for j < len(data) && (data[j] == ' ' || data[j] == '	' || data[j] == '\n' || data[j] == '\r') {
+				j++
+			}
+			if j < len(data) && data[j] == ':' {
+				isKey = true
+			}
+
+			if isKey {
+				result = append(result, []byte(Green)...)
+			} else {
+				result = append(result, []byte(Yellow)...)
+			}
+			result = append(result, char)
+
+		case char == '{' || char == '}' || char == '[' || char == ']':
+			result = append(result, []byte(Cyan)...)
+			result = append(result, char)
+			result = append(result, []byte(Reset)...)
+		case (char >= '0' && char <= '9') || char == '-':
+			result = append(result, []byte(Magenta)...)
+			j := i
+			for j < len(data) && ((data[j] >= '0' && data[j] <= '9') || data[j] == '.' || data[j] == 'e' || data[j] == 'E' || data[j] == '+' || data[j] == '-') {
+				result = append(result, data[j])
+				j++
+			}
+			result = append(result, []byte(Reset)...)
+			i = j - 1
+		case bytes.HasPrefix(data[i:], []byte("true")):
+			result = append(result, []byte(Blue)...)
+			result = append(result, []byte("true")...)
+			result = append(result, []byte(Reset)...)
+			i += 3 // len("true") - 1
+		case bytes.HasPrefix(data[i:], []byte("false")):
+			result = append(result, []byte(Blue)...)
+			result = append(result, []byte("false")...)
+			result = append(result, []byte(Reset)...)
+			i += 4 // len("false") - 1
+		case bytes.HasPrefix(data[i:], []byte("null")):
+			result = append(result, []byte(Red)...)
+			result = append(result, []byte("null")...)
+			result = append(result, []byte(Reset)...)
+			i += 3 // len("null") - 1
+		default:
+			result = append(result, char)
+		}
+	}
+	return result
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		log.Fatalf("Usage: %s <file.json>", os.Args[0])
@@ -1917,10 +2029,18 @@ func main() {
 		}
 	}
 
-	encoder := json.NewEncoder(os.Stdout)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(programData); err != nil {
-		log.Fatalf("Error encoding JISP program state to stdout: %v", err)
+	if isTerminal(os.Stdout) {
+		data, err := json.MarshalIndent(programData, "", "  ")
+		if err != nil {
+			log.Fatalf("Error marshaling JISP program state: %v", err)
+		}
+		os.Stdout.Write(colorizeJSON(data))
+	} else {
+		encoder := json.NewEncoder(os.Stdout)
+		encoder.SetIndent("", "  ")
+		if err := encoder.Encode(programData); err != nil {
+			log.Fatalf("Error encoding JISP program state to stdout: %v", err)
+		}
 	}
 
 	if executionErr != nil {
