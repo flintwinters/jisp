@@ -120,19 +120,20 @@ func (cf *CallFrame) UnmarshalJSON(data []byte) error {
 
 	switch v := aux.Ip.(type) {
 	case []interface{}:
-		if len(v) > 0 {
-			if ipFloat, ok := v[len(v)-1].(float64); ok {
-				cf.Ip = int(ipFloat)
-			} else {
-				return fmt.Errorf("could not unmarshal Ip: last element of path is not a number")
+		if len(v) == 0 {
+			return fmt.Errorf("could not unmarshal Ip: instruction pointer path cannot be an empty array")
+		}
+		if ipFloat, ok := v[len(v)-1].(float64); ok {
+			cf.Ip = int(ipFloat)
+			if len(v) > 1 {
+				cf.basePath = v[:len(v)-1]
 			}
 		} else {
-			// If Ip is an empty array, it means the instruction pointer is at the beginning,
-			// which can be represented by 0.
-			cf.Ip = 0
+			return fmt.Errorf("could not unmarshal Ip: last element of path is not a number")
 		}
-	case nil: // Explicitly handle nil for cases where Ip might be absent
-		cf.Ip = 0 // Default to 0 or handle as appropriate for an absent IP
+	case nil:
+		// Ip might be absent if the frame is not actively executing, which is fine.
+		cf.Ip = 0
 	default:
 		return fmt.Errorf("could not unmarshal Ip: expected an array or null, got %T", aux.Ip)
 	}
