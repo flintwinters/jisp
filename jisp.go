@@ -185,6 +185,15 @@ func jispProgramFromBytes(data []byte) (*JispProgram, error) {
 	if err := json.Unmarshal(data, &jp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON into JispProgram struct: %w", err)
 	}
+	if jp.Stack == nil {
+		jp.Stack = []interface{}{}
+	}
+	if jp.Variables == nil {
+		jp.Variables = make(map[string]interface{})
+	}
+	if jp.CallStack == nil {
+		jp.CallStack = []*CallFrame{}
+	}
 	return &jp, nil
 }
 
@@ -207,6 +216,17 @@ func stepOp(jp *JispProgram, op *JispOperation) error {
 	subProgram, err := jispProgramFromBytes(subProgramBytes)
 	if err != nil {
 		return fmt.Errorf("step error: could not reconstruct sub-program from stack value: %w", err)
+	}
+
+	// Initialize call stack if this is the first execution step
+	if len(subProgram.CallStack) == 0 && len(subProgram.Code) > 0 {
+		frame := &CallFrame{
+			Ops:       subProgram.Code,
+			Ip:        0,
+			basePath:  []interface{}{"code"},
+			Variables: subProgram.Variables,
+		}
+		subProgram.CallStack = append(subProgram.CallStack, frame)
 	}
 
 	if frame := subProgram.currentFrame(); frame != nil && frame.Ip < len(frame.Ops) {
