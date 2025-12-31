@@ -180,6 +180,21 @@ func (jp *JispProgram) newError(op *JispOperation, message string) *JispError {
 	}
 }
 
+// ensureInitialized checks if core JispProgram components (Stack, Variables, CallStack) are nil
+// and initializes them to their zero values if so. This prevents nil pointer dereferences
+// and ensures a consistent program state.
+func (jp *JispProgram) ensureInitialized() {
+	if jp.Stack == nil {
+		jp.Stack = []interface{}{}
+	}
+	if jp.Variables == nil {
+		jp.Variables = make(map[string]interface{})
+	}
+	if jp.CallStack == nil {
+		jp.CallStack = []*CallFrame{}
+	}
+}
+
 // JispOperation represents a single instruction in a JISP program, consisting
 // of an operation name and a list of arguments.
 type JispOperation struct {
@@ -208,11 +223,6 @@ func (op *JispOperation) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// JispCode represents the code part of a JISP program.
-type JispCode struct {
-	Code []JispOperation `json:"code"`
-}
-
 // operationHandler defines the signature for all JISP operations.
 type operationHandler func(jp *JispProgram, op *JispOperation) error
 
@@ -225,15 +235,7 @@ func jispProgramFromBytes(data []byte) (*JispProgram, error) {
 	if err := json.Unmarshal(data, &jp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal JSON into JispProgram struct: %w", err)
 	}
-	if jp.Stack == nil {
-		jp.Stack = []interface{}{}
-	}
-	if jp.Variables == nil {
-		jp.Variables = make(map[string]interface{})
-	}
-	if jp.CallStack == nil {
-		jp.CallStack = []*CallFrame{}
-	}
+	jp.ensureInitialized()
 	return &jp, nil
 }
 
@@ -484,6 +486,26 @@ func unique(slice []interface{}) []interface{} {
 	return list
 }
 
+// isNumberSlice checks if all elements in the slice are float64.
+func isNumberSlice(slice []interface{}) bool {
+	for _, item := range slice {
+		if _, ok := item.(float64); !ok {
+			return false
+		}
+	}
+	return true
+}
+
+// isStringSlice checks if all elements in the slice are string.
+func isStringSlice(slice []interface{}) bool {
+	for _, item := range slice {
+		if _, ok := item.(string); !ok {
+			return false
+		}
+	}
+	return true
+}
+
 func popTwoComparableSlices(jp *JispProgram, opName string) ([]interface{}, []interface{}, error) {
 	a1, a2, err := popTwo[[]interface{}](jp, opName)
 	if err != nil {
@@ -659,16 +681,7 @@ func sortOp(jp *JispProgram, op *JispOperation) error {
 			return nil
 		}
 
-		// Check if all elements are numbers
-		allNumbers := true
-		for _, item := range v {
-			if _, ok := item.(float64); !ok {
-				allNumbers = false
-				break
-			}
-		}
-
-		if allNumbers {
+		if isNumberSlice(v) {
 			numSlice := make([]float64, len(v))
 			for i, item := range v {
 				numSlice[i] = item.(float64)
@@ -682,16 +695,7 @@ func sortOp(jp *JispProgram, op *JispOperation) error {
 			return nil
 		}
 
-		// Check if all elements are strings
-		allStrings := true
-		for _, item := range v {
-			if _, ok := item.(string); !ok {
-				allStrings = false
-				break
-			}
-		}
-
-		if allStrings {
+		if isStringSlice(v) {
 			strSlice := make([]string, len(v))
 			for i, item := range v {
 				strSlice[i] = item.(string)
@@ -924,22 +928,22 @@ func noopOp(jp *JispProgram, _ *JispOperation) error {
 	return nil
 }
 
+
 func sliceOp(jp *JispProgram, _ *JispOperation) error {
-	if len(jp.Stack) < 2 {
-		return fmt.Errorf("slice error: stack underflow, expected at least 2 values (input, start)")
-	}
-
 	var inputVal, startRaw, endRaw interface{}
-	val2, val1 := jp.Stack[len(jp.Stack)-1], jp.Stack[len(jp.Stack)-2]
-	_, isNum1 := val1.(float64)
-	_, isNum2 := val2.(float64)
 
-	if len(jp.Stack) >= 3 && isNum1 && isNum2 {
-		endRaw, startRaw, inputVal = jp.Stack[len(jp.Stack)-1], jp.Stack[len(jp.Stack)-2], jp.Stack[len(jp.Stack)-3]
-		jp.Stack = jp.Stack[:len(jp.Stack)-3]
+	// Try to pop 3 values (input, start, end)
+	values, err := jp.popx("slice", 3)
+	if err == nil {
+		inputVal, startRaw, endRaw = values[0], values[1], values[2]
 	} else {
-		startRaw, inputVal = jp.Stack[len(jp.Stack)-1], jp.Stack[len(jp.Stack)-2]
-		jp.Stack = jp.Stack[:len(jp.Stack)-2]
+		// If 3 values not available, try to pop 2 values (input, start)
+		values, err = jp.popx("slice", 2)
+		if err != nil {
+			return fmt.Errorf("slice error: stack underflow, expected at least 2 values (input, start)")
+		}
+		inputVal, startRaw = values[0], values[1]
+		endRaw = nil // Explicitly set endRaw to nil if not provided
 	}
 
 	startFloat, ok := startRaw.(float64)
@@ -1480,9 +1484,7 @@ func (jp *JispProgram) Pop(fieldName string) error {
 	if err != nil {
 		return err
 	}
-	if jp.Variables == nil {
-		jp.Variables = make(map[string]interface{})
-	}
+	jp.ensureInitialized()
 	jp.Variables[fieldName] = value
 	return nil
 }
@@ -1538,9 +1540,7 @@ func (jp *JispProgram) setValueForPath(pathVal interface{}, value interface{}) e
 	// 1. For a simple string path, set the variable in the current frame's locals.
 	// 2. For a complex path `["var", "key"]`, use the scoped `getValueForPath` to find "var"
 	//    and then modify it in place.
-	if jp.Variables == nil {
-		jp.Variables = make(map[string]interface{})
-	}
+	jp.ensureInitialized()
 
 	switch path := pathVal.(type) {
 	case string:
@@ -1892,9 +1892,7 @@ func (jp *JispProgram) Try(tryBody []JispOperation, catchVar string, catchBody [
 // For arrays, it binds each element to loopVar and executes bodyOps.
 // For objects, it binds each key to loopVar and executes bodyOps.
 func (jp *JispProgram) For(loopVar string, collection interface{}, bodyOps []JispOperation, bodyOpsPathSegment interface{}) error {
-	if jp.Variables == nil {
-		jp.Variables = make(map[string]interface{})
-	}
+	jp.ensureInitialized()
 
 	switch c := collection.(type) {
 	case []interface{}:
@@ -1938,9 +1936,7 @@ func (jp *JispProgram) executeLoopBody(bodyOps []JispOperation, bodyOpsPathSegme
 
 func (jp *JispProgram) handleCaughtError(caughtErr *JispError, catchVar string, catchBody []JispOperation, catchBodyPathSegment interface{}) {
 	// Save the error message to the catch variable
-	if jp.Variables == nil {
-		jp.Variables = make(map[string]interface{})
-	}
+	jp.ensureInitialized()
 	jp.Variables[catchVar] = caughtErr.Message
 
 	// Execute catchBody
@@ -2223,26 +2219,11 @@ func main() {
 	// This supports loading just `{"code": [...]}` as well as a full state object.
 	var jp JispProgram
 	if err := json.Unmarshal(fileContent, &jp); err != nil {
-		// Try to unmarshal into just a JispCode struct for backward compatibility
-		// where the input file might ONLY contain a 'code' array.
-		var jispCode JispCode
-		if err2 := json.Unmarshal(fileContent, &jispCode); err2 != nil {
-			log.Fatalf("Error unmarshaling JISP program: %v\n(Also failed to parse as simple code block: %v)", err, err2)
-		}
-		// If that worked, initialize a new JispProgram with this code.
-		jp.Code = jispCode.Code
+		log.Fatalf("Error unmarshaling JISP program: %v", err)
 	}
 
 	// Initialize maps and slices if they are nil after unmarshaling
-	if jp.Stack == nil {
-		jp.Stack = []interface{}{}
-	}
-	if jp.Variables == nil {
-		jp.Variables = make(map[string]interface{})
-	}
-	if jp.CallStack == nil {
-		jp.CallStack = []*CallFrame{}
-	}
+	jp.ensureInitialized()
 
 	// Start execution only if there's no pre-existing error.
 	if jp.Error == nil {
