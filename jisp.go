@@ -100,7 +100,7 @@ type JispProgram struct {
 	Code        []JispOperation        `json:"code"`
 	CallStack   []*CallFrame           `json:"call_stack"`
 	Error       *JispError             `json:"error,omitempty"`
-	History     []json.RawMessage      `json:"history,omitempty"`
+	History     []json.RawMessage      `json:"history"`
 	SaveHistory bool                   `json:"save_history,omitempty"`
 }
 
@@ -328,8 +328,7 @@ func undoOp(jp *JispProgram, op *JispOperation) error {
 	}
 
 	if len(subProgram.History) == 0 {
-		jp.Push(subProgram)
-		return nil
+		return fmt.Errorf("undo error: no history to undo")
 	}
 
 	lastPatchBytes := subProgram.History[len(subProgram.History)-1]

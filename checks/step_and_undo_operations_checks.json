@@ -133,7 +133,7 @@
             "final_program": {
               "type": "object",
               "properties": {
-                "stack": { "type": "array", "items": [{"type": "number", "const": 10.0}, {"type": "number", "const": 10.0}], "maxItems": 2 },
+                "stack": { "type": "array", "prefixItems": [{"type": "number", "const": 1.0}, {"type": "number", "const": 2.0}], "minItems": 2, "maxItems": 2 },
                 "history": { "type": "array", "minItems": 2, "maxItems": 2 },
                 "call_stack": {
                   "type": "array",
@@ -230,28 +230,10 @@
           "save_history": false
         }],
         ["step"],
-        ["undo"],
-        ["pop", "final_program"]
+        ["undo"]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "stack": { "type": "array", "items": [{"type": "number", "const": 1.0}], "minItems": 1, "maxItems": 1 },
-                "history": { "type": "array", "maxItems": 0 }
-              },
-              "required": ["stack", "history"]
-            }
-          }
-        }
-      }
-    }
+    "expected_error_message": "undo error: no history to undo"
   },
   {
     "description": "Basic Subprocess Test: Push and pop a subprocess without execution.",
@@ -606,38 +588,10 @@
             ["push", 10.0]
           ]
         }],
-        ["undo"],
-        ["pop", "program_no_undo_history"]
+        ["undo"]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": { "type": "array", "maxItems": 0 },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "program_no_undo_history": {
-              "type": "object",
-              "properties": {
-                "stack": {
-                  "type": "array",
-                  "maxItems": 0
-                },
-                "variables": { "type": "object", "maxProperties": 0 },
-                "call_stack": {
-                  "type": "array",
-                  "maxItems": 0
-                }
-              },
-              "required": ["stack", "variables", "call_stack"]
-            }
-          },
-          "required": ["program_no_undo_history"]
-        }
-      },
-      "required": ["stack", "variables"]
-    }
+    "expected_error_message": "undo error: no history to undo"
   },
   {
     "description": "Negative Test: Step operation - stack underflow (empty stack for step operation).",
