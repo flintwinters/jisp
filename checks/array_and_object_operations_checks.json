@@ -46,40 +46,10 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "string_length": {
-              "type": "number",
-              "const": 5.0
-            },
-            "array_length": {
-              "type": "number",
-              "const": 4.0
-            },
-            "object_length": {
-              "type": "number",
-              "const": 2.0
-            }
-          },
-          "required": [
-            "string_length",
-            "array_length",
-            "object_length"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_variables": {
+      "string_length": 5.0,
+      "array_length": 4.0,
+      "object_length": 2.0
     }
   },
   {
@@ -211,36 +181,11 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "sliced_array": {
-              "type": "array",
-              "items": {
-                "type": "number"
-              },
-              "const": [
-                3.0,
-                4.0,
-                5.0
-              ]
-            }
-          },
-          "required": [
-            "sliced_array"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
+    "expected_variables": {
+      "sliced_array": [
+        3.0,
+        4.0,
+        5.0
       ]
     }
   },
@@ -275,36 +220,11 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "another_sliced_array": {
-              "type": "array",
-              "items": {
-                "type": "number"
-              },
-              "const": [
-                20.0,
-                30.0,
-                40.0
-              ]
-            }
-          },
-          "required": [
-            "another_sliced_array"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
+    "expected_variables": {
+      "another_sliced_array": [
+        20.0,
+        30.0,
+        40.0
       ]
     }
   },
@@ -770,8 +690,7 @@
         "stack"
       ]
     }
-  }
-  ,
+  },
   {
     "description": "Join operation - joins two arrays of objects.",
     "jisp_program": {
@@ -873,48 +792,86 @@
     "description": "Keys operation - retrieves keys from an empty object.",
     "jisp_program": {
       "code": [
-        ["push", {}],
-        ["keys"],
-        ["pop", "empty_object_keys"]
+        [
+          "push",
+          {}
+        ],
+        [
+          "keys"
+        ],
+        [
+          "pop",
+          "empty_object_keys"
+        ]
       ]
     },
     "validation_schema": {
       "type": "object",
       "properties": {
-        "stack": { "type": "array", "maxItems": 0 },
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
         "variables": {
           "type": "object",
           "properties": {
-            "empty_object_keys": { "type": "array", "maxItems": 0 }
+            "empty_object_keys": {
+              "type": "array",
+              "maxItems": 0
+            }
           },
-          "required": ["empty_object_keys"]
+          "required": [
+            "empty_object_keys"
+          ]
         }
       },
-      "required": ["stack", "variables"]
+      "required": [
+        "stack",
+        "variables"
+      ]
     }
   },
   {
     "description": "Values operation - retrieves values from an empty object.",
     "jisp_program": {
       "code": [
-        ["push", {}],
-        ["values"],
-        ["pop", "empty_object_values"]
+        [
+          "push",
+          {}
+        ],
+        [
+          "values"
+        ],
+        [
+          "pop",
+          "empty_object_values"
+        ]
       ]
     },
     "validation_schema": {
       "type": "object",
       "properties": {
-        "stack": { "type": "array", "maxItems": 0 },
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
         "variables": {
           "type": "object",
           "properties": {
-            "empty_object_values": { "type": "array", "maxItems": 0 }
+            "empty_object_values": {
+              "type": "array",
+              "maxItems": 0
+            }
           },
-          "required": ["empty_object_values"]
+          "required": [
+            "empty_object_values"
+          ]
         }
       },
-      "required": ["stack", "variables"]
+      "required": [
+        "stack",
+        "variables"
+      ]
     }
   }
 ]

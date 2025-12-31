@@ -20,30 +20,9 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "result_of_addition": {
-              "type": "number",
-              "const": 8.0
-            }
-          },
-          "required": [
-            "result_of_addition"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_stack": [],
+    "expected_variables": {
+      "result_of_addition": 8.0
     }
   },
   {
@@ -63,28 +42,9 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 1,
-          "items": {
-            "type": "boolean",
-            "const": true
-          }
-        },
-        "variables": {
-          "type": "object",
-          "maxProperties": 0
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
-    }
+    "expected_stack": [
+      true
+    ]
   },
   {
     "description": "Eq operation - unequal values.",
@@ -103,36 +63,25 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 1,
-          "items": {
-            "type": "boolean",
-            "const": false
-          }
-        },
-        "variables": {
-          "type": "object",
-          "maxProperties": 0
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
-    }
+    "expected_stack": [
+      false
+    ]
   },
   {
     "description": "NEGATIVE Test: Division by zero should result in an error.",
     "jisp_program": {
       "code": [
-        ["push", 10.0],
-        ["push", 0.0],
-        ["div"]
+        [
+          "push",
+          10.0
+        ],
+        [
+          "push",
+          0.0
+        ],
+        [
+          "div"
+        ]
       ]
     },
     "expected_error_message": "division by zero"
@@ -141,9 +90,17 @@
     "description": "NEGATIVE Test: Modulo by zero should result in an error.",
     "jisp_program": {
       "code": [
-        ["push", 10.0],
-        ["push", 0.0],
-        ["mod"]
+        [
+          "push",
+          10.0
+        ],
+        [
+          "push",
+          0.0
+        ],
+        [
+          "mod"
+        ]
       ]
     },
     "expected_error_message": "modulo by zero"

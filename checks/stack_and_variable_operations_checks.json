@@ -27,35 +27,9 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "my_variable": {
-              "type": "string",
-              "const": "Hello, JISP!"
-            },
-            "retrieved_message": {
-              "type": "string",
-              "const": "Hello, JISP!"
-            }
-          },
-          "required": [
-            "my_variable",
-            "retrieved_message"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_variables": {
+      "my_variable": "Hello, JISP!",
+      "retrieved_message": "Hello, JISP!"
     }
   },
   {
@@ -82,35 +56,11 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 1,
-          "items": {
-            "type": "boolean",
-            "const": true
-          }
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "existing_var": {
-              "type": "string",
-              "const": "some_value"
-            }
-          },
-          "required": [
-            "existing_var"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_stack": [
+      true
+    ],
+    "expected_variables": {
+      "existing_var": "some_value"
     }
   },
   {
@@ -126,28 +76,9 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 1,
-          "items": {
-            "type": "boolean",
-            "const": false
-          }
-        },
-        "variables": {
-          "type": "object",
-          "maxProperties": 0
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
-    }
+    "expected_stack": [
+      false
+    ]
   },
   {
     "description": "Delete operation.",
@@ -171,23 +102,6 @@
         [
           "delete"
         ]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "maxProperties": 0
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
       ]
     }
   },
@@ -219,35 +133,9 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "my_var": {
-              "type": "string",
-              "const": "stack_value"
-            },
-            "retrieved_value": {
-              "type": "string",
-              "const": "stack_value"
-            }
-          },
-          "required": [
-            "my_var",
-            "retrieved_value"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_variables": {
+      "my_var": "stack_value",
+      "retrieved_value": "stack_value"
     }
   },
   {
@@ -352,35 +240,9 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "another_var": {
-              "type": "string",
-              "const": "arg_value"
-            },
-            "retrieved_arg_value": {
-              "type": "string",
-              "const": "arg_value"
-            }
-          },
-          "required": [
-            "another_var",
-            "retrieved_arg_value"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_variables": {
+      "another_var": "arg_value",
+      "retrieved_arg_value": "arg_value"
     }
   },
   {
@@ -514,55 +376,13 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "val_a": {
-              "type": "number",
-              "const": 1
-            },
-            "val_b": {
-              "type": "number",
-              "const": 2
-            },
-            "val_c": {
-              "type": "number",
-              "const": 3
-            },
-            "c_val": {
-              "type": "number",
-              "const": 3
-            },
-            "b_val": {
-              "type": "number",
-              "const": 2
-            },
-            "a_val": {
-              "type": "number",
-              "const": 1
-            }
-          },
-          "required": [
-            "val_a",
-            "val_b",
-            "val_c",
-            "a_val",
-            "b_val",
-            "c_val"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_variables": {
+      "val_a": 1,
+      "val_b": 2,
+      "val_c": 3,
+      "c_val": 3,
+      "b_val": 2,
+      "a_val": 1
     }
   },
   {
@@ -674,30 +494,8 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "new_var": {
-              "type": "string",
-              "const": "new_value"
-            }
-          },
-          "required": [
-            "new_var"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_variables": {
+      "new_var": "new_value"
     }
   },
   {
@@ -771,30 +569,8 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "the_answer": {
-              "type": "number",
-              "const": 42
-            }
-          },
-          "required": [
-            "the_answer"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_variables": {
+      "the_answer": 42
     }
   },
   {
@@ -870,35 +646,9 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "key1": {
-              "type": "string",
-              "const": "value1"
-            },
-            "key2": {
-              "type": "string",
-              "const": "value2"
-            }
-          },
-          "required": [
-            "key1",
-            "key2"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_variables": {
+      "key1": "value1",
+      "key2": "value2"
     }
   },
   {

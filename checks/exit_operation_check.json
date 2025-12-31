@@ -6,35 +6,33 @@
         "my_var": "hello"
       },
       "code": [
-        ["push", 1.0],
-        ["push", 2.0],
-        ["set", "another_var"],
-        ["exit"],
-        ["push", "should_not_reach"]
+        [
+          "push",
+          1.0
+        ],
+        [
+          "push",
+          2.0
+        ],
+        [
+          "set",
+          "another_var"
+        ],
+        [
+          "exit"
+        ],
+        [
+          "push",
+          "should_not_reach"
+        ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 1,
-          "items": {
-            "type": "number",
-            "const": 1.0
-          }
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "my_var": { "type": "string", "const": "hello" },
-            "another_var": { "type": "number", "const": 2.0 }
-          },
-          "required": ["my_var", "another_var"]
-        }
-      },
-      "required": ["stack", "variables"]
+    "expected_stack": [
+      1.0
+    ],
+    "expected_variables": {
+      "my_var": "hello",
+      "another_var": 2.0
     }
   },
   {
@@ -43,47 +41,61 @@
       "variables": {
         "outer_var": "outer_value",
         "inner_func": [
-          ["push", "inner_value"],
-          ["push", "temp_var"],
-          ["set"],
-          ["exit"],
-          ["push", "should_not_reach_in_func"]
+          [
+            "push",
+            "inner_value"
+          ],
+          [
+            "push",
+            "temp_var"
+          ],
+          [
+            "set"
+          ],
+          [
+            "exit"
+          ],
+          [
+            "push",
+            "should_not_reach_in_func"
+          ]
         ]
       },
       "code": [
-        ["push", 10.0],
-        ["push", 20.0],
-        ["set", "global_var"],
-        ["push", "inner_func"],
-        ["get"],
-        ["call"],
-        ["push", "should_not_reach_in_main"]
+        [
+          "push",
+          10.0
+        ],
+        [
+          "push",
+          20.0
+        ],
+        [
+          "set",
+          "global_var"
+        ],
+        [
+          "push",
+          "inner_func"
+        ],
+        [
+          "get"
+        ],
+        [
+          "call"
+        ],
+        [
+          "push",
+          "should_not_reach_in_main"
+        ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 1,
-          "items": {
-            "type": "number",
-            "const": 10.0
-          }
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "outer_var": { "type": "string", "const": "outer_value" },
-            "global_var": { "type": "number", "const": 20.0 }
-          },
-          "required": ["outer_var", "global_var"],
-          "additionalProperties": true
-        },
-        "code": { "type": "array" }
-      },
-      "required": ["stack", "variables", "code"]
+    "expected_stack": [
+      10.0
+    ],
+    "expected_variables": {
+      "outer_var": "outer_value",
+      "global_var": 20.0
     }
   }
 ]

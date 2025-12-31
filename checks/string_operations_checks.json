@@ -16,30 +16,8 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "trimmed_string": {
-              "type": "string",
-              "const": "hello world"
-            }
-          },
-          "required": [
-            "trimmed_string"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_variables": {
+      "trimmed_string": "hello world"
     }
   },
   {
@@ -59,30 +37,8 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "lowercased_string": {
-              "type": "string",
-              "const": "hello world"
-            }
-          },
-          "required": [
-            "lowercased_string"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_variables": {
+      "lowercased_string": "hello world"
     }
   },
   {
@@ -102,30 +58,8 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "uppercased_string": {
-              "type": "string",
-              "const": "HELLO WORLD"
-            }
-          },
-          "required": [
-            "uppercased_string"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_variables": {
+      "uppercased_string": "HELLO WORLD"
     }
   },
   {
@@ -145,30 +79,8 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "string_from_int": {
-              "type": "string",
-              "const": "123"
-            }
-          },
-          "required": [
-            "string_from_int"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_variables": {
+      "string_from_int": "123"
     }
   },
   {
@@ -192,30 +104,8 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "concatenated_string": {
-              "type": "string",
-              "const": "hello world"
-            }
-          },
-          "required": [
-            "concatenated_string"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_variables": {
+      "concatenated_string": "hello world"
     }
   },
   {
@@ -243,30 +133,8 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "replaced_string": {
-              "type": "string",
-              "const": "hi world hi"
-            }
-          },
-          "required": [
-            "replaced_string"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_variables": {
+      "replaced_string": "hi world hi"
     }
   },
   {
@@ -294,30 +162,8 @@
         ]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "sliced_string": {
-              "type": "string",
-              "const": "hello"
-            }
-          },
-          "required": [
-            "sliced_string"
-          ]
-        }
-      },
-      "required": [
-        "stack",
-        "variables"
-      ]
+    "expected_variables": {
+      "sliced_string": "hello"
     }
   }
 ]
