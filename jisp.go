@@ -13,6 +13,8 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"github.com/evanphx/json-patch/v5"
+	"github.com/wI2L/jsondiff"
 	"github.com/xeipuuv/gojsonschema"
 )
 
@@ -73,7 +75,7 @@ func parseRawOperation(rawOp []interface{}) (JispOperation, error) {
 type CallFrame struct {
 	Ip       int                    `json:"-"`
 	Ops      []JispOperation        `json:"Ops"`
-	basePath []interface{}
+	basePath []interface{}          `json:"basePath"`
 	Variables map[string]interface{} `json:"variables,omitempty"`
 }
 
@@ -93,12 +95,51 @@ func (cf *CallFrame) MarshalJSON() ([]byte, error) {
 // JispProgram represents the entire state of a JISP program, including the
 // execution stack, variables map, a general-purpose state map, and a call stack.
 type JispProgram struct {
-	Stack      []interface{}          `json:"stack"`
-	Variables  map[string]interface{} `json:"variables"`
-	Code       []JispOperation        `json:"code"`          // The main program code
-	CallStack  []*CallFrame           `json:"call_stack"` // Stack for function calls
-	Error      *JispError             `json:"error,omitempty"`
-	History    []json.RawMessage      `json:"history,omitempty"` // For undo operation
+	Stack       []interface{}          `json:"stack"`
+	Variables   map[string]interface{} `json:"variables"`
+	Code        []JispOperation        `json:"code"`
+	CallStack   []*CallFrame           `json:"call_stack"`
+	Error       *JispError             `json:"error,omitempty"`
+	History     []json.RawMessage      `json:"history,omitempty"`
+	SaveHistory bool                   `json:"save_history,omitempty"`
+}
+
+func (cf *CallFrame) UnmarshalJSON(data []byte) error {
+	type Alias CallFrame
+	aux := &struct {
+		Ip interface{} `json:"Ip"`
+		*Alias
+	}{
+		Alias: (*Alias)(cf),
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+
+	cf.basePath = []interface{}{} // Initialize basePath
+
+	switch v := aux.Ip.(type) {
+	case float64:
+		cf.Ip = int(v)
+	case []interface{}:
+		if len(v) > 0 {
+			if ipFloat, ok := v[len(v)-1].(float64); ok {
+				cf.Ip = int(ipFloat)
+				if len(v) > 1 {
+					cf.basePath = v[:len(v)-1]
+				}
+			} else {
+				return fmt.Errorf("could not unmarshal Ip: last element of path is not a number")
+			}
+		} else {
+			cf.Ip = 0
+		}
+	default:
+		// Ip might be absent if the frame is not actively executing, which is fine.
+		cf.Ip = 0
+	}
+
+	return nil
 }
 
 // currentFrame returns the currently executing frame from the call stack.
@@ -217,6 +258,10 @@ func stepOp(jp *JispProgram, op *JispOperation) error {
 	if err != nil {
 		return fmt.Errorf("step error: could not reconstruct sub-program from stack value: %w", err)
 	}
+	if len(subProgram.Code) == 0 {
+		jp.Push(subProgram)
+		return nil
+	}
 
 	// Initialize call stack if this is the first execution step
 	if len(subProgram.CallStack) == 0 && len(subProgram.Code) > 0 {
@@ -229,15 +274,34 @@ func stepOp(jp *JispProgram, op *JispOperation) error {
 		subProgram.CallStack = append(subProgram.CallStack, frame)
 	}
 
-	if frame := subProgram.currentFrame(); frame != nil && frame.Ip < len(frame.Ops) {
-		currentSnapshot, err := json.Marshal(subProgram)
+	if frame := subProgram.currentFrame(); frame != nil && frame.Ip < len(frame.Ops) && subProgram.SaveHistory {
+		before, err := json.Marshal(subProgram)
 		if err != nil {
 			return fmt.Errorf("step error: failed to snapshot sub-program: %w", err)
 		}
-		subProgram.History = append(subProgram.History, currentSnapshot)
-	}
 
-	_ = subProgram.executeSingleInstruction()
+		_ = subProgram.executeSingleInstruction()
+
+		after, err := json.Marshal(subProgram)
+		if err != nil {
+			return fmt.Errorf("step error: failed to marshal post-execution state: %w", err)
+		}
+
+		// By passing `after` as the source and `before` as the destination,
+		// we generate a patch that reverts the change.
+		patch, err := jsondiff.CompareJSON(after, before)
+		if err != nil {
+			return fmt.Errorf("step error: failed to generate diff: %w", err)
+		}
+
+		patchBytes, err := json.Marshal(patch)
+		if err != nil {
+			return fmt.Errorf("step error: failed to marshal patch: %w", err)
+		}
+		subProgram.History = append(subProgram.History, patchBytes)
+	} else {
+		_ = subProgram.executeSingleInstruction()
+	}
 
 	jp.Push(subProgram)
 	return nil
@@ -269,14 +333,44 @@ func undoOp(jp *JispProgram, op *JispOperation) error {
 		return nil
 	}
 
-	lastSnapshotBytes := subProgram.History[len(subProgram.History)-1]
-	
-	revertedProgram, err := jispProgramFromBytes(lastSnapshotBytes)
+	lastPatchBytes := subProgram.History[len(subProgram.History)-1]
+
+	patch, err := jsonpatch.DecodePatch(lastPatchBytes)
 	if err != nil {
-		return fmt.Errorf("undo error: failed to unmarshal historical state: %w", err)
+		return fmt.Errorf("undo error: failed to decode patch: %w", err)
 	}
 
-	jp.Push(revertedProgram)
+	// Apply the patch to revert the state
+	revertedBytes, err := patch.Apply(subProgramBytes)
+	if err != nil {
+		return fmt.Errorf("undo error: failed to apply patch: %w", err)
+	}
+
+	// Unmarshal the reverted state back into a JispProgram
+	var revertedProgram JispProgram
+	if err := json.Unmarshal(revertedBytes, &revertedProgram); err != nil {
+		return fmt.Errorf("undo error: failed to unmarshal reverted program: %w", err)
+	}
+
+	// Manually unmarshal the CallStack to ensure the custom UnmarshalJSON is applied
+	if revertedProgram.CallStack != nil {
+		for i, frame := range revertedProgram.CallStack {
+			frameBytes, err := json.Marshal(frame)
+			if err != nil {
+				return fmt.Errorf("undo error: failed to marshal call frame: %w", err)
+			}
+			var newFrame CallFrame
+			if err := json.Unmarshal(frameBytes, &newFrame); err != nil {
+				return fmt.Errorf("undo error: failed to unmarshal call frame: %w", err)
+			}
+			revertedProgram.CallStack[i] = &newFrame
+		}
+	}
+
+	// Remove the applied patch from the history
+	revertedProgram.History = revertedProgram.History[:len(revertedProgram.History)-1]
+
+	jp.Push(&revertedProgram)
 	return nil
 }
 
