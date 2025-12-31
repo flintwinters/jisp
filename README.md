@@ -72,7 +72,7 @@ Not happy with this explicit variable declaration.
 #### Implementation TODOs:
 - [ ] `step`
 - [ ] `undo`
-- [ ] `exit`
+- [x] `exit`
 - [x] `for`
 - [x] `foreach`
 - [x] `try`
