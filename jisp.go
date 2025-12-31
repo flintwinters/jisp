@@ -98,6 +98,7 @@ type JispProgram struct {
 	Code       []JispOperation        `json:"code"`          // The main program code
 	CallStack  []*CallFrame           `json:"call_stack"` // Stack for function calls
 	Error      *JispError             `json:"error,omitempty"`
+	History    []json.RawMessage      `json:"history,omitempty"` // For undo operation
 }
 
 // currentFrame returns the currently executing frame from the call stack.
@@ -177,6 +178,88 @@ type operationHandler func(jp *JispProgram, op *JispOperation) error
 
 var operations map[string]operationHandler
 
+// jispProgramFromBytes reconstructs a JispProgram from raw JSON bytes.
+// It's a helper for step/undo to ensure a full JispProgram struct is created from a generic value.
+func jispProgramFromBytes(data []byte) (*JispProgram, error) {
+	var jp JispProgram
+	if err := json.Unmarshal(data, &jp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal JSON into JispProgram struct: %w", err)
+	}
+	return &jp, nil
+}
+
+// stepOp pops a Jisp state object, executes one instruction, and pushes the modified object back.
+func stepOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("step error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	subProgramVal, err := jp.popValue("step")
+	if err != nil {
+		return err
+	}
+
+	subProgramBytes, err := json.Marshal(subProgramVal)
+	if err != nil {
+		return fmt.Errorf("step error: failed to marshal sub-program value: %w", err)
+	}
+
+	subProgram, err := jispProgramFromBytes(subProgramBytes)
+	if err != nil {
+		return fmt.Errorf("step error: could not reconstruct sub-program from stack value: %w", err)
+	}
+
+	if frame := subProgram.currentFrame(); frame != nil && frame.Ip < len(frame.Ops) {
+		currentSnapshot, err := json.Marshal(subProgram)
+		if err != nil {
+			return fmt.Errorf("step error: failed to snapshot sub-program: %w", err)
+		}
+		subProgram.History = append(subProgram.History, currentSnapshot)
+	}
+
+	_ = subProgram.executeSingleInstruction()
+
+	jp.Push(subProgram)
+	return nil
+}
+
+// undoOp pops a Jisp state object, reverts it to its previous state, and pushes it back.
+func undoOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("undo error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	subProgramVal, err := jp.popValue("undo")
+	if err != nil {
+		return err
+	}
+
+	subProgramBytes, err := json.Marshal(subProgramVal)
+	if err != nil {
+		return fmt.Errorf("undo error: failed to marshal sub-program value: %w", err)
+	}
+
+	subProgram, err := jispProgramFromBytes(subProgramBytes)
+	if err != nil {
+		return fmt.Errorf("undo error: could not reconstruct sub-program from stack value: %w", err)
+	}
+
+	if len(subProgram.History) == 0 {
+		jp.Push(subProgram)
+		return nil
+	}
+
+	lastSnapshotBytes := subProgram.History[len(subProgram.History)-1]
+	
+	revertedProgram, err := jispProgramFromBytes(lastSnapshotBytes)
+	if err != nil {
+		return fmt.Errorf("undo error: failed to unmarshal historical state: %w", err)
+	}
+
+	jp.Push(revertedProgram)
+	return nil
+}
+
 func init() {
 	operations = map[string]operationHandler{
 		"push":         pushOp,
@@ -229,6 +312,8 @@ func init() {
 		"call":         callOp,
 		"return":       returnOp,
 		"exit":         exitOp,
+		"step":         stepOp,
+		"undo":         undoOp,
 	}
 }
 
@@ -690,11 +775,11 @@ func rangeOp(jp *JispProgram, op *JispOperation) error {
 }
 
 func raiseOp(jp *JispProgram, op *JispOperation) error {
-	errMsg, err := pop[string](jp, "raise")
+	errmsg, err := pop[string](jp, "raise")
 	if err != nil {
 		return err
 	}
-	jp.Error = jp.newError(op, errMsg)
+	jp.Error = jp.newError(op, errmsg)
 	return nil
 }
 
@@ -710,13 +795,13 @@ func assertOp(jp *JispProgram, op *JispOperation) error {
 	}
 
 	if !condition {
-		errMsg := "assertion failed"
+		errmsg := "assertion failed"
 		if len(op.Args) > 0 {
 			if customMsg, ok := op.Args[0].(string); ok {
-				errMsg = customMsg
+				errmsg = customMsg
 			}
 		}
-		jp.Error = jp.newError(op, errMsg)
+		jp.Error = jp.newError(op, errmsg)
 	}
 
 	return nil
@@ -822,6 +907,39 @@ func (jp *JispProgram) executeOperationsWithPathSegment(ops []JispOperation, seg
 	return jp.ExecuteOperations(ops, path, useParentScope)
 }
 
+// executeSingleInstruction executes the single operation at the current instruction pointer.
+// It is the atomic unit of the JISP interpreter. It sets jp.Error on runtime errors
+// and returns control flow errors to be handled by the execution loop.
+func (jp *JispProgram) executeSingleInstruction() error {
+	frame := jp.currentFrame()
+	op := frame.Ops[frame.Ip]
+
+	handler, found := operations[op.Name]
+	if !found {
+		jp.Error = jp.newError(&op, fmt.Sprintf("unknown operation: %s", op.Name))
+		frame.Ip++ // Consume the invalid instruction
+		return nil
+	}
+
+	err := handler(jp, &op)
+	frame.Ip++ // Always advance IP after an attempt
+
+	if err != nil {
+		var jispErr *JispError
+		switch {
+		case errors.Is(err, ErrBreak), errors.Is(err, ErrContinue), errors.Is(err, ErrReturn), errors.Is(err, ErrExit):
+			return err // Propagate control flow signals
+		case errors.As(err, &jispErr):
+			jp.Error = jispErr
+			return nil
+		default:
+			jp.Error = jp.newError(&op, err.Error())
+			return nil
+		}
+	}
+	return nil
+}
+
 // ExecuteOperations pushes a new call frame for the given operations and executes them.
 // It manages the instruction pointer within this frame and handles control flow.
 func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interface{}, useParentScope bool) error {
@@ -835,10 +953,9 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interfa
 	if useParentScope && parentFrame != nil {
 		frameVars = parentFrame.Variables
 	} else if parentFrame == nil {
-		// This is the first frame (global scope), so use the global variables map.
-		frameVars = jp.Variables
+		frameVars = jp.Variables // Global scope
 	} else {
-		frameVars = make(map[string]interface{})
+		frameVars = make(map[string]interface{}) // New scope
 	}
 
 	frame := &CallFrame{
@@ -849,8 +966,6 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interfa
 	}
 	jp.CallStack = append(jp.CallStack, frame)
 
-	// Defer popping the frame. This ensures that the call stack is cleaned up
-	// correctly, whether the function returns normally or due to an error.
 	defer func() {
 		if len(jp.CallStack) > 0 && jp.CallStack[len(jp.CallStack)-1] == frame {
 			jp.CallStack = jp.CallStack[:len(jp.CallStack)-1]
@@ -859,37 +974,16 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interfa
 
 	for frame.Ip < len(frame.Ops) {
 		if jp.Error != nil {
-			return nil // Stop execution if an error has been set
-		}
-		op := frame.Ops[frame.Ip]
-
-		handler, found := operations[op.Name]
-		if !found {
-			jp.Error = jp.newError(&op, fmt.Sprintf("unknown operation: %s", op.Name))
-			return nil
+			return nil // Stop if a runtime error was set
 		}
 
-		if err := handler(jp, &op); err != nil {
-			var jispErr *JispError
-			switch {
-			case errors.Is(err, ErrBreak), errors.Is(err, ErrContinue):
-				return err // Propagate control flow signals directly
-			case errors.Is(err, ErrReturn):
-				return err // Propagate return signal to be handled by callOp
-			case errors.As(err, &jispErr):
-				// It's already a JispError from a lower-level function like pop.
-				// Set it and stop execution.
-				jp.Error = jispErr
-				return nil
-			case errors.Is(err, ErrExit):
-				return err // Propagate exit signal to main
-			default:
-				// Wrap other errors as JispError and set it on the program
-				jp.Error = jp.newError(&op, err.Error())
-				return nil // Stop execution by returning nil
+		err := jp.executeSingleInstruction()
+		if err != nil {
+			if errors.Is(err, ErrReturn) {
+				return nil // This frame is done.
 			}
+			return err // Propagate break, continue, exit
 		}
-		frame.Ip++
 	}
 	return nil
 }
@@ -1917,7 +2011,7 @@ func colorizeJSON(data []byte) []byte {
 		if inString {
 			if char == '"' {
 				backslashes := 0
-				for k := i - 1; k > 0 && data[k] == '\\'; k-- {
+				for k := i - 1; k > 0 && data[k] == '\n'; k-- {
 					backslashes++
 				}
 				if backslashes%2 == 0 {
@@ -1941,7 +2035,7 @@ func colorizeJSON(data []byte) []byte {
 			for j < len(data) {
 				if data[j] == '"' {
 					backslashes := 0
-					for k := j - 1; k > i && data[k] == '\\'; k-- {
+					for k := j - 1; k > i && data[k] == '\n'; k-- {
 						backslashes++
 					}
 					if backslashes%2 == 0 {
@@ -1951,7 +2045,7 @@ func colorizeJSON(data []byte) []byte {
 				}
 				j++
 			}
-			for j < len(data) && (data[j] == ' ' || data[j] == '	' || data[j] == '\n' || data[j] == '\r') {
+			for j < len(data) && (data[j] == ' ' || data[j] == '\t' || data[j] == '\n' || data[j] == '\r') {
 				j++
 			}
 			if j < len(data) && data[j] == ':' {
@@ -1980,17 +2074,17 @@ func colorizeJSON(data []byte) []byte {
 			i = j - 1
 		case bytes.HasPrefix(data[i:], []byte("true")):
 			result = append(result, []byte(Blue)...)
-			result = append(result, []byte("true")...)
+			result = append(result, []byte("true")	...)
 			result = append(result, []byte(Reset)...)
 			i += 3 // len("true") - 1
 		case bytes.HasPrefix(data[i:], []byte("false")):
 			result = append(result, []byte(Blue)...)
-			result = append(result, []byte("false")...)
+			result = append(result, []byte("false")	...)
 			result = append(result, []byte(Reset)...)
 			i += 4 // len("false") - 1
 		case bytes.HasPrefix(data[i:], []byte("null")):
 			result = append(result, []byte(Red)...)
-			result = append(result, []byte("null")...)
+			result = append(result, []byte("null")	...)
 			result = append(result, []byte(Reset)...)
 			i += 3 // len("null") - 1
 		default:
@@ -2001,82 +2095,68 @@ func colorizeJSON(data []byte) []byte {
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		log.Fatalf("Usage: %s <file.json>", os.Args[0])
-	}
-	filename := os.Args[1]
+	log.SetFlags(0) // No timestamps
 
-	file, err := os.Open(filename)
+	if len(os.Args) != 2 {
+		log.Fatalf("Usage: %s <jisp_file.json>", os.Args[0])
+	}
+	filePath := os.Args[1]
+
+	fileContent, err := os.ReadFile(filePath)
 	if err != nil {
-		log.Fatalf("Error opening file %s: %v", filename, err)
-	}
-	defer file.Close()
-
-	var programData map[string]interface{}
-	decoder := json.NewDecoder(file)
-	if err := decoder.Decode(&programData); err != nil {
-		log.Fatalf("Error reading JISP program from %s: %v", filename, err)
+		log.Fatalf("Error reading file: %v", err)
 	}
 
-	// Extract code
-	rawCode, ok := programData["code"]
-	if !ok {
-		log.Fatalf("Input JSON must have a 'code' field.")
-	}
-	codeOps, err := parseJispOps(rawCode)
-	if err != nil {
-		log.Fatalf("Error parsing 'code' field: %v", err)
+	// This is the core change: unmarshal directly into a JispProgram.
+	// This supports loading just `{"code": [...]}` as well as a full state object.
+	var jp JispProgram
+	if err := json.Unmarshal(fileContent, &jp); err != nil {
+		// Try to unmarshal into just a JispCode struct for backward compatibility
+		// where the input file might ONLY contain a 'code' array.
+		var jispCode JispCode
+		if err2 := json.Unmarshal(fileContent, &jispCode); err2 != nil {
+			log.Fatalf("Error unmarshaling JISP program: %v\n(Also failed to parse as simple code block: %v)", err, err2)
+		}
+		// If that worked, initialize a new JispProgram with this code.
+		jp.Code = jispCode.Code
 	}
 
-	// Initialize JispProgram with references to the programData map
-	jp := &JispProgram{
-		Code: codeOps,
-	}
-
-	// Initialize stack
-	if stack, ok := programData["stack"].([]interface{}); ok {
-		jp.Stack = stack
-	} else {
+	// Initialize maps and slices if they are nil after unmarshaling
+	if jp.Stack == nil {
 		jp.Stack = []interface{}{}
 	}
-
-	// Initialize variables
-	if variables, ok := programData["variables"].(map[string]interface{}); ok {
-		jp.Variables = variables
-	} else {
+	if jp.Variables == nil {
 		jp.Variables = make(map[string]interface{})
 	}
-
-	// Set up the initial call frame for the main code
-	// The basePath for the top-level code is simply "code"
-	executionErr := jp.ExecuteOperations(codeOps, []interface{}{"code"}, false)
-
-	// executionErr is now only for control flow (like ErrExit) or fatal interpreter errors.
-	// Jisp-level errors are in jp.Error.
-
-	if executionErr != nil && !errors.Is(executionErr, ErrExit) {
-		// A non-Jisp, non-exit error occurred. This is a fatal interpreter issue.
-		log.Fatalf("Fatal runtime error: %v", executionErr)
+	if jp.CallStack == nil {
+		jp.CallStack = []*CallFrame{}
 	}
 
-	// Marshal the final program state. jp.Error will be included if it's not nil.
-	outputJSON, marshalErr := json.MarshalIndent(jp, "", "  ")
-	if marshalErr != nil {
-		log.Fatalf("Error marshaling final program state: %v", marshalErr)
+	// Start execution only if there's no pre-existing error.
+	if jp.Error == nil {
+		err = jp.ExecuteOperations(jp.Code, []interface{}{"code"}, false)
+		if err != nil && !errors.Is(err, ErrExit) {
+			// A non-JispError occurred during execution that wasn't handled.
+			// This would be a catastrophic interpreter bug.
+			// We wrap it in a JispError for consistent output.
+			jp.Error = jp.newError(&JispOperation{Name: "fatal"}, err.Error())
+		}
 	}
 
-	if isTerminal(os.Stdout) {
-		os.Stdout.Write(colorizeJSON(outputJSON))
-		os.Stdout.WriteString("\n")
-	} else {
-		os.Stdout.Write(outputJSON)
-		os.Stdout.WriteString("\n")
+	// Marshal the final state to JSON
+	output, err := json.MarshalIndent(jp, "", "  ")
+	if err != nil {
+		log.Fatalf("Error marshaling final state: %v", err)
 	}
+
+	useColor := isTerminal(os.Stdout)
+	if useColor {
+		output = colorizeJSON(output)
+	}
+
+	fmt.Println(string(output))
 
 	if jp.Error != nil {
 		os.Exit(1)
 	}
-	os.Exit(0)
 }
-
-

@@ -70,8 +70,8 @@ Make a decision on the ergonomics of map, filter, and reduce operations:
 Not happy with this explicit variable declaration.
 
 #### Implementation TODOs:
-- [ ] `step`
-- [ ] `undo`
+- [x] `step`
+- [x] `undo`
 - [x] `exit`
 - [x] `for`
 - [x] `foreach`
