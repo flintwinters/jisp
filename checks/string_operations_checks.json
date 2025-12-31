@@ -16,6 +16,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "trimmed_string": "hello world"
     }
@@ -37,6 +38,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "lowercased_string": "hello world"
     }
@@ -58,6 +60,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "uppercased_string": "HELLO WORLD"
     }
@@ -79,6 +82,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "string_from_int": "123"
     }
@@ -104,6 +108,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "concatenated_string": "hello world"
     }
@@ -133,6 +138,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "replaced_string": "hi world hi"
     }
@@ -162,6 +168,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "sliced_string": "hello"
     }

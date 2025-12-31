@@ -22,8 +22,30 @@
         ]
       ]
     },
-    "expected_variables": {
-      "if_result": "then_executed"
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "if_result": {
+              "type": "string",
+              "const": "then_executed"
+            }
+          },
+          "required": [
+            "if_result"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
     }
   },
   {
@@ -59,8 +81,30 @@
         ]
       ]
     },
-    "expected_variables": {
-      "if_result_else": "else_executed"
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "if_result_else": {
+              "type": "string",
+              "const": "else_executed"
+            }
+          },
+          "required": [
+            "if_result_else"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
     }
   },
   {
@@ -84,6 +128,23 @@
             ]
           ]
         ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "maxProperties": 0
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
       ]
     }
   },
@@ -183,10 +244,40 @@
         ]
       ]
     },
-    "expected_variables": {
-      "counter": 0.0,
-      "loop_condition": false,
-      "final_counter_value": 0.0
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "counter": {
+              "type": "number",
+              "const": 0.0
+            },
+            "loop_condition": {
+              "type": "boolean",
+              "const": false
+            },
+            "final_counter_value": {
+              "type": "number",
+              "const": 0.0
+            }
+          },
+          "required": [
+            "counter",
+            "loop_condition",
+            "final_counter_value"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
     }
   },
   {
@@ -307,10 +398,40 @@
         ]
       ]
     },
-    "expected_variables": {
-      "counter": 2.0,
-      "loop_condition": true,
-      "final_counter_value_break": 2.0
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "counter": {
+              "type": "number",
+              "const": 2.0
+            },
+            "loop_condition": {
+              "type": "boolean",
+              "const": true
+            },
+            "final_counter_value_break": {
+              "type": "number",
+              "const": 2.0
+            }
+          },
+          "required": [
+            "counter",
+            "loop_condition",
+            "final_counter_value_break"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
     }
   },
   {
@@ -473,11 +594,45 @@
         ]
       ]
     },
-    "expected_variables": {
-      "i": 6.0,
-      "sum_of_odd_numbers": 9.0,
-      "loop_condition": false,
-      "final_sum_of_odd_numbers": 9.0
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "i": {
+              "type": "number",
+              "const": 6.0
+            },
+            "sum_of_odd_numbers": {
+              "type": "number",
+              "const": 9.0
+            },
+            "loop_condition": {
+              "type": "boolean",
+              "const": false
+            },
+            "final_sum_of_odd_numbers": {
+              "type": "number",
+              "const": 9.0
+            }
+          },
+          "required": [
+            "i",
+            "sum_of_odd_numbers",
+            "loop_condition",
+            "final_sum_of_odd_numbers"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
     }
   },
   {
@@ -543,9 +698,36 @@
         ]
       ]
     },
-    "expected_variables": {
-      "sum": 6.0,
-      "final_sum": 6.0
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "sum": {
+              "type": "number",
+              "const": 6.0
+            },
+            "final_sum": {
+              "type": "number",
+              "const": 6.0
+            }
+          },
+          "required": [
+            "sum",
+            "final_sum"
+          ],
+          "additionalProperties": true
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
     }
   },
   {
@@ -668,9 +850,35 @@
         ]
       ]
     },
-    "expected_variables": {
-      "successful_result": 1.0,
-      "final_status": 1.0
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "successful_result": {
+              "type": "number",
+              "const": 1.0
+            },
+            "final_status": {
+              "type": "number",
+              "const": 1.0
+            }
+          },
+          "required": [
+            "successful_result",
+            "final_status"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
     }
   },
   {
@@ -844,9 +1052,35 @@
         ]
       ]
     },
-    "expected_variables": {
-      "sum": 3.0,
-      "final_sum_break": 3.0
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "sum": {
+              "type": "number",
+              "const": 3.0
+            },
+            "final_sum_break": {
+              "type": "number",
+              "const": 3.0
+            }
+          },
+          "required": [
+            "sum",
+            "final_sum_break"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
     }
   },
   {
@@ -943,9 +1177,35 @@
         ]
       ]
     },
-    "expected_variables": {
-      "sum": 9.0,
-      "final_sum_continue": 9.0
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "variables": {
+          "type": "object",
+          "properties": {
+            "sum": {
+              "type": "number",
+              "const": 9.0
+            },
+            "final_sum_continue": {
+              "type": "number",
+              "const": 9.0
+            }
+          },
+          "required": [
+            "sum",
+            "final_sum_continue"
+          ]
+        }
+      },
+      "required": [
+        "stack",
+        "variables"
+      ]
     }
   },
   {
@@ -1035,24 +1295,11 @@
             "my_object": {
               "type": "object",
               "properties": {
-                "a": {
-                  "type": "number",
-                  "const": 10.0
-                },
-                "b": {
-                  "type": "number",
-                  "const": 20.0
-                },
-                "c": {
-                  "type": "number",
-                  "const": 30.0
-                }
+                "a": { "type": "number", "const": 10.0 },
+                "b": { "type": "number", "const": 20.0 },
+                "c": { "type": "number", "const": 30.0 }
               },
-              "required": [
-                "a",
-                "b",
-                "c"
-              ]
+              "required": ["a", "b", "c"]
             },
             "sum_of_object_values": {
               "type": "number",

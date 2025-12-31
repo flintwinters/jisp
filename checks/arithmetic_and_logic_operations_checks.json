@@ -44,7 +44,8 @@
     },
     "expected_stack": [
       true
-    ]
+    ],
+    "expected_variables": {}
   },
   {
     "description": "Eq operation - unequal values.",
@@ -65,7 +66,8 @@
     },
     "expected_stack": [
       false
-    ]
+    ],
+    "expected_variables": {}
   },
   {
     "description": "NEGATIVE Test: Division by zero should result in an error.",

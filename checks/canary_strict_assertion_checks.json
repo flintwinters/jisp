@@ -28,6 +28,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "a": 10.0,
       "b": 25.0
@@ -178,6 +179,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "branch_result": "then_was_executed"
     }
@@ -222,6 +224,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "sum": 60.0,
       "item": 30.0

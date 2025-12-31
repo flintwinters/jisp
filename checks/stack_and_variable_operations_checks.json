@@ -27,6 +27,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "my_variable": "Hello, JISP!",
       "retrieved_message": "Hello, JISP!"
@@ -78,7 +79,8 @@
     },
     "expected_stack": [
       false
-    ]
+    ],
+    "expected_variables": {}
   },
   {
     "description": "Delete operation.",
@@ -103,7 +105,9 @@
           "delete"
         ]
       ]
-    }
+    },
+    "expected_stack": [],
+    "expected_variables": {}
   },
   {
     "description": "Get operation - no arguments, path from stack (string).",
@@ -133,6 +137,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "my_var": "stack_value",
       "retrieved_value": "stack_value"
@@ -240,6 +245,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "another_var": "arg_value",
       "retrieved_arg_value": "arg_value"
@@ -376,6 +382,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "val_a": 1,
       "val_b": 2,
@@ -494,6 +501,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "new_var": "new_value"
     }
@@ -569,6 +577,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "the_answer": 42
     }
@@ -646,6 +655,7 @@
         ]
       ]
     },
+    "expected_stack": [],
     "expected_variables": {
       "key1": "value1",
       "key2": "value2"
