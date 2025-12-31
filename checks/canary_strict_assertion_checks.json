@@ -178,5 +178,31 @@
         },
         "required": ["stack", "variables"]
     }
+  },
+  {
+    "description": "NEGATIVE Canary Test 5: Forced Failure for Stack State. This test is DESIGNED TO FAIL. It uses the 'assert' command to intentionally cause the Jisp program to exit with a specific error. This verifies that the test harness correctly catches explicit program failures. If this test passes, it means the 'assert' command is working correctly.",
+    "jisp_program": {
+      "code": [
+        ["push", false],
+        ["assert", "Negative canary test: Intentionally failed assertion for stack state."]
+      ]
+    },
+    "expected_error_message": "Negative canary test: Intentionally failed assertion for stack state."
+  },
+  {
+    "description": "NEGATIVE Canary Test 6: Forced Failure for Variable Value. This test is DESIGNED TO FAIL. It performs an addition (5 + 5), then asserts that the result is not equal to the expected value, forcing an error. This verifies that the test harness correctly catches logical failures enforced by 'assert'. If this test passes, it confirms that 'assert', 'eq', and arithmetic operations are functioning as expected.",
+    "jisp_program": {
+      "code": [
+        ["push", 5.0],
+        ["push", 5.0],
+        ["add"],
+        ["set", "result"],
+        ["get", "result"],
+        ["push", 11.0],
+        ["eq"],
+        ["assert", "Negative canary test: Incorrect variable value. Expected 11.0 but got 10.0."]
+      ]
+    },
+    "expected_error_message": "Negative canary test: Incorrect variable value. Expected 11.0 but got 10.0."
   }
 ]
