@@ -32,7 +32,7 @@ TEST_FAILED_VALIDATION_ERROR = "Validation error."
 
 # Skipping messages
 SKIPPING_TEST_MISSING_PROGRAM = "[bold yellow]⚠️ Skipping test '{description}' in {filepath}: Missing 'jisp_program'.[/bold yellow]"
-SKIPPING_TEST_MISSING_SCHEMA_OR_ERROR = "[bold yellow]⚠️ Skipping test '{description}' in {filepath}: Missing 'validation_schema' or 'expected_error_message'.[/bold yellow]"
+SKIPPING_TEST_MISSING_SCHEMA_OR_ERROR = "[bold yellow]⚠️ Skipping test '{description}' in {filepath}: Missing 'validation_schema', 'expected_stack'/'expected_variables', or 'expected_error_message'.[/bold yellow]"
 
 # Final summary messages
 ALL_TESTS_PASSED = "[bold green]All {passed_tests} tests passed successfully![/bold green]"
@@ -56,6 +56,45 @@ def _handle_test_failure(fail_fast, description, checks_filepath, message, detai
 def _print_test_failure(description: str, checks_filepath: str, message: str):
     """Helper to print a formatted test failure message."""
     console.print(f"  [bold red]❌ Test '{description}'\n[bold blue]{checks_filepath}[/bold blue] {message}[/bold red]")
+
+
+def _generate_validation_schema(check):
+    expected_stack = check.get("expected_stack")
+    expected_variables = check.get("expected_variables")
+
+    if expected_stack is None and expected_variables is None:
+        return None
+
+    schema = {
+        "type": "object",
+        "properties": {},
+        "required": ["stack", "variables"]
+    }
+
+    # Handle stack validation
+    if expected_stack is not None:
+        schema['properties']['stack'] = {'const': expected_stack}
+    else:
+        # Default: stack must be empty if not specified
+        schema['properties']['stack'] = {'type': 'array', 'maxItems': 0}
+
+    # Handle variables validation
+    if expected_variables is not None:
+        variable_properties = {
+            key: {"const": value} for key, value in expected_variables.items()
+        }
+        schema['properties']['variables'] = {
+            'type': 'object',
+            'properties': variable_properties,
+            'required': list(expected_variables.keys()),
+            'additionalProperties': False,
+        }
+    else:
+        # Default: variables must be empty if not specified
+        schema['properties']['variables'] = {'type': 'object', 'maxProperties': 0}
+
+    return schema
+
 
 def compile_go_program():
     if os.path.exists(BINARY_NAME) and os.path.getmtime(GO_SOURCE_FILE) < os.path.getmtime(BINARY_NAME):
@@ -109,6 +148,9 @@ def run_all_checks(fail_fast=False):
                 jisp_program = check.get("jisp_program")
                 validation_schema = check.get("validation_schema")
                 expected_error_message = check.get("expected_error_message")
+
+                if not validation_schema and ("expected_stack" in check or "expected_variables" in check):
+                    validation_schema = _generate_validation_schema(check)
 
                 if not jisp_program:
                     console.print(SKIPPING_TEST_MISSING_PROGRAM.format(description=description, filepath=checks_filepath))
