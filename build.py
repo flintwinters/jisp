@@ -86,7 +86,7 @@ def run_all_checks():
             console.print(JSON_DECODE_ERROR_IN_FILE.format(filepath=checks_filepath, e=e))
             continue
 
-        for i, check in enumerate(checks):
+        for i, check in enumerate(checks if isinstance(checks, list) else [checks]):
             total_tests += 1
             description = check.get("description", f"Unnamed test {i+1}")
             jisp_program = check.get("jisp_program")

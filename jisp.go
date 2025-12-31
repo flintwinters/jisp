@@ -34,18 +34,19 @@ func exitOp(jp *JispProgram, op *JispOperation) error {
 // JispError is a custom error type for JISP program errors.
 // It allows the 'try' operation to catch and handle runtime errors gracefully.
 type JispError struct {
-	OperationName      string        `json:"operation_name"`
-	InstructionPointer []interface{} `json:"instruction_pointer"`
-	Message            string        `json:"message"`
-	StackSnapshot      []interface{} `json:"stack_snapshot"`
+	OperationName      string                 `json:"operation_name"`
+	InstructionPointer []interface{}          `json:"instruction_pointer"`
+	Message            string                 `json:"message"`
+	StackSnapshot      []interface{}          `json:"stack_snapshot"`
+	CallStackSnapshot  []*CallFrame           `json:"call_stack_snapshot"`
+	VariablesSnapshot  map[string]interface{} `json:"variables_snapshot"`
 }
 
 func (e *JispError) Error() string {
-	stackJSON, _ := json.MarshalIndent(e.StackSnapshot, "", "  ")
-	ipJSON, _ := json.Marshal(e.InstructionPointer)
-	return fmt.Sprintf("Jisp Execution Error:\n  Operation: '%s'\n  Instruction: %s\n  Message: %s\n  Stack: %s",
-		e.OperationName, ipJSON, e.Message, stackJSON)
+	return fmt.Sprintf("Jisp error in '%s' at %v: %s", e.OperationName, e.InstructionPointer, e.Message)
 }
+
+
 
 // parseRawOperation parses a single operation from a raw array of interfaces.
 // It expects the first element to be the operation name (string) and the rest to be arguments.
@@ -96,6 +97,7 @@ type JispProgram struct {
 	Variables  map[string]interface{} `json:"variables"`
 	Code       []JispOperation        `json:"code"`          // The main program code
 	CallStack  []*CallFrame           `json:"call_stack"` // Stack for function calls
+	Error      *JispError             `json:"error,omitempty"`
 }
 
 // currentFrame returns the currently executing frame from the call stack.
@@ -111,11 +113,29 @@ func (jp *JispProgram) newError(op *JispOperation, message string) *JispError {
 	stackCopy := make([]interface{}, len(jp.Stack))
 	copy(stackCopy, jp.Stack)
 
+	// Deep copy call stack
+	callStackCopy := make([]*CallFrame, len(jp.CallStack))
+	for i, frame := range jp.CallStack {
+		// Note: This is a shallow copy of the frame's Ops and Variables.
+		// For debugging snapshots, this is usually sufficient.
+		frameCopy := *frame
+		callStackCopy[i] = &frameCopy
+	}
+
+	// Deep copy variables
+	varsCopy := make(map[string]interface{})
+	for k, v := range jp.Variables {
+		// Note: This is a shallow copy of nested structures.
+		varsCopy[k] = v
+	}
+
 	return &JispError{
 		OperationName:      op.Name,
 		InstructionPointer: jp.currentInstructionPath(),
 		Message:            message,
 		StackSnapshot:      stackCopy,
+		CallStackSnapshot:  callStackCopy,
+		VariablesSnapshot:  varsCopy,
 	}
 }
 
@@ -669,12 +689,13 @@ func rangeOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
-func raiseOp(jp *JispProgram, _ *JispOperation) error {
+func raiseOp(jp *JispProgram, op *JispOperation) error {
 	errMsg, err := pop[string](jp, "raise")
 	if err != nil {
 		return err
 	}
-	return &JispError{Message: errMsg}
+	jp.Error = jp.newError(op, errMsg)
+	return nil
 }
 
 func assertOp(jp *JispProgram, op *JispOperation) error {
@@ -695,7 +716,7 @@ func assertOp(jp *JispProgram, op *JispOperation) error {
 				errMsg = customMsg
 			}
 		}
-		return &JispError{Message: errMsg}
+		jp.Error = jp.newError(op, errMsg)
 	}
 
 	return nil
@@ -837,11 +858,15 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interfa
 	}()
 
 	for frame.Ip < len(frame.Ops) {
+		if jp.Error != nil {
+			return nil // Stop execution if an error has been set
+		}
 		op := frame.Ops[frame.Ip]
 
 		handler, found := operations[op.Name]
 		if !found {
-			return jp.newError(&op, fmt.Sprintf("unknown operation: %s", op.Name))
+			jp.Error = jp.newError(&op, fmt.Sprintf("unknown operation: %s", op.Name))
+			return nil
 		}
 
 		if err := handler(jp, &op); err != nil {
@@ -852,12 +877,16 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interfa
 			case errors.Is(err, ErrReturn):
 				return err // Propagate return signal to be handled by callOp
 			case errors.As(err, &jispErr):
-				return err // Already a JispError, propagate
+				// It's already a JispError from a lower-level function like pop.
+				// Set it and stop execution.
+				jp.Error = jispErr
+				return nil
 			case errors.Is(err, ErrExit):
 				return err // Propagate exit signal to main
 			default:
-				// Wrap other errors as JispError for 'try' to catch
-				return jp.newError(&op, err.Error())
+				// Wrap other errors as JispError and set it on the program
+				jp.Error = jp.newError(&op, err.Error())
+				return nil // Stop execution by returning nil
 			}
 		}
 		frame.Ip++
@@ -1636,27 +1665,20 @@ func (jp *JispProgram) If(thenBody, elseBody []JispOperation) error {
 
 // Try executes the tryBody, and if a JispError occurs, it binds the error message
 // to catchVar and executes the catchBody.
-func (jp *JispProgram) Try(tryBody []JispOperation, catchVar string, catchBody []JispOperation) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			// This catches panics that are not JispError.
-			// Re-throw if it's not a JispError, or if catchBody is not provided.
-			if _, ok := r.(*JispError); !ok || catchBody == nil {
-				panic(r)
-			}
-			// If it's a JispError and catchBody exists, handle it.
-			err = jp.handleCaughtError(r, catchVar, catchBody, 2)
-		}
-	}()
-
-	// Execute tryBody
-	if tryErr := jp.executeOperationsWithPathSegment(tryBody, 0, true); tryErr != nil {
-		if jispErr, ok := tryErr.(*JispError); ok {
-			// JispError occurred, handle it with the catch block
-			return jp.handleCaughtError(jispErr, catchVar, catchBody, 2)
-		}
-		return tryErr // Propagate other types of errors
+func (jp *JispProgram) Try(tryBody []JispOperation, catchVar string, catchBody []JispOperation) error {
+	// Execute tryBody. Any errors will be stored in jp.Error.
+	if err := jp.executeOperationsWithPathSegment(tryBody, 0, true); err != nil {
+		// Propagate control flow signals, but not JispErrors
+		return err
 	}
+
+	if jp.Error != nil {
+		// A JispError occurred, handle it with the catch block.
+		caughtErr := jp.Error
+		jp.Error = nil // Clear the error before executing the catch body.
+		jp.handleCaughtError(caughtErr, catchVar, catchBody, 2)
+	}
+
 	return nil
 }
 
@@ -1708,27 +1730,18 @@ func (jp *JispProgram) executeLoopBody(bodyOps []JispOperation, bodyOpsPathSegme
 	return nil
 }
 
-func (jp *JispProgram) handleCaughtError(caught interface{}, catchVar string, catchBody []JispOperation, catchBodyPathSegment interface{}) error {
-	var errMsg string
-	if jispErr, ok := caught.(*JispError); ok {
-		errMsg = jispErr.Message
-	} else if err, ok := caught.(error); ok {
-		errMsg = err.Error()
-	} else {
-		errMsg = fmt.Sprintf("%v", caught)
-	}
-
+func (jp *JispProgram) handleCaughtError(caughtErr *JispError, catchVar string, catchBody []JispOperation, catchBodyPathSegment interface{}) {
 	// Save the error message to the catch variable
 	if jp.Variables == nil {
 		jp.Variables = make(map[string]interface{})
 	}
-	jp.Variables[catchVar] = errMsg
+	jp.Variables[catchVar] = caughtErr.Message
 
 	// Execute catchBody
 	if catchBody != nil {
-		return jp.executeOperationsWithPathSegment(catchBody, catchBodyPathSegment, true)
+		// Errors inside catchBody will be set on jp.Error by ExecuteOperations
+		_ = jp.executeOperationsWithPathSegment(catchBody, catchBodyPathSegment, true)
 	}
-	return nil // If no catchBody, just absorb the error
 }
 
 // --- Helper Functions ---
@@ -2038,88 +2051,32 @@ func main() {
 	// The basePath for the top-level code is simply "code"
 	executionErr := jp.ExecuteOperations(codeOps, []interface{}{"code"}, false)
 
-	output := map[string]interface{}{
-		"stack":     jp.Stack,
-		"variables": jp.Variables,
-		"code":      jp.Code, // Include code in the output
+	// executionErr is now only for control flow (like ErrExit) or fatal interpreter errors.
+	// Jisp-level errors are in jp.Error.
+
+	if executionErr != nil && !errors.Is(executionErr, ErrExit) {
+		// A non-Jisp, non-exit error occurred. This is a fatal interpreter issue.
+		log.Fatalf("Fatal runtime error: %v", executionErr)
 	}
 
-	if executionErr != nil {
-		if errors.Is(executionErr, ErrExit) {
-			// If ErrExit, output the current program state as JSON and exit cleanly
-			// Program state is already in 'output' map
-			outputJSON, marshalErr := json.MarshalIndent(output, "", "  ")
-			if marshalErr != nil {
-				log.Fatalf("Error marshaling program state on exit: %v", marshalErr)
-			}
-			if isTerminal(os.Stdout) {
-				os.Stdout.Write(colorizeJSON(outputJSON))
-				os.Stdout.WriteString("\n")
-			} else {
-				os.Stdout.Write(outputJSON)
-				os.Stdout.WriteString("\n")
-			}
-			os.Exit(0)
-		}
-
-		var jispErr *JispError
-		if errors.As(executionErr, &jispErr) {
-			// If it's a JispError, include it in the output and exit with error code
-			output["error"] = jispErr
-			outputJSON, marshalErr := json.MarshalIndent(output, "", "  ")
-			if marshalErr != nil {
-				log.Fatalf("Error marshaling program state with error: %v", marshalErr)
-			}
-			if isTerminal(os.Stdout) {
-				os.Stdout.Write(colorizeJSON(outputJSON))
-				os.Stdout.WriteString("\n")
-			} else {
-				os.Stdout.Write(outputJSON)
-				os.Stdout.WriteString("\n")
-			}
-			os.Exit(1)
-		} else {
-			// Other unexpected errors
-			log.Fatalf("Runtime error: %v", executionErr)
-		}
-	}
-
-	// If program executes to completion without an error or exit, print final state
-	outputJSON, marshalErr := json.MarshalIndent(output, "", "  ")
+	// Marshal the final program state. jp.Error will be included if it's not nil.
+	outputJSON, marshalErr := json.MarshalIndent(jp, "", "  ")
 	if marshalErr != nil {
 		log.Fatalf("Error marshaling final program state: %v", marshalErr)
 	}
+
 	if isTerminal(os.Stdout) {
 		os.Stdout.Write(colorizeJSON(outputJSON))
 		os.Stdout.WriteString("\n")
 	} else {
 		os.Stdout.Write(outputJSON)
 		os.Stdout.WriteString("\n")
+	}
+
+	if jp.Error != nil {
+		os.Exit(1)
 	}
 	os.Exit(0)
 }
 
-// printProgramState is a helper to marshal and print the current JispProgram state.
-// If an error is provided, it will be included in the output.
-func (jp *JispProgram) printProgramState(err *JispError) {
-	output := map[string]interface{}{
-		"stack":     jp.Stack,
-		"variables": jp.Variables,
-	}
-	if err != nil {
-		output["error"] = err
-	}
 
-	outputJSON, marshalErr := json.MarshalIndent(output, "", "  ")
-	if marshalErr != nil {
-		log.Fatalf("Error marshaling program state: %v", marshalErr)
-	}
-
-	if isTerminal(os.Stdout) {
-		os.Stdout.Write(colorizeJSON(outputJSON))
-		os.Stdout.WriteString("\n")
-	} else {
-		os.Stdout.Write(outputJSON)
-		os.Stdout.WriteString("\n")
-	}
-}
