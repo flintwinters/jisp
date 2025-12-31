@@ -380,38 +380,257 @@ func init() {
 		"pop":          popOp,
 		"set":          setOp,
 		"get":          getOp,
-		"exists":       existsOp,
-		"delete":       deleteOp,
-		"eq":           eqOp,
-		"lt":           ltOp,
-		"gt":           gtOp,
-		"add":          addOp,
-		"sub":          subOp,
-		"mul":          mulOp,
-		"div":          divOp,
-		"mod":          modOp,
-		"and":          andOp,
-		"or":           orOp,
-		"not":          notOp,
+		"exists": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("exists error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return jp.Exists()
+		},
+		"delete": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("delete error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return jp.Delete()
+		},
+		"eq": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("eq error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return jp.Eq()
+		},
+		"lt": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("lt error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return jp.Lt()
+		},
+		"gt": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("gt error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return jp.Gt()
+		},
+		"add": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("add error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return jp.Add()
+		},
+		"sub": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("sub error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return jp.Sub()
+		},
+		"mul": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("mul error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return jp.Mul()
+		},
+		"div": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("div error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return jp.Div()
+		},
+		"mod": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("mod error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return jp.Mod()
+		},
+		"and": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("and error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return jp.And()
+		},
+		"or": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("or error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return jp.Or()
+		},
+		"not": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("not error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return jp.Not()
+		},
 		"if":           ifOp,
 		"while":        whileOp,
-		"trim":         trimOp,
-		"lower":        lowerOp,
-		"upper":        upperOp,
-		"to_string":    toStringOp,
-		"concat":       concatOp,
-		"break":        breakOp,
-		"continue":     continueOp,
-		"len":          lenOp,
-		"keys":         keysOp,
-		"values":       valuesOp,
-		"noop":         noopOp,
-		"try":          tryOp,
-		"replace":      replaceOp,
-		"for":          forOp,
-		"slice":        sliceOp,
-		"raise":        raiseOp,
-		"assert":       assertOp,
+		"trim": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("trim error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return jp.applyStringUnaryOp("trim", strings.TrimSpace)
+		},
+		"lower": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("lower error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return jp.applyStringUnaryOp("lower", strings.ToLower)
+		},
+		"upper": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("upper error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return jp.applyStringUnaryOp("upper", strings.ToUpper)
+		},
+		"to_string": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("to_string error: expected 0 arguments, got %d", len(op.Args))
+			}
+			val, err := jp.popValue("to_string")
+			if err != nil {
+				return err
+			}
+			jp.Push(fmt.Sprintf("%v", val))
+			return nil
+		},
+		"concat": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("concat error: expected 0 arguments, got %d", len(op.Args))
+			}
+			v1, v2, err := popTwo[string](jp, "concat")
+			if err != nil {
+				return err
+			}
+			jp.Push(v1 + v2)
+			return nil
+		},
+		        "break": func(jp *JispProgram, op *JispOperation) error {
+					if len(op.Args) > 0 {
+						return fmt.Errorf("break error: expected 0 arguments, got %d", len(op.Args))
+					}
+					return ErrBreak
+				},
+		"continue": func(jp *JispProgram, op *JispOperation) error {
+			if len(op.Args) > 0 {
+				return fmt.Errorf("continue error: expected 0 arguments, got %d", len(op.Args))
+			}
+			return ErrContinue
+		},
+		"len": func(jp *JispProgram, op *JispOperation) error {
+			return applyCollectionOp(jp, "len", op, collectionHandlers{
+				stringHandler: func(s string) (interface{}, error) {
+					return float64(len(s)), nil
+				},
+				arrayHandler: func(a []interface{}) (interface{}, error) {
+					return float64(len(a)), nil
+				},
+				objectHandler: func(m map[string]interface{}) (interface{}, error) {
+					return float64(len(m)), nil
+				},
+			})
+		},
+		"keys": func(jp *JispProgram, op *JispOperation) error {
+			return applyCollectionOp(jp, "keys", op, collectionHandlers{
+				objectHandler: func(m map[string]interface{}) (interface{}, error) {
+					keys := make([]string, 0, len(m))
+					for k := range m {
+						keys = append(keys, k)
+					}
+					return keys, nil
+				},
+			})
+		},
+		"values": func(jp *JispProgram, op *JispOperation) error {
+			return applyCollectionOp(jp, "values", op, collectionHandlers{
+				objectHandler: func(m map[string]interface{}) (interface{}, error) {
+					values := make([]interface{}, 0, len(m))
+					for _, val := range m {
+						values = append(values, val)
+					}
+					return values, nil
+				},
+			})
+		},
+		        "noop": func(jp *JispProgram, op *JispOperation) error {
+					if len(op.Args) > 0 {
+						return fmt.Errorf("noop error: expected 0 arguments, got %d", len(op.Args))
+					}
+					return nil
+				},
+				"try":          tryOp,
+				"replace": func(jp *JispProgram, op *JispOperation) error {
+					if len(op.Args) > 0 {
+						return fmt.Errorf("replace error: expected 0 arguments, got %d", len(op.Args))
+					}
+					values, err := jp.popx("replace", 3)
+					if err != nil {
+						return err
+					}
+					str, okStr := values[0].(string)
+					old, okOld := values[1].(string)
+					new, okNew := values[2].(string)
+					if !okStr || !okOld || !okNew {
+						return fmt.Errorf("replace error: expected three strings on the stack")
+					}
+					jp.Push(strings.ReplaceAll(str, old, new))
+					return nil
+				},
+				"for":          forOp,
+				"slice": func(jp *JispProgram, op *JispOperation) error {
+					if len(op.Args) > 0 {
+						return fmt.Errorf("slice error: expected 0 arguments, got %d", len(op.Args))
+					}
+					var inputVal, startRaw, endRaw interface{}
+		
+					// Try to pop 3 values (input, start, end)
+					values, err := jp.popx("slice", 3)
+					if err == nil {
+						inputVal, startRaw, endRaw = values[0], values[1], values[2]
+					} else {
+						// If 3 values not available, try to pop 2 values (input, start)
+						values, err = jp.popx("slice", 2)
+						if err != nil {
+							return fmt.Errorf("slice error: stack underflow, expected at least 2 values (input, start)")
+						}
+						inputVal, startRaw = values[0], values[1]
+						endRaw = nil // Explicitly set endRaw to nil if not provided
+					}
+		
+					startFloat, ok := startRaw.(float64)
+					if !ok {
+						return fmt.Errorf("slice error: expected numeric start index, got %T", startRaw)
+					}
+					start := int(startFloat)
+		
+					hasEnd := endRaw != nil
+					var end int
+					if hasEnd {
+						endFloat, ok := endRaw.(float64)
+						if !ok {
+							return fmt.Errorf("slice error: expected numeric end index, got %T", endRaw)
+						}
+						end = int(endFloat)
+					}
+		
+					var sliceable Slicer
+					switch v := inputVal.(type) {
+					case string:
+						sliceable = stringSlicer(v)
+					case []interface{}:
+						sliceable = sliceSlicer(v)
+					default:
+						return fmt.Errorf("slice error: unsupported type %T for slicing, expected string or array", inputVal)
+					}
+		
+					length := sliceable.Len()
+					if !hasEnd {
+						end = length
+					}
+		
+					if start < 0 || end < start || end > length {
+						return fmt.Errorf("slice error: invalid indices [%d:%d] for collection of length %d", start, end, length)
+					}
+		
+					jp.Push(sliceable.Slice(start, end))
+					return nil
+				},
+				"raise":        raiseOp,		"assert":       assertOp,
 		"range":        rangeOp,
 		"foreach":      forOp,
 		"filter":       filterOp,
@@ -675,42 +894,34 @@ func sortOp(jp *JispProgram, op *JispOperation) error {
 
 	switch v := val.(type) {
 	case []interface{}:
-		// Attempt to sort as numbers or strings
 		if len(v) == 0 {
-			jp.Push(v) // Push empty slice back
+			jp.Push(v)
 			return nil
 		}
 
-		if isNumberSlice(v) {
-			numSlice := make([]float64, len(v))
-			for i, item := range v {
-				numSlice[i] = item.(float64)
+		// Check type of first element to determine sort type
+		switch v[0].(type) {
+		case float64:
+			if !isNumberSlice(v) {
+				return fmt.Errorf("sort error: array contains mixed types")
 			}
-			sort.Float64s(numSlice)
-			result := make([]interface{}, len(numSlice))
-			for i, num := range numSlice {
-				result[i] = num
-			}
-			jp.Push(result)
+			sort.Slice(v, func(i, j int) bool {
+				return v[i].(float64) < v[j].(float64)
+			})
+			jp.Push(v)
 			return nil
-		}
-
-		if isStringSlice(v) {
-			strSlice := make([]string, len(v))
-			for i, item := range v {
-				strSlice[i] = item.(string)
+		case string:
+			if !isStringSlice(v) {
+				return fmt.Errorf("sort error: array contains mixed types")
 			}
-			sort.Strings(strSlice)
-			result := make([]interface{}, len(strSlice))
-			for i, str := range strSlice {
-				result[i] = str
-			}
-			jp.Push(result)
+			sort.Slice(v, func(i, j int) bool {
+				return v[i].(string) < v[j].(string)
+			})
+			jp.Push(v)
 			return nil
+		default:
+			return fmt.Errorf("sort error: array contains unsortable types")
 		}
-
-		return fmt.Errorf("sort error: array contains mixed types or unsortable types")
-
 	default:
 		return fmt.Errorf("sort error: unsupported type %T for sorting, expected array", val)
 	}
@@ -923,68 +1134,6 @@ func assertOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
-func noopOp(jp *JispProgram, _ *JispOperation) error {
-	// No operation, do nothing.
-	return nil
-}
-
-
-func sliceOp(jp *JispProgram, _ *JispOperation) error {
-	var inputVal, startRaw, endRaw interface{}
-
-	// Try to pop 3 values (input, start, end)
-	values, err := jp.popx("slice", 3)
-	if err == nil {
-		inputVal, startRaw, endRaw = values[0], values[1], values[2]
-	} else {
-		// If 3 values not available, try to pop 2 values (input, start)
-		values, err = jp.popx("slice", 2)
-		if err != nil {
-			return fmt.Errorf("slice error: stack underflow, expected at least 2 values (input, start)")
-		}
-		inputVal, startRaw = values[0], values[1]
-		endRaw = nil // Explicitly set endRaw to nil if not provided
-	}
-
-	startFloat, ok := startRaw.(float64)
-	if !ok {
-		return fmt.Errorf("slice error: expected numeric start index, got %T", startRaw)
-	}
-	start := int(startFloat)
-
-	hasEnd := endRaw != nil
-	var end int
-	if hasEnd {
-		endFloat, ok := endRaw.(float64)
-		if !ok {
-			return fmt.Errorf("slice error: expected numeric end index, got %T", endRaw)
-		}
-		end = int(endFloat)
-	}
-
-	var sliceable Slicer
-	switch v := inputVal.(type) {
-	case string:
-		sliceable = stringSlicer(v)
-	case []interface{}:
-		sliceable = sliceSlicer(v)
-	default:
-		return fmt.Errorf("slice error: unsupported type %T for slicing, expected string or array", inputVal)
-	}
-
-	length := sliceable.Len()
-	if !hasEnd {
-		end = length
-	}
-
-	if start < 0 || end < start || end > length {
-		return fmt.Errorf("slice error: invalid indices [%d:%d] for collection of length %d", start, end, length)
-	}
-
-	jp.Push(sliceable.Slice(start, end))
-	return nil
-}
-
 // Slicer defines an interface for types that can be sliced.
 type Slicer interface {
 	Len() int
@@ -1177,28 +1326,6 @@ func popOp(jp *JispProgram, op *JispOperation) error {
 	return jp.Pop(fieldName)
 }
 
-func breakOp(jp *JispProgram, _ *JispOperation) error {
-	return ErrBreak
-}
-
-func continueOp(jp *JispProgram, _ *JispOperation) error {
-	return ErrContinue
-}
-
-func existsOp(jp *JispProgram, _ *JispOperation) error { return jp.Exists() }
-func deleteOp(jp *JispProgram, _ *JispOperation) error { return jp.Delete() }
-func eqOp(jp *JispProgram, _ *JispOperation) error     { return jp.Eq() }
-func ltOp(jp *JispProgram, _ *JispOperation) error     { return jp.Lt() }
-func gtOp(jp *JispProgram, _ *JispOperation) error     { return jp.Gt() }
-func addOp(jp *JispProgram, _ *JispOperation) error    { return jp.Add() }
-func subOp(jp *JispProgram, _ *JispOperation) error    { return jp.Sub() }
-func mulOp(jp *JispProgram, _ *JispOperation) error    { return jp.Mul() }
-func divOp(jp *JispProgram, _ *JispOperation) error    { return jp.Div() }
-func modOp(jp *JispProgram, _ *JispOperation) error    { return jp.Mod() }
-func andOp(jp *JispProgram, _ *JispOperation) error    { return jp.And() }
-func orOp(jp *JispProgram, _ *JispOperation) error     { return jp.Or() }
-func notOp(jp *JispProgram, _ *JispOperation) error    { return jp.Not() }
-
 func ifOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) == 0 || len(op.Args) > 2 {
 		return fmt.Errorf("if error: expected 1 or 2 array arguments for then/else bodies, got %v", op.Args)
@@ -1274,51 +1401,6 @@ func forOp(jp *JispProgram, op *JispOperation) error {
 	return jp.For(loopVar, collectionVal, bodyOps, 2)
 }
 
-func trimOp(jp *JispProgram, _ *JispOperation) error {
-	return jp.applyStringUnaryOp("trim", strings.TrimSpace)
-}
-
-func lowerOp(jp *JispProgram, _ *JispOperation) error {
-	return jp.applyStringUnaryOp("lower", strings.ToLower)
-}
-
-func upperOp(jp *JispProgram, _ *JispOperation) error {
-	return jp.applyStringUnaryOp("upper", strings.ToUpper)
-}
-
-func toStringOp(jp *JispProgram, _ *JispOperation) error {
-	val, err := jp.popValue("to_string")
-	if err != nil {
-		return err
-	}
-	jp.Push(fmt.Sprintf("%v", val))
-	return nil
-}
-
-func concatOp(jp *JispProgram, _ *JispOperation) error {
-	v1, v2, err := popTwo[string](jp, "concat")
-	if err != nil {
-		return err
-	}
-	jp.Push(v1 + v2)
-	return nil
-}
-
-func replaceOp(jp *JispProgram, _ *JispOperation) error {
-	values, err := jp.popx("replace", 3)
-	if err != nil {
-		return err
-	}
-	str, okStr := values[0].(string)
-	old, okOld := values[1].(string)
-	new, okNew := values[2].(string)
-	if !okStr || !okOld || !okNew {
-		return fmt.Errorf("replace error: expected three strings on the stack")
-	}
-	jp.Push(strings.ReplaceAll(str, old, new))
-	return nil
-}
-
 func whileOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) != 2 {
 		return fmt.Errorf("while error: expected 2 arguments for condition path and body, got %v", op.Args)
@@ -1363,44 +1445,6 @@ func whileOp(jp *JispProgram, op *JispOperation) error {
 		}
 	}
 	return nil
-}
-
-func lenOp(jp *JispProgram, op *JispOperation) error {
-	return applyCollectionOp(jp, "len", op, collectionHandlers{
-		stringHandler: func(s string) (interface{}, error) {
-			return float64(len(s)), nil
-		},
-		arrayHandler: func(a []interface{}) (interface{}, error) {
-			return float64(len(a)), nil
-		},
-		objectHandler: func(m map[string]interface{}) (interface{}, error) {
-			return float64(len(m)), nil
-		},
-	})
-}
-
-func valuesOp(jp *JispProgram, op *JispOperation) error {
-	return applyCollectionOp(jp, "values", op, collectionHandlers{
-		objectHandler: func(m map[string]interface{}) (interface{}, error) {
-			values := make([]interface{}, 0, len(m))
-			for _, val := range m {
-				values = append(values, val)
-			}
-			return values, nil
-		},
-	})
-}
-
-func keysOp(jp *JispProgram, op *JispOperation) error {
-	return applyCollectionOp(jp, "keys", op, collectionHandlers{
-		objectHandler: func(m map[string]interface{}) (interface{}, error) {
-			keys := make([]string, 0, len(m))
-			for k := range m {
-				keys = append(keys, k)
-			}
-			return keys, nil
-		},
-	})
 }
 
 type collectionHandlers struct {
@@ -2004,23 +2048,6 @@ func (jp *JispProgram) popx(opName string, n int) ([]interface{}, error) {
 	values := jp.Stack[len(jp.Stack)-n:]
 	jp.Stack = jp.Stack[:len(jp.Stack)-n]
 	return values, nil
-}
-
-func (jp *JispProgram) popString(opName string) (string, error) {
-	return pop[string](jp, opName)
-}
-
-func (jp *JispProgram) popKeyValue(opName string) (string, interface{}, error) {
-	values, err := jp.popx(opName, 2)
-	if err != nil {
-		return "", nil, err
-	}
-	value := values[0]
-	key, ok := values[1].(string)
-	if !ok {
-		return "", nil, fmt.Errorf("%s error: expected a string key on stack, got %T", opName, values[1])
-	}
-	return key, value, nil
 }
 
 func (jp *JispProgram) applyStringUnaryOp(opName string, op func(string) string) error {
