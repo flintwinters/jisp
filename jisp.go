@@ -412,6 +412,127 @@ func undoOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
+func toStringOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) > 0 {
+		return fmt.Errorf("to_string error: expected 0 arguments, got %d", len(op.Args))
+	}
+	val, err := jp.popValue("to_string")
+	if err != nil {
+		return err
+	}
+	jp.Push(fmt.Sprintf("%v", val))
+	return nil
+}
+
+func concatOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) > 0 {
+		return fmt.Errorf("concat error: expected 0 arguments, got %d", len(op.Args))
+	}
+	v1, v2, err := popTwo[string](jp, "concat")
+	if err != nil {
+		return err
+	}
+	jp.Push(v1 + v2)
+	return nil
+}
+
+func lenStringHandler(s string) (interface{}, error) { return float64(len(s)), nil }
+func lenArrayHandler(a []interface{}) (interface{}, error) { return float64(len(a)), nil }
+func lenObjectHandler(m map[string]interface{}) (interface{}, error) { return float64(len(m)), nil }
+
+func keysObjectHandler(m map[string]interface{}) (interface{}, error) {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys, nil
+}
+
+func valuesObjectHandler(m map[string]interface{}) (interface{}, error) {
+	values := make([]interface{}, 0, len(m))
+	for _, val := range m {
+		values = append(values, val)
+	}
+	return values, nil
+}
+
+func replaceOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) > 0 {
+		return fmt.Errorf("replace error: expected 0 arguments, got %d", len(op.Args))
+	}
+	values, err := jp.popx("replace", 3)
+	if err != nil {
+		return err
+	}
+	str, okStr := values[0].(string)
+	old, okOld := values[1].(string)
+	new, okNew := values[2].(string)
+	if !okStr || !okOld || !okNew {
+		return fmt.Errorf("replace error: expected three strings on the stack")
+	}
+	jp.Push(strings.ReplaceAll(str, old, new))
+	return nil
+}
+
+func sliceOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) > 0 {
+		return fmt.Errorf("slice error: expected 0 arguments, got %d", len(op.Args))
+	}
+	var inputVal, startRaw, endRaw interface{}
+
+	// Try to pop 3 values (input, start, end)
+	values, err := jp.popx("slice", 3)
+	if err == nil {
+		inputVal, startRaw, endRaw = values[0], values[1], values[2]
+	} else {
+		// If 3 values not available, try to pop 2 values (input, start)
+		values, err = jp.popx("slice", 2)
+		if err != nil {
+			return fmt.Errorf("slice error: stack underflow, expected at least 2 values (input, start)")
+		}
+		inputVal, startRaw = values[0], values[1]
+		endRaw = nil // Explicitly set endRaw to nil if not provided
+	}
+
+	startFloat, ok := startRaw.(float64)
+	if !ok {
+		return fmt.Errorf("slice error: expected numeric start index, got %T", startRaw)
+	}
+	start := int(startFloat)
+
+	hasEnd := endRaw != nil
+	var end int
+	if hasEnd {
+		endFloat, ok := endRaw.(float64)
+		if !ok {
+			return fmt.Errorf("slice error: expected numeric end index, got %T", endRaw)
+		}
+		end = int(endFloat)
+	}
+
+	var sliceable Slicer
+	switch v := inputVal.(type) {
+	case string:
+		sliceable = stringSlicer(v)
+	case []interface{}:
+		sliceable = sliceSlicer(v)
+	default:
+		return fmt.Errorf("slice error: unsupported type %T for slicing, expected string or array", inputVal)
+	}
+
+	length := sliceable.Len()
+	if !hasEnd {
+		end = length
+	}
+
+	if start < 0 || end < start || end > length {
+		return fmt.Errorf("slice error: invalid indices [%d:%d] for collection of length %d", start, end, length)
+	}
+
+	jp.Push(sliceable.Slice(start, end))
+	return nil
+}
+
 func init() {
 	operations = map[string]operationHandler{
 	"push":         pushOp,
@@ -438,6 +559,12 @@ func init() {
 	"exit":         exitOp,
 	"step":         stepOp,
 	"undo":         undoOp,
+	"to_string": 	toStringOp,
+	"concat": 		concatOp,
+	"try":  		tryOp,
+	"replace": 		replaceOp,
+	"for":          forOp,
+	"slice": 		sliceOp,
 	"exists":       makeNoArgsHandler((*JispProgram).Exists),
 	"delete":       makeNoArgsHandler((*JispProgram).Delete),
 	"eq":           makeNoArgsHandler((*JispProgram).Eq),
@@ -454,131 +581,20 @@ func init() {
 	"trim":         makeStringUnaryOpHandler(strings.TrimSpace),
 	"lower":        makeStringUnaryOpHandler(strings.ToLower),
 	"upper":        makeStringUnaryOpHandler(strings.ToUpper),
-	"break":    makeConstantErrorHandler(ErrBreak),
-	"continue": makeConstantErrorHandler(ErrContinue),
-	"noop": makeConstantErrorHandler(nil),
-	"to_string": func(jp *JispProgram, op *JispOperation) error {
-		if len(op.Args) > 0 {
-			return fmt.Errorf("to_string error: expected 0 arguments, got %d", len(op.Args))
-		}
-		val, err := jp.popValue("to_string")
-		if err != nil {
-			return err
-		}
-		jp.Push(fmt.Sprintf("%v", val))
-		return nil
-	},
-	"concat": func(jp *JispProgram, op *JispOperation) error {
-		if len(op.Args) > 0 {
-			return fmt.Errorf("concat error: expected 0 arguments, got %d", len(op.Args))
-		}
-		v1, v2, err := popTwo[string](jp, "concat")
-		if err != nil {
-			return err
-		}
-		jp.Push(v1 + v2)
-		return nil
-	},
+	"break":    	makeConstantErrorHandler(ErrBreak),
+	"continue": 	makeConstantErrorHandler(ErrContinue),
+	"noop": 		makeConstantErrorHandler(nil),
 	"len": makeCollectionOpHandler(collectionHandlers{
-		stringHandler: func(s string) (interface{}, error) { return float64(len(s)), nil },
-		arrayHandler:  func(a []interface{}) (interface{}, error) { return float64(len(a)), nil },
-		objectHandler: func(m map[string]interface{}) (interface{}, error) { return float64(len(m)), nil },
+		stringHandler: lenStringHandler,
+		arrayHandler:  lenArrayHandler,
+		objectHandler: lenObjectHandler,
 	}),
 	"keys": makeCollectionOpHandler(collectionHandlers{
-		objectHandler: func(m map[string]interface{}) (interface{}, error) {
-			keys := make([]string, 0, len(m))
-			for k := range m {
-				keys = append(keys, k)
-			}
-			return keys, nil
-		},
+		objectHandler: keysObjectHandler,
 	}),
 	"values": makeCollectionOpHandler(collectionHandlers{
-		objectHandler: func(m map[string]interface{}) (interface{}, error) {
-			values := make([]interface{}, 0, len(m))
-			for _, val := range m {
-				values = append(values, val)
-			}
-			return values, nil
-		},
+		objectHandler: valuesObjectHandler,
 	}),
-	"try":  tryOp,
-	"replace": func(jp *JispProgram, op *JispOperation) error {
-		if len(op.Args) > 0 {
-			return fmt.Errorf("replace error: expected 0 arguments, got %d", len(op.Args))
-		}
-		values, err := jp.popx("replace", 3)
-		if err != nil {
-			return err
-		}
-		str, okStr := values[0].(string)
-		old, okOld := values[1].(string)
-		new, okNew := values[2].(string)
-		if !okStr || !okOld || !okNew {
-			return fmt.Errorf("replace error: expected three strings on the stack")
-		}
-		jp.Push(strings.ReplaceAll(str, old, new))
-		return nil
-	},
-	"for":          forOp,
-	"slice": func(jp *JispProgram, op *JispOperation) error {
-		if len(op.Args) > 0 {
-			return fmt.Errorf("slice error: expected 0 arguments, got %d", len(op.Args))
-		}
-		var inputVal, startRaw, endRaw interface{}
-
-		// Try to pop 3 values (input, start, end)
-		values, err := jp.popx("slice", 3)
-		if err == nil {
-			inputVal, startRaw, endRaw = values[0], values[1], values[2]
-		} else {
-			// If 3 values not available, try to pop 2 values (input, start)
-			values, err = jp.popx("slice", 2)
-			if err != nil {
-				return fmt.Errorf("slice error: stack underflow, expected at least 2 values (input, start)")
-			}
-			inputVal, startRaw = values[0], values[1]
-			endRaw = nil // Explicitly set endRaw to nil if not provided
-		}
-
-		startFloat, ok := startRaw.(float64)
-		if !ok {
-			return fmt.Errorf("slice error: expected numeric start index, got %T", startRaw)
-		}
-		start := int(startFloat)
-
-		hasEnd := endRaw != nil
-		var end int
-		if hasEnd {
-			endFloat, ok := endRaw.(float64)
-			if !ok {
-				return fmt.Errorf("slice error: expected numeric end index, got %T", endRaw)
-			}
-			end = int(endFloat)
-		}
-
-		var sliceable Slicer
-		switch v := inputVal.(type) {
-		case string:
-			sliceable = stringSlicer(v)
-		case []interface{}:
-			sliceable = sliceSlicer(v)
-		default:
-			return fmt.Errorf("slice error: unsupported type %T for slicing, expected string or array", inputVal)
-		}
-
-		length := sliceable.Len()
-		if !hasEnd {
-			end = length
-		}
-
-		if start < 0 || end < start || end > length {
-			return fmt.Errorf("slice error: invalid indices [%d:%d] for collection of length %d", start, end, length)
-		}
-
-		jp.Push(sliceable.Slice(start, end))
-		return nil
-	},
 	}
 }
 
