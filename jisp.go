@@ -297,51 +297,54 @@ func stepOp(jp *JispProgram, op *JispOperation) error {
 	if err != nil {
 		return fmt.Errorf("step error: could not reconstruct sub-program from stack value: %w", err)
 	}
-	if len(subProgram.Code) == 0 {
-		jp.Push(subProgram)
-		return nil
-	}
-
-	// Initialize call stack if this is the first execution step
-	if len(subProgram.CallStack) == 0 && len(subProgram.Code) > 0 {
-		frame := &CallFrame{
-			Ops:       subProgram.Code,
-			Ip:        0,
-			basePath:  []interface{}{"code"},
-			Variables: subProgram.Variables,
+		if len(subProgram.Code) == 0 {
+			jp.Push(subProgram)
+			return nil
 		}
-		subProgram.CallStack = append(subProgram.CallStack, frame)
-	}
-
-	if frame := subProgram.currentFrame(); frame != nil && frame.Ip < len(frame.Ops) && subProgram.SaveHistory {
-		before, err := json.Marshal(subProgram)
-		if err != nil {
-			return fmt.Errorf("step error: failed to snapshot sub-program: %w", err)
+	
+		if subProgram.currentFrame() == nil {
+			// If the sub-program hasn't started yet, initialize its call stack
+			frame := &CallFrame{
+				Ops:       subProgram.Code,
+				Ip:        0,
+				basePath:  []interface{}{"code"},
+				Variables: subProgram.Variables,
+			}
+			subProgram.CallStack = append(subProgram.CallStack, frame)
 		}
-
-		_ = subProgram.executeSingleInstruction()
-
-		after, err := json.Marshal(subProgram)
-		if err != nil {
-			return fmt.Errorf("step error: failed to marshal post-execution state: %w", err)
+	
+		if frame := subProgram.currentFrame(); frame != nil && frame.Ip < len(frame.Ops) && subProgram.SaveHistory {
+			before, err := json.Marshal(subProgram)
+			if err != nil {
+				return fmt.Errorf("step error: failed to snapshot sub-program: %w", err)
+			}
+	
+			err = subProgram.executeSingleInstruction() // Execute one instruction
+			if err != nil {
+				return fmt.Errorf("step error: during single instruction execution: %w", err)
+			}
+	
+			after, err := json.Marshal(subProgram)
+			if err != nil {
+				return fmt.Errorf("step error: failed to marshal post-execution state: %w", err)
+			}
+	
+			patch, err := jsondiff.CompareJSON(after, before)
+			if err != nil {
+				return fmt.Errorf("step error: failed to generate diff: %w", err)
+			}
+	
+			patchBytes, err := json.Marshal(patch)
+			if err != nil {
+				return fmt.Errorf("step error: failed to marshal patch: %w", err)
+			}
+			subProgram.History = append(subProgram.History, patchBytes)
+		} else if frame != nil && frame.Ip < len(frame.Ops) {
+			err := subProgram.executeSingleInstruction() // Execute one instruction
+			if err != nil {
+				return fmt.Errorf("step error: during single instruction execution: %w", err)
+			}
 		}
-
-		// By passing `after` as the source and `before` as the destination,
-		// we generate a patch that reverts the change.
-		patch, err := jsondiff.CompareJSON(after, before)
-		if err != nil {
-			return fmt.Errorf("step error: failed to generate diff: %w", err)
-		}
-
-		patchBytes, err := json.Marshal(patch)
-		if err != nil {
-			return fmt.Errorf("step error: failed to marshal patch: %w", err)
-		}
-		subProgram.History = append(subProgram.History, patchBytes)
-	} else {
-		_ = subProgram.executeSingleInstruction()
-	}
-
 	jp.Push(subProgram)
 	return nil
 }
@@ -1117,7 +1120,7 @@ func (jp *JispProgram) executeOperationsWithPathSegment(ops []JispOperation, seg
 	path := make([]interface{}, len(parentPath)+1)
 	copy(path, parentPath)
 	path[len(parentPath)] = segment
-	return jp.ExecuteOperations(ops, path, useParentScope)
+	return jp.executeFrame(ops, path, useParentScope, -1)
 }
 
 // executeSingleInstruction executes the single operation at the current instruction pointer.
@@ -1155,7 +1158,7 @@ func (jp *JispProgram) executeSingleInstruction() error {
 
 // ExecuteOperations pushes a new call frame for the given operations and executes them.
 // It manages the instruction pointer within this frame and handles control flow.
-func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interface{}, useParentScope bool) error {
+func (jp *JispProgram) executeFrame(ops []JispOperation, basePath []interface{}, useParentScope bool, instructionLimit int) error {
 	if len(ops) == 0 {
 		return nil
 	}
@@ -1185,7 +1188,7 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interfa
 		}
 	}()
 
-	for frame.Ip < len(frame.Ops) {
+	for instructionLimit != 0 && frame.Ip < len(frame.Ops) {
 		if jp.Error != nil {
 			return nil // Stop if a runtime error was set
 		}
@@ -1197,8 +1200,15 @@ func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interfa
 			}
 			return err // Propagate break, continue, exit
 		}
+		instructionLimit--
 	}
 	return nil
+}
+
+// ExecuteOperations pushes a new call frame for the given operations and executes them.
+// It manages the instruction pointer within this frame and handles control flow.
+func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interface{}, useParentScope bool) error {
+	return jp.executeFrame(ops, basePath, useParentScope, -1)
 }
 
 // --- Operation Handlers ---
@@ -2202,7 +2212,7 @@ func main() {
 
 	// Start execution only if there's no pre-existing error.
 	if jp.Error == nil {
-		err = jp.ExecuteOperations(jp.Code, []interface{}{"code"}, false)
+		err = jp.executeFrame(jp.Code, []interface{}{"code"}, false, -1)
 		if err != nil && !errors.Is(err, ErrExit) {
 			// A non-JispError occurred during execution that wasn't handled.
 			// This would be a catastrophic interpreter bug.
