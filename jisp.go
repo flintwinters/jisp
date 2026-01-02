@@ -11,18 +11,21 @@ import (
 	"log"
 	"math"
 	"os"
+	"reflect"
 	"sort"
 	"strings"
+
 	"github.com/evanphx/json-patch/v5"
 	"github.com/wI2L/jsondiff"
 	"github.com/xeipuuv/gojsonschema"
 )
 
 var (
-	ErrBreak    = errors.New("break")
-	ErrContinue = errors.New("continue")
-	ErrReturn   = errors.New("return")
-	ErrExit     = errors.New("exit")
+	ErrBreak      = errors.New("break")
+	ErrContinue   = errors.New("continue")
+	ErrReturn     = errors.New("return")
+	ErrExit       = errors.New("exit")
+	ErrBreakpoint = errors.New("breakpoint")
 )
 
 // exitOp stops the program execution.
@@ -102,6 +105,8 @@ type JispProgram struct {
 	Error       *JispError             `json:"error,omitempty"`
 	History     []json.RawMessage      `json:"history"`
 	SaveHistory bool                   `json:"save_history,omitempty"`
+	Debug       bool                   `json:"debug,omitempty"`
+	Breakpoints [][]interface{}        `json:"breakpoints,omitempty"`
 }
 
 func (cf *CallFrame) UnmarshalJSON(data []byte) error {
@@ -451,6 +456,13 @@ func (jp *JispProgram) Run() error {
 
 		err := jp.executeSingleInstruction()
 		if err != nil {
+			if errors.Is(err, ErrBreakpoint) {
+				frame := jp.currentFrame()
+				if frame != nil {
+					frame.Ip++ // Increment IP when breakpoint is hit so next run/step continues past it.
+				}
+				return nil // Breakpoint hit, stop execution gracefully.
+			}
 			if errors.Is(err, ErrReturn) {
 				jp.CallStack = jp.CallStack[:len(jp.CallStack)-1] // Pop frame on return
 				continue
@@ -467,6 +479,13 @@ func (jp *JispProgram) Run() error {
 			return nil
 		}
 	}
+}
+
+func breakpointOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) > 0 {
+		return fmt.Errorf("breakpoint error: expected 0 arguments, got %d", len(op.Args))
+	}
+	return ErrBreakpoint
 }
 
 func runOp(jp *JispProgram, op *JispOperation) error {
@@ -647,6 +666,7 @@ func init() {
 	"step":         stepOp,
 	"undo":         undoOp,
 	"run":          runOp,
+	"breakpoint":   breakpointOp,
 	"to_string": 	toStringOp,
 	"concat": 		concatOp,
 	"try":  		tryOp,
@@ -1213,6 +1233,15 @@ func (jp *JispProgram) executeOperationsWithPathSegment(ops []JispOperation, seg
 // and returns control flow errors to be handled by the execution loop.
 func (jp *JispProgram) executeSingleInstruction() error {
 	frame := jp.currentFrame()
+	if jp.Debug && len(jp.Breakpoints) > 0 {
+		currentPath := jp.currentInstructionPath()
+		for _, bp := range jp.Breakpoints {
+			if pathsEqual(currentPath, bp) {
+				return ErrBreakpoint
+			}
+		}
+	}
+
 	op := frame.Ops[frame.Ip]
 
 	handler, found := operations[op.Name]
@@ -1223,21 +1252,20 @@ func (jp *JispProgram) executeSingleInstruction() error {
 	}
 
 	err := handler(jp, &op)
-	frame.Ip++ // Always advance IP after an attempt
-
 	if err != nil {
 		var jispErr *JispError
 		switch {
-		case errors.Is(err, ErrBreak), errors.Is(err, ErrContinue), errors.Is(err, ErrReturn), errors.Is(err, ErrExit):
-			return err // Propagate control flow signals
+		case errors.Is(err, ErrBreak), errors.Is(err, ErrContinue), errors.Is(err, ErrReturn), errors.Is(err, ErrExit), errors.Is(err, ErrBreakpoint):
+			return err // Propagate control flow signals including breakpoint
 		case errors.As(err, &jispErr):
 			jp.Error = jispErr
-			return nil
 		default:
 			jp.Error = jp.newError(&op, err.Error())
-			return nil
 		}
+		frame.Ip++ // Consume the invalid instruction
+		return nil
 	}
+	frame.Ip++ // Always advance IP after a successful instruction or handled error
 	return nil
 }
 
@@ -1280,6 +1308,9 @@ func (jp *JispProgram) executeFrame(ops []JispOperation, basePath []interface{},
 
 		err := jp.executeSingleInstruction()
 		if err != nil {
+			if errors.Is(err, ErrBreakpoint) {
+				return nil // Stop execution for this frame on breakpoint.
+			}
 			if errors.Is(err, ErrReturn) {
 				return nil // This frame is done.
 			}
@@ -1288,6 +1319,45 @@ func (jp *JispProgram) executeFrame(ops []JispOperation, basePath []interface{},
 		instructionLimit--
 	}
 	return nil
+}
+
+// toFloat is a helper to convert various numeric types to float64 for comparison.
+func toFloat(v interface{}) (float64, bool) {
+	switch i := v.(type) {
+	case float64:
+		return i, true
+	case int:
+		return float64(i), true
+	case int32:
+		return float64(i), true
+	case int64:
+		return float64(i), true
+	default:
+		return 0, false
+	}
+}
+
+// pathsEqual compares two Jisp paths, correctly handling int vs float64 differences.
+func pathsEqual(p1, p2 []interface{}) bool {
+	if len(p1) != len(p2) {
+		return false
+	}
+	for i := range p1 {
+		v1 := p1[i]
+		v2 := p2[i]
+
+		f1, ok1 := toFloat(v1)
+		f2, ok2 := toFloat(v2)
+
+		if ok1 && ok2 {
+			if f1 != f2 {
+				return false
+			}
+		} else if !reflect.DeepEqual(v1, v2) {
+			return false
+		}
+	}
+	return true
 }
 
 // ExecuteOperations pushes a new call frame for the given operations and executes them.
