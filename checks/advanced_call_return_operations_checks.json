@@ -1,138 +1,137 @@
 [
-  {
-    "description": "Call and return - mutual recursion to determine if a number is even or odd.",
-    "jisp_program": {
-        "variables": {
-            "is_even": [
-                ["set", "n"],
-                ["get", "n"], ["push", 0.0], ["eq"],
-                ["if",
-                    [
-                        ["push", true], ["return"]
-                    ],
-                    [
-                        ["get", "n"], ["push", 1.0], ["sub"],
-                        ["get", "is_odd"],
-                        ["call"],
-                        ["return"]
-                    ]
-                ]
-            ],
-            "is_odd": [
-                ["set", "n"],
-                ["get", "n"], ["push", 0.0], ["eq"],
-                ["if",
-                    [
-                        ["push", false], ["return"]
-                    ],
-                    [
-                        ["get", "n"], ["push", 1.0], ["sub"],
-                        ["get", "is_even"],
-                        ["call"],
-                        ["return"]
-                    ]
-                ]
-            ]
-        },
-        "code": [
-            ["push", 5.0],
-            ["get", "is_odd"],
-            ["call"],
-            ["pop", "is_5_odd"],
-            ["push", 6.0],
-            ["get", "is_even"],
-            ["call"],
-            ["pop", "is_6_even"]
-        ]
-    },
-    "validation_schema": {
-        "type": "object",
-        "properties": {
-            "stack": { "type": "array", "maxItems": 0 },
-            "variables": {
-                "type": "object",
-                "properties": {
-                    "is_even": { "type": "array" },
-                    "is_odd": { "type": "array" },
-                    "is_5_odd": { "type": "boolean", "const": true },
-                    "is_6_even": { "type": "boolean", "const": true }
-                },
-                "required": ["is_even", "is_odd", "is_5_odd", "is_6_even"]
-            }
-        },
-        "required": ["stack", "variables"]
-    }
+ {
+  "description": "Call and return - mutual recursion to determine if a number is even or odd.",
+  "jisp_program": {
+   "variables": {
+    "is_even": [
+     ["set", "n"],
+     ["get", "n"],
+     ["push", 0.0],
+     ["eq"],
+     [
+      "if",
+      [["push", true], ["return"]],
+      [
+       ["get", "n"],
+       ["push", 1.0],
+       ["sub"],
+       ["get", "is_odd"],
+       ["call"],
+       ["return"]
+      ]
+     ]
+    ],
+    "is_odd": [
+     ["set", "n"],
+     ["get", "n"],
+     ["push", 0.0],
+     ["eq"],
+     [
+      "if",
+      [["push", false], ["return"]],
+      [
+       ["get", "n"],
+       ["push", 1.0],
+       ["sub"],
+       ["get", "is_even"],
+       ["call"],
+       ["return"]
+      ]
+     ]
+    ]
+   },
+   "code": [
+    ["push", 5.0],
+    ["get", "is_odd"],
+    ["call"],
+    ["pop", "is_5_odd"],
+    ["push", 6.0],
+    ["get", "is_even"],
+    ["call"],
+    ["pop", "is_6_even"]
+   ]
   },
-  {
-    "description": "Call and return - closure test where an inner function accesses a variable from its parent's scope after the parent has returned.",
-    "jisp_program": {
-        "variables": {
-            "make_adder": [
-                ["set", "x"],
-                ["push", [
-                    ["set", "y"],
-                    ["get", "y"],
-                    ["get", "x"],
-                    ["add"],
-                    ["return"]
-                ]],
-                ["return"]
-            ]
-        },
-        "code": [
-            ["push", 5.0],
-            ["get", "make_adder"],
-            ["call"],
-            ["set", "add5_func"],
-
-            ["push", 10.0],
-            ["get", "add5_func"],
-            ["call"],
-            ["pop", "result"]
-        ]
-    },
-    "expected_error_message": "get error: variable 'x' not found"
-  },
-  {
-    "description": "Call and return - variable shadowing. A function's local variable should not affect a global variable with the same name.",
-    "jisp_program": {
-        "variables": {
-            "x": 100.0,
-            "shadow_func": [
-                ["set", "x"],
-                ["get", "x"],
-                ["push", 1.0],
-                ["add"],
-                ["set", "x"],
-                ["get", "x"],
-                ["return"]
-            ]
-        },
-        "code": [
-            ["push", 5.0],
-            ["get", "shadow_func"],
-            ["call"],
-            ["pop", "func_result"],
-            ["get", "x"],
-            ["pop", "global_x_after_call"]
-        ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": { "type": "array", "maxItems": 0 },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "x": { "type": "number", "const": 100.0 },
-            "shadow_func": { "type": "array" },
-            "func_result": { "type": "number", "const": 6.0 },
-            "global_x_after_call": { "type": "number", "const": 100.0 }
-          },
-          "required": ["x", "shadow_func", "func_result", "global_x_after_call"]
-        }
-      },
-      "required": ["stack", "variables"]
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "stack": {"type": "array", "maxItems": 0},
+    "variables": {
+     "type": "object",
+     "properties": {
+      "is_even": {"type": "array"},
+      "is_odd": {"type": "array"},
+      "is_5_odd": {"type": "boolean", "const": true},
+      "is_6_even": {"type": "boolean", "const": true}
+     },
+     "required": ["is_even", "is_odd", "is_5_odd", "is_6_even"]
     }
+   },
+   "required": ["stack", "variables"]
   }
+ },
+ {
+  "description": "Call and return - closure test where an inner function accesses a variable from its parent's scope after the parent has returned.",
+  "jisp_program": {
+   "variables": {
+    "make_adder": [
+     ["set", "x"],
+     ["push", [["set", "y"], ["get", "y"], ["get", "x"], ["add"], ["return"]]],
+     ["return"]
+    ]
+   },
+   "code": [
+    ["push", 5.0],
+    ["get", "make_adder"],
+    ["call"],
+    ["set", "add5_func"],
+    ["push", 10.0],
+    ["get", "add5_func"],
+    ["call"],
+    ["pop", "result"]
+   ]
+  },
+  "expected_error_message": "get error: variable 'x' not found"
+ },
+ {
+  "description": "Call and return - variable shadowing. A function's local variable should not affect a global variable with the same name.",
+  "jisp_program": {
+   "variables": {
+    "x": 100.0,
+    "shadow_func": [
+     ["set", "x"],
+     ["get", "x"],
+     ["push", 1.0],
+     ["add"],
+     ["set", "x"],
+     ["get", "x"],
+     ["return"]
+    ]
+   },
+   "code": [
+    ["push", 5.0],
+    ["get", "shadow_func"],
+    ["call"],
+    ["pop", "func_result"],
+    ["get", "x"],
+    ["pop", "global_x_after_call"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "stack": {"type": "array", "maxItems": 0},
+    "variables": {
+     "type": "object",
+     "properties": {
+      "x": {"type": "number", "const": 100.0},
+      "shadow_func": {"type": "array"},
+      "func_result": {"type": "number", "const": 6.0},
+      "global_x_after_call": {"type": "number", "const": 100.0}
+     },
+     "required": ["x", "shadow_func", "func_result", "global_x_after_call"]
+    }
+   },
+   "required": ["stack", "variables"]
+  }
+ }
 ]

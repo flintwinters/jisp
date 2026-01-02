@@ -1,193 +1,204 @@
 [
-  {
-    "description": "Breakpoint operation - stops execution at a specific instruction.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "debug": true,
-          "breakpoints": [
-            ["code", 1]
-          ],
-          "code": [
-            ["push", 1.0],
-            ["pop", "a"],
-            ["push", 2.0],
-            ["pop", "b"]
-          ]
-        }],
-        ["run"],
-        ["pop", "final_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "stack": { "type": "array", "items": {"type": "number", "const": 1.0}, "minItems": 1, "maxItems": 1 },
-                "variables": { "type": "object", "maxProperties": 0 },
-                "call_stack": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "Ip": { "type": "array", "prefixItems": [{"type": "string", "const": "code"}, {"type": "number", "const": 2}] }
-                    }
-                  }
-                }
-              },
-              "required": ["stack", "variables", "call_stack"]
-            }
-          }
-        }
-      }
-    }
+ {
+  "description": "Breakpoint operation - stops execution at a specific instruction.",
+  "jisp_program": {
+   "code": [
+    [
+     "push",
+     {
+      "debug": true,
+      "breakpoints": [["code", 1]],
+      "code": [["push", 1.0], ["pop", "a"], ["push", 2.0], ["pop", "b"]]
+     }
+    ],
+    ["run"],
+    ["pop", "final_program"]
+   ]
   },
-  {
-    "description": "Breakpoint operation - does not stop execution when debug is false.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "debug": false,
-          "breakpoints": [
-            ["code", 1]
-          ],
-          "code": [
-            ["push", 1.0],
-            ["pop", "a"],
-            ["push", 2.0],
-            ["pop", "b"]
-          ]
-        }],
-        ["run"],
-        ["pop", "final_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "final_program": {
+       "type": "object",
+       "properties": {
+        "stack": {
+         "type": "array",
+         "items": {"type": "number", "const": 1.0},
+         "minItems": 1,
+         "maxItems": 1
+        },
+        "variables": {"type": "object", "maxProperties": 0},
+        "call_stack": {
+         "type": "array",
+         "items": {
           "type": "object",
           "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "stack": { "type": "array", "maxItems": 0 },
-                "variables": {
-                  "type": "object",
-                  "properties": {
-                    "a": { "type": "number", "const": 1.0 },
-                    "b": { "type": "number", "const": 2.0 }
-                  },
-                  "required": ["a", "b"]
-                },
-                "call_stack": { "type": "array", "maxItems": 0 }
-              },
-              "required": ["stack", "variables", "call_stack"]
-            }
+           "Ip": {
+            "type": "array",
+            "prefixItems": [
+             {"type": "string", "const": "code"},
+             {"type": "number", "const": 2}
+            ]
+           }
           }
+         }
         }
+       },
+       "required": ["stack", "variables", "call_stack"]
       }
+     }
     }
-  },
-  {
-    "description": "Breakpoint operation - continue execution with 'run' after hitting a breakpoint.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "debug": true,
-          "breakpoints": [
-            ["code", 1]
-          ],
-          "code": [
-            ["push", 1.0],
-            ["pop", "a"],
-            ["push", 2.0],
-            ["pop", "b"]
-          ]
-        }],
-        ["run"],
-        ["run"],
-        ["pop", "final_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "stack": { "type": "array", "items": {"type": "number", "const": 1.0}, "minItems": 1, "maxItems": 1 },
-                "variables": {
-                  "type": "object",
-                  "properties": {
-                    "b": { "type": "number", "const": 2.0 }
-                  },
-                  "required": ["b"]
-                },
-                "call_stack": { "type": "array", "maxItems": 0 }
-              },
-              "required": ["stack", "variables", "call_stack"]
-            }
-          }
-        }
-      }
-    }
-  },
-  {
-    "description": "Breakpoint operation - continue execution with 'step' after hitting a breakpoint.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "debug": true,
-          "breakpoints": [
-            ["code", 1]
-          ],
-          "code": [
-            ["push", 1.0],
-            ["pop", "a"],
-            ["push", 2.0],
-            ["pop", "b"]
-          ]
-        }],
-        ["run"],
-        ["step"],
-        ["pop", "final_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                                        "stack": { "type": "array", "prefixItems": [{"type": "number", "const": 1.0}, {"type": "number", "const": 2.0}], "minItems": 2, "maxItems": 2 },
-                                        "variables": { "type": "object", "maxProperties": 0 },
-                                        "call_stack": {
-                                          "type": "array",
-                                          "items": {
-                                            "type": "object",
-                                            "properties": {
-                                              "Ip": { "type": "array", "prefixItems": [{"type": "string", "const": "code"}, {"type": "number", "const": 3}] }
-                                            }
-                                          },
-                                          "minItems": 1, "maxItems": 1
-                                        }              },
-              "required": ["stack", "variables", "call_stack"]
-            }
-          }
-        }
-      }
-    }
+   }
   }
+ },
+ {
+  "description": "Breakpoint operation - does not stop execution when debug is false.",
+  "jisp_program": {
+   "code": [
+    [
+     "push",
+     {
+      "debug": false,
+      "breakpoints": [["code", 1]],
+      "code": [["push", 1.0], ["pop", "a"], ["push", 2.0], ["pop", "b"]]
+     }
+    ],
+    ["run"],
+    ["pop", "final_program"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "final_program": {
+       "type": "object",
+       "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+         "type": "object",
+         "properties": {
+          "a": {"type": "number", "const": 1.0},
+          "b": {"type": "number", "const": 2.0}
+         },
+         "required": ["a", "b"]
+        },
+        "call_stack": {"type": "array", "maxItems": 0}
+       },
+       "required": ["stack", "variables", "call_stack"]
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "description": "Breakpoint operation - continue execution with 'run' after hitting a breakpoint.",
+  "jisp_program": {
+   "code": [
+    [
+     "push",
+     {
+      "debug": true,
+      "breakpoints": [["code", 1]],
+      "code": [["push", 1.0], ["pop", "a"], ["push", 2.0], ["pop", "b"]]
+     }
+    ],
+    ["run"],
+    ["run"],
+    ["pop", "final_program"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "final_program": {
+       "type": "object",
+       "properties": {
+        "stack": {
+         "type": "array",
+         "items": {"type": "number", "const": 1.0},
+         "minItems": 1,
+         "maxItems": 1
+        },
+        "variables": {
+         "type": "object",
+         "properties": {"b": {"type": "number", "const": 2.0}},
+         "required": ["b"]
+        },
+        "call_stack": {"type": "array", "maxItems": 0}
+       },
+       "required": ["stack", "variables", "call_stack"]
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "description": "Breakpoint operation - continue execution with 'step' after hitting a breakpoint.",
+  "jisp_program": {
+   "code": [
+    [
+     "push",
+     {
+      "debug": true,
+      "breakpoints": [["code", 1]],
+      "code": [["push", 1.0], ["pop", "a"], ["push", 2.0], ["pop", "b"]]
+     }
+    ],
+    ["run"],
+    ["step"],
+    ["pop", "final_program"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "final_program": {
+       "type": "object",
+       "properties": {
+        "stack": {
+         "type": "array",
+         "prefixItems": [{"type": "number", "const": 1.0}, {"type": "number", "const": 2.0}],
+         "minItems": 2,
+         "maxItems": 2
+        },
+        "variables": {"type": "object", "maxProperties": 0},
+        "call_stack": {
+         "type": "array",
+         "items": {
+          "type": "object",
+          "properties": {
+           "Ip": {
+            "type": "array",
+            "prefixItems": [
+             {"type": "string", "const": "code"},
+             {"type": "number", "const": 3}
+            ]
+           }
+          }
+         },
+         "minItems": 1,
+         "maxItems": 1
+        }
+       },
+       "required": ["stack", "variables", "call_stack"]
+      }
+     }
+    }
+   }
+  }
+ }
 ]

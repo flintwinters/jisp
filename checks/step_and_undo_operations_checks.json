@@ -1,773 +1,689 @@
 [
-  {
-    "description": "User Test Case: Step 3 times, Undo 2 times.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "code":[
-            ["push", 10.0],
-            ["push", 10.0],
-            ["add"]
-          ],
-          "save_history": true
-        }],
-        ["step"],
-        ["step"],
-        ["step"],
-        ["undo"],
-        ["undo"],
-        ["pop", "final_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
+ {
+  "description": "User Test Case: Step 3 times, Undo 2 times.",
+  "jisp_program": {
+   "code": [
+    [
+     "push",
+     {"code": [["push", 10.0], ["push", 10.0], ["add"]], "save_history": true}
+    ],
+    ["step"],
+    ["step"],
+    ["step"],
+    ["undo"],
+    ["undo"],
+    ["pop", "final_program"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "final_program": {
+       "type": "object",
+       "properties": {
+        "stack": {
+         "type": "array",
+         "prefixItems": [{"type": "number", "const": 10.0}],
+         "minItems": 1,
+         "maxItems": 1
+        },
+        "history": {"type": "array", "minItems": 1, "maxItems": 1},
+        "call_stack": {
+         "type": "array",
+         "items": {
           "type": "object",
           "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "stack": { "type": "array", "prefixItems": [{"type": "number", "const": 10.0}], "minItems": 1, "maxItems": 1 },
-                "history": { "type": "array", "minItems": 1, "maxItems": 1 },
-                "call_stack": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "Ip": { "type": "array", "prefixItems": [{"type": "string", "const": "code"}, {"type": "number", "const": 1}] }
-                    }
-                  }
-                }
-              },
-              "required": ["stack", "history", "call_stack"]
-            }
+           "Ip": {
+            "type": "array",
+            "prefixItems": [
+             {"type": "string", "const": "code"},
+             {"type": "number", "const": 1}
+            ]
+           }
           }
+         }
         }
+       },
+       "required": ["stack", "history", "call_stack"]
       }
+     }
     }
-  },
-  {
-    "description": "Full Undo to Initial State.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "code":[
-            ["push", 1.0],
-            ["push", 2.0],
-            ["add"]
-          ],
-          "save_history": true
-        }],
-        ["step"],
-        ["step"],
-        ["step"],
-        ["undo"],
-        ["undo"],
-        ["undo"],
-        ["pop", "final_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "stack": { "type": "array", "maxItems": 0 },
-                "history": { "type": "array", "maxItems": 0 },
-                "call_stack": {
-                  "type": "array",
-                  "minItems": 1,
-                  "maxItems": 1,
-                  "prefixItems": [{
-                    "type": "object",
-                    "properties": {
-                      "Ip": {
-                        "type": "array",
-                        "prefixItems": [{"type": "string", "const": "code"}, {"type": "number", "const": 0}],
-                        "minItems": 2,
-                        "maxItems": 2
-                      }
-                    },
-                    "required": ["Ip"]
-                  }],
-                  "items": false
-                }
-              },
-              "required": ["stack", "history", "call_stack"]
-            }
-          }
-        }
-      }
-    }
-  },
-  {
-    "description": "Interspersed Step and Undo.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "code":[
-            ["push", 1.0],
-            ["push", 2.0],
-            ["add"]
-          ],
-          "save_history": true
-        }],
-        ["step"],
-        ["step"],
-        ["undo"],
-        ["step"],
-        ["pop", "final_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "stack": { "type": "array", "prefixItems": [{"type": "number", "const": 1.0}, {"type": "number", "const": 2.0}], "minItems": 2, "maxItems": 2 },
-                "history": { "type": "array", "minItems": 2, "maxItems": 2 },
-                "call_stack": {
-                  "type": "array",
-                  "minItems": 1,
-                  "maxItems": 1,
-                  "prefixItems": [{
-                    "type": "object",
-                    "properties": {
-                      "Ip": {
-                        "type": "array",
-                        "prefixItems": [{"type": "string", "const": "code"}, {"type": "number", "const": 2}],
-                        "minItems": 2,
-                        "maxItems": 2
-                      }
-                    },
-                    "required": ["Ip"]
-                  }],
-                  "items": false
-                }
-              },
-              "required": ["stack", "history", "call_stack"]
-            }
-          }
-        }
-      }
-    }
-  },
-  {
-    "description": "Undo with Function Calls.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "variables": {
-            "my_func": [["push", 5.0]]
-          },
-          "code":[
-            ["call", "my_func"],
-            ["pop", "result"]
-          ],
-          "save_history": true
-        }],
-        ["step"],
-        ["step"],
-        ["undo"],
-        ["undo"],
-        ["pop", "final_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "stack": { "type": "array", "maxItems": 0 },
-                "history": { "type": "array", "maxItems": 0 },
-                "call_stack": {
-                  "type": "array",
-                  "minItems": 1,
-                  "maxItems": 1,
-                  "prefixItems": [{
-                    "type": "object",
-                    "properties": {
-                      "Ip": {
-                        "type": "array",
-                        "prefixItems": [{"type": "string", "const": "code"}, {"type": "number", "const": 0}],
-                        "minItems": 2,
-                        "maxItems": 2
-                      }
-                    },
-                    "required": ["Ip"]
-                  }],
-                  "items": false
-                }
-              },
-              "required": ["stack", "history", "call_stack"]
-            }
-          }
-        }
-      }
-    }
-  },
-    {
-    "description": "Undo without History (save_history: false).",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "code":[
-            ["push", 1.0]
-          ],
-          "save_history": false
-        }],
-        ["step"],
-        ["undo"]
-      ]
-    },
-    "expected_error_message": "undo error: no history to undo"
-  },
-  {
-    "description": "Basic Subprocess Test: Push and pop a subprocess without execution.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "code": [["push", 123]]
-        }],
-        ["pop", "subprocess"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "subprocess": {
-              "type": "object",
-              "properties": {
-                "code": {
-                  "type": "array",
-                  "items": { "type": "array" }
-                }
-              },
-              "required": ["code"]
-            }
-          },
-          "required": ["subprocess"]
-        }
-      }
-    }
-  },
-    {
-    "description": "Step on Trivial Program (no code): Step on a program with no code.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "code": []
-        }],
-        ["step"],
-        ["pop", "stepped_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "stepped_program": {
-              "type": "object",
-              "properties": {
-                "code": { "type": "array", "maxItems": 0 }
-              },
-              "required": ["code"]
-            }
-          }
-        }
-      }
-    }
-  },
-  {
-    "description": "Step on Trivial Program (noop): Step on a program with a single noop.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "code": [["noop"]]
-        }],
-        ["step"],
-        ["pop", "stepped_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "stepped_program": {
-              "type": "object",
-              "properties": {
-                "call_stack": {
-                  "type": "array",
-                  "items": {
-                    "properties": {
-                      "Ip": { 
-                        "type": "array"
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  {
-    "description": "Step with save_history: true - one step.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "save_history": true,
-          "code": [["push", 1.0]]
-        }],
-        ["step"],
-        ["pop", "stepped_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "stepped_program": {
-              "type": "object",
-              "properties": {
-                "history": { "type": "array", "minItems": 1, "maxItems": 1 }
-              },
-              "required": ["history"]
-            }
-          }
-        }
-      }
-    }
-  },
-  {
-    "description": "Undo after one step with history.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "save_history": true,
-          "code": [["push", 1.0]]
-        }],
-        ["step"],
-        ["undo"],
-        ["pop", "undone_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "undone_program": {
-              "type": "object",
-              "properties": {
-                "stack": { "type": "array", "maxItems": 0 },
-                "history": { "type": "array", "maxItems": 0 }
-              },
-              "required": ["stack", "history"]
-            }
-          }
-        }
-      }
-    }
-  },
-  {
-    "description": "Step operation - executes one instruction of a nested program.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "code": [
-            ["push", 1.0],
-            ["pop", "a"]
-          ]
-        }],
-        ["step"],
-        ["pop", "stepped_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": { "type": "array", "maxItems": 0 },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "stepped_program": {
-              "type": "object",
-              "properties": {
-                "stack": {
-                  "type": "array",
-                  "items": { "type": "number", "const": 1.0 },
-                  "minItems": 1,
-                  "maxItems": 1
-                },
-                "variables": { "type": "object", "maxProperties": 0 },
-                "call_stack": {
-                  "type": "array",
-                  "minItems": 1,
-                  "maxItems": 1,
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "Ip": { "type": "array" },
-                      "Ops": { "type": "array" }
-                    },
-                    "required": ["Ip", "Ops"]
-                  }
-                }
-              },
-              "required": ["stack", "variables", "call_stack"]
-            }
-          },
-          "required": ["stepped_program"]
-        }
-      },
-      "required": ["stack", "variables"]
-    }
-  },
-  {
-    "description": "Step operation - executes multiple instructions of a nested program.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "code": [
-            ["push", 1.0],
-            ["pop", "a"],
-            ["push", 2.0],
-            ["pop", "b"]
-          ]
-        }],
-        ["step"],
-        ["step"],
-        ["step"],
-        ["pop", "stepped_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": { "type": "array", "maxItems": 0 },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "stepped_program": {
-              "type": "object",
-              "properties": {
-                "stack": {
-                  "type": "array", 
-                  "items": {"type": "number", "const": 2.0},
-                  "minItems": 1,
-                  "maxItems": 1
-                },
-                "variables": {
-                  "type": "object",
-                  "properties": {
-                    "a": { "type": "number", "const": 1.0 }
-                  },
-                  "required": ["a"],
-                  "additionalProperties": false
-                },
-                "call_stack": {
-                  "type": "array",
-                  "minItems": 1,
-                  "maxItems": 1,
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "Ip": { "type": "array" },
-                      "Ops": { "type": "array" }
-                    },
-                    "required": ["Ip", "Ops"]
-                  }
-                }
-              },
-              "required": ["stack", "variables", "call_stack"]
-            }
-          },
-          "required": ["stepped_program"]
-        }
-      },
-      "required": ["stack", "variables"]
-    }
-  },
-  {
-    "description": "Undo operation - reverts the last instruction of a stepped program.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "save_history": true,
-          "code": [
-            ["push", 1.0],
-            ["pop", "a"],
-            ["push", 2.0],
-            ["pop", "b"]
-          ]
-        }],
-        ["step"],
-        ["step"],
-        ["step"],
-        ["undo"],
-        ["pop", "undone_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": { "type": "array", "maxItems": 0 },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "undone_program": {
-              "type": "object",
-              "properties": {
-                "stack": {
-                  "type": "array",
-                   "maxItems": 0
-                },
-                "variables": {
-                  "type": "object",
-                  "properties": {
-                    "a": { "type": "number", "const": 1.0 }
-                  },
-                  "required": ["a"],
-                  "additionalProperties": false
-                },
-                "call_stack": {
-                  "type": "array",
-                  "minItems": 1,
-                  "maxItems": 1,
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "Ip": { "type": "array" },
-                      "Ops": { "type": "array" }
-                    },
-                    "required": ["Ip", "Ops"]
-                  }
-                }
-              },
-              "required": ["stack", "variables", "call_stack"]
-            }
-          },
-          "required": ["undone_program"]
-        }
-      },
-      "required": ["stack", "variables"]
-    }
-  },
-  {
-    "description": "Undo operation - no history, program state remains unchanged.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "code": [
-            ["push", 10.0]
-          ]
-        }],
-        ["undo"]
-      ]
-    },
-    "expected_error_message": "undo error: no history to undo"
-  },
-  {
-    "description": "Negative Test: Step operation - stack underflow (empty stack for step operation).",
-    "jisp_program": {
-      "code": [
-        ["step"]
-      ]
-    },
-    "expected_error_message": "stack underflow for step: expected 1 value"
-  },
-  {
-    "description": "Negative Test: Undo operation - stack underflow (empty stack for undo operation).",
-    "jisp_program": {
-      "code": [
-        ["undo"]
-      ]
-    },
-    "expected_error_message": "stack underflow for undo: expected 1 value"
-  },
-  {
-    "description": "Run operation - executes a simple sub-program to completion.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "code": [
-            ["push", 5.0],
-            ["push", 3.0],
-            ["add"],
-            ["pop", "result"]
-          ]
-        }],
-        ["run"],
-        ["pop", "final_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "stack": { "type": "array", "maxItems": 0 },
-                "variables": {
-                  "type": "object",
-                  "properties": { "result": { "type": "number", "const": 8.0 } },
-                  "required": ["result"]
-                },
-                "call_stack": { "type": "array", "maxItems": 0 }
-              },
-              "required": ["stack", "variables", "call_stack"]
-            }
-          }
-        }
-      }
-    }
-  },
-  {
-    "description": "Run operation - sub-program with an error.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "code": [
-            ["push", "a"],
-            ["push", 1.0],
-            ["add"]
-          ]
-        }],
-        ["run"],
-        ["pop", "final_program"],
-        ["push", 123],
-        ["push", 123],
-        ["add"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "error": {
-                  "type": "object",
-                  "properties": {
-                    "message": { "type": "string", "pattern": "add error: expected a float64 on stack, got string" }
-                  },
-                  "required": ["message"]
-                }
-              },
-              "required": ["error"]
-            }
-          }
-        }
-      }
-    },
-    "expected_stack": [246]
-  },
-  {
-    "description": "Run operation - sub-program with an exit.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "code": [
-            ["push", "stopping early"],
-            ["pop", "status"],
-            ["exit"]
-          ]
-        }],
-        ["run"],
-        ["pop", "final_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "variables": {
-                  "type": "object",
-                  "properties": { "status": { "type": "string", "const": "stopping early" } },
-                  "required": ["status"]
-                }
-              },
-              "required": ["variables"]
-            }
-          }
-        }
-      }
-    }
-  },
-  {
-    "description": "Run operation - on an already completed program.",
-    "jisp_program": {
-      "code": [
-        ["push", {
-          "code": [["push", 1], ["pop", "a"]],
-          "call_stack": [],
-          "stack": [],
-          "variables": {"a": 1}
-        }],
-        ["step"],
-        ["step"],
-        ["run"],
-        ["pop", "final_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "variables": {
-                  "type": "object",
-                  "properties": { "a": { "type": "number", "const": 1 } },
-                  "required": ["a"]
-                },
-                "call_stack": { "type": "array", "maxItems": 0 }
-              },
-              "required": ["variables", "call_stack"]
-            }
-          }
-        }
-      }
-    }
+   }
   }
+ },
+ {
+  "description": "Full Undo to Initial State.",
+  "jisp_program": {
+   "code": [
+    [
+     "push",
+     {"code": [["push", 1.0], ["push", 2.0], ["add"]], "save_history": true}
+    ],
+    ["step"],
+    ["step"],
+    ["step"],
+    ["undo"],
+    ["undo"],
+    ["undo"],
+    ["pop", "final_program"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "final_program": {
+       "type": "object",
+       "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "history": {"type": "array", "maxItems": 0},
+        "call_stack": {
+         "type": "array",
+         "minItems": 1,
+         "maxItems": 1,
+         "prefixItems": [
+          {
+           "type": "object",
+           "properties": {
+            "Ip": {
+             "type": "array",
+             "prefixItems": [
+              {"type": "string", "const": "code"},
+              {"type": "number", "const": 0}
+             ],
+             "minItems": 2,
+             "maxItems": 2
+            }
+           },
+           "required": ["Ip"]
+          }
+         ],
+         "items": false
+        }
+       },
+       "required": ["stack", "history", "call_stack"]
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "description": "Interspersed Step and Undo.",
+  "jisp_program": {
+   "code": [
+    [
+     "push",
+     {"code": [["push", 1.0], ["push", 2.0], ["add"]], "save_history": true}
+    ],
+    ["step"],
+    ["step"],
+    ["undo"],
+    ["step"],
+    ["pop", "final_program"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "final_program": {
+       "type": "object",
+       "properties": {
+        "stack": {
+         "type": "array",
+         "prefixItems": [{"type": "number", "const": 1.0}, {"type": "number", "const": 2.0}],
+         "minItems": 2,
+         "maxItems": 2
+        },
+        "history": {"type": "array", "minItems": 2, "maxItems": 2},
+        "call_stack": {
+         "type": "array",
+         "minItems": 1,
+         "maxItems": 1,
+         "prefixItems": [
+          {
+           "type": "object",
+           "properties": {
+            "Ip": {
+             "type": "array",
+             "prefixItems": [
+              {"type": "string", "const": "code"},
+              {"type": "number", "const": 2}
+             ],
+             "minItems": 2,
+             "maxItems": 2
+            }
+           },
+           "required": ["Ip"]
+          }
+         ],
+         "items": false
+        }
+       },
+       "required": ["stack", "history", "call_stack"]
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "description": "Undo with Function Calls.",
+  "jisp_program": {
+   "code": [
+    [
+     "push",
+     {
+      "variables": {"my_func": [["push", 5.0]]},
+      "code": [["call", "my_func"], ["pop", "result"]],
+      "save_history": true
+     }
+    ],
+    ["step"],
+    ["step"],
+    ["undo"],
+    ["undo"],
+    ["pop", "final_program"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "final_program": {
+       "type": "object",
+       "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "history": {"type": "array", "maxItems": 0},
+        "call_stack": {
+         "type": "array",
+         "minItems": 1,
+         "maxItems": 1,
+         "prefixItems": [
+          {
+           "type": "object",
+           "properties": {
+            "Ip": {
+             "type": "array",
+             "prefixItems": [
+              {"type": "string", "const": "code"},
+              {"type": "number", "const": 0}
+             ],
+             "minItems": 2,
+             "maxItems": 2
+            }
+           },
+           "required": ["Ip"]
+          }
+         ],
+         "items": false
+        }
+       },
+       "required": ["stack", "history", "call_stack"]
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "description": "Undo without History (save_history: false).",
+  "jisp_program": {
+   "code": [
+    ["push", {"code": [["push", 1.0]], "save_history": false}],
+    ["step"],
+    ["undo"]
+   ]
+  },
+  "expected_error_message": "undo error: no history to undo"
+ },
+ {
+  "description": "Basic Subprocess Test: Push and pop a subprocess without execution.",
+  "jisp_program": {"code": [["push", {"code": [["push", 123]]}], ["pop", "subprocess"]]},
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "subprocess": {
+       "type": "object",
+       "properties": {"code": {"type": "array", "items": {"type": "array"}}},
+       "required": ["code"]
+      }
+     },
+     "required": ["subprocess"]
+    }
+   }
+  }
+ },
+ {
+  "description": "Step on Trivial Program (no code): Step on a program with no code.",
+  "jisp_program": {"code": [["push", {"code": []}], ["step"], ["pop", "stepped_program"]]},
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "stepped_program": {
+       "type": "object",
+       "properties": {"code": {"type": "array", "maxItems": 0}},
+       "required": ["code"]
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "description": "Step on Trivial Program (noop): Step on a program with a single noop.",
+  "jisp_program": {
+   "code": [["push", {"code": [["noop"]]}], ["step"], ["pop", "stepped_program"]]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "stepped_program": {
+       "type": "object",
+       "properties": {
+        "call_stack": {"type": "array", "items": {"properties": {"Ip": {"type": "array"}}}}
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "description": "Step with save_history: true - one step.",
+  "jisp_program": {
+   "code": [
+    ["push", {"save_history": true, "code": [["push", 1.0]]}],
+    ["step"],
+    ["pop", "stepped_program"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "stepped_program": {
+       "type": "object",
+       "properties": {"history": {"type": "array", "minItems": 1, "maxItems": 1}},
+       "required": ["history"]
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "description": "Undo after one step with history.",
+  "jisp_program": {
+   "code": [
+    ["push", {"save_history": true, "code": [["push", 1.0]]}],
+    ["step"],
+    ["undo"],
+    ["pop", "undone_program"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "undone_program": {
+       "type": "object",
+       "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "history": {"type": "array", "maxItems": 0}
+       },
+       "required": ["stack", "history"]
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "description": "Step operation - executes one instruction of a nested program.",
+  "jisp_program": {
+   "code": [
+    ["push", {"code": [["push", 1.0], ["pop", "a"]]}],
+    ["step"],
+    ["pop", "stepped_program"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "stack": {"type": "array", "maxItems": 0},
+    "variables": {
+     "type": "object",
+     "properties": {
+      "stepped_program": {
+       "type": "object",
+       "properties": {
+        "stack": {
+         "type": "array",
+         "items": {"type": "number", "const": 1.0},
+         "minItems": 1,
+         "maxItems": 1
+        },
+        "variables": {"type": "object", "maxProperties": 0},
+        "call_stack": {
+         "type": "array",
+         "minItems": 1,
+         "maxItems": 1,
+         "items": {
+          "type": "object",
+          "properties": {"Ip": {"type": "array"}, "Ops": {"type": "array"}},
+          "required": ["Ip", "Ops"]
+         }
+        }
+       },
+       "required": ["stack", "variables", "call_stack"]
+      }
+     },
+     "required": ["stepped_program"]
+    }
+   },
+   "required": ["stack", "variables"]
+  }
+ },
+ {
+  "description": "Step operation - executes multiple instructions of a nested program.",
+  "jisp_program": {
+   "code": [
+    [
+     "push",
+     {"code": [["push", 1.0], ["pop", "a"], ["push", 2.0], ["pop", "b"]]}
+    ],
+    ["step"],
+    ["step"],
+    ["step"],
+    ["pop", "stepped_program"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "stack": {"type": "array", "maxItems": 0},
+    "variables": {
+     "type": "object",
+     "properties": {
+      "stepped_program": {
+       "type": "object",
+       "properties": {
+        "stack": {
+         "type": "array",
+         "items": {"type": "number", "const": 2.0},
+         "minItems": 1,
+         "maxItems": 1
+        },
+        "variables": {
+         "type": "object",
+         "properties": {"a": {"type": "number", "const": 1.0}},
+         "required": ["a"],
+         "additionalProperties": false
+        },
+        "call_stack": {
+         "type": "array",
+         "minItems": 1,
+         "maxItems": 1,
+         "items": {
+          "type": "object",
+          "properties": {"Ip": {"type": "array"}, "Ops": {"type": "array"}},
+          "required": ["Ip", "Ops"]
+         }
+        }
+       },
+       "required": ["stack", "variables", "call_stack"]
+      }
+     },
+     "required": ["stepped_program"]
+    }
+   },
+   "required": ["stack", "variables"]
+  }
+ },
+ {
+  "description": "Undo operation - reverts the last instruction of a stepped program.",
+  "jisp_program": {
+   "code": [
+    [
+     "push",
+     {
+      "save_history": true,
+      "code": [["push", 1.0], ["pop", "a"], ["push", 2.0], ["pop", "b"]]
+     }
+    ],
+    ["step"],
+    ["step"],
+    ["step"],
+    ["undo"],
+    ["pop", "undone_program"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "stack": {"type": "array", "maxItems": 0},
+    "variables": {
+     "type": "object",
+     "properties": {
+      "undone_program": {
+       "type": "object",
+       "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+         "type": "object",
+         "properties": {"a": {"type": "number", "const": 1.0}},
+         "required": ["a"],
+         "additionalProperties": false
+        },
+        "call_stack": {
+         "type": "array",
+         "minItems": 1,
+         "maxItems": 1,
+         "items": {
+          "type": "object",
+          "properties": {"Ip": {"type": "array"}, "Ops": {"type": "array"}},
+          "required": ["Ip", "Ops"]
+         }
+        }
+       },
+       "required": ["stack", "variables", "call_stack"]
+      }
+     },
+     "required": ["undone_program"]
+    }
+   },
+   "required": ["stack", "variables"]
+  }
+ },
+ {
+  "description": "Undo operation - no history, program state remains unchanged.",
+  "jisp_program": {"code": [["push", {"code": [["push", 10.0]]}], ["undo"]]},
+  "expected_error_message": "undo error: no history to undo"
+ },
+ {
+  "description": "Negative Test: Step operation - stack underflow (empty stack for step operation).",
+  "jisp_program": {"code": [["step"]]},
+  "expected_error_message": "stack underflow for step: expected 1 value"
+ },
+ {
+  "description": "Negative Test: Undo operation - stack underflow (empty stack for undo operation).",
+  "jisp_program": {"code": [["undo"]]},
+  "expected_error_message": "stack underflow for undo: expected 1 value"
+ },
+ {
+  "description": "Run operation - executes a simple sub-program to completion.",
+  "jisp_program": {
+   "code": [
+    [
+     "push",
+     {"code": [["push", 5.0], ["push", 3.0], ["add"], ["pop", "result"]]}
+    ],
+    ["run"],
+    ["pop", "final_program"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "final_program": {
+       "type": "object",
+       "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+         "type": "object",
+         "properties": {"result": {"type": "number", "const": 8.0}},
+         "required": ["result"]
+        },
+        "call_stack": {"type": "array", "maxItems": 0}
+       },
+       "required": ["stack", "variables", "call_stack"]
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "description": "Run operation - sub-program with an error.",
+  "jisp_program": {
+   "code": [
+    ["push", {"code": [["push", "a"], ["push", 1.0], ["add"]]}],
+    ["run"],
+    ["pop", "final_program"],
+    ["push", 123],
+    ["push", 123],
+    ["add"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "final_program": {
+       "type": "object",
+       "properties": {
+        "error": {
+         "type": "object",
+         "properties": {
+          "message": {
+           "type": "string",
+           "pattern": "add error: expected a float64 on stack, got string"
+          }
+         },
+         "required": ["message"]
+        }
+       },
+       "required": ["error"]
+      }
+     }
+    }
+   }
+  },
+  "expected_stack": [246]
+ },
+ {
+  "description": "Run operation - sub-program with an exit.",
+  "jisp_program": {
+   "code": [
+    [
+     "push",
+     {"code": [["push", "stopping early"], ["pop", "status"], ["exit"]]}
+    ],
+    ["run"],
+    ["pop", "final_program"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "final_program": {
+       "type": "object",
+       "properties": {
+        "variables": {
+         "type": "object",
+         "properties": {"status": {"type": "string", "const": "stopping early"}},
+         "required": ["status"]
+        }
+       },
+       "required": ["variables"]
+      }
+     }
+    }
+   }
+  }
+ },
+ {
+  "description": "Run operation - on an already completed program.",
+  "jisp_program": {
+   "code": [
+    [
+     "push",
+     {
+      "code": [["push", 1], ["pop", "a"]],
+      "call_stack": [],
+      "stack": [],
+      "variables": {"a": 1}
+     }
+    ],
+    ["step"],
+    ["step"],
+    ["run"],
+    ["pop", "final_program"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "variables": {
+     "type": "object",
+     "properties": {
+      "final_program": {
+       "type": "object",
+       "properties": {
+        "variables": {
+         "type": "object",
+         "properties": {"a": {"type": "number", "const": 1}},
+         "required": ["a"]
+        },
+        "call_stack": {"type": "array", "maxItems": 0}
+       },
+       "required": ["variables", "call_stack"]
+      }
+     }
+    }
+   }
+  }
+ }
 ]

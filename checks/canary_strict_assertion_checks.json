@@ -1,356 +1,166 @@
 [
-  {
-    "description": "Canary Test 1: Basic Stack and Variable Manipulation. This test verifies the fundamental operations of pushing values onto the stack, setting variables from the stack, and performing a simple arithmetic operation. It is designed to be extremely strict, asserting the exact final state of both the stack and all variables. If this test fails, it indicates a critical regression in core Jisp functionality. Expected behavior: 1. Push 10.0 to stack. Stack: [10.0]. 2. Set variable 'a' to 10.0. Stack: []. Variables: {'a': 10.0}. 3. Push 20.0 to stack. Stack: [20.0]. 4. Push 5.0 to stack. Stack: [20.0, 5.0]. 5. Add the top two stack values (20.0 + 5.0). Stack: [25.0]. 6. Set variable 'b' to 25.0. Stack: []. Variables: {'a': 10.0, 'b': 25.0}. The final validation schema checks that 'a' is exactly 10.0, 'b' is exactly 25.0, the stack is empty, and no other variables exist.",
-    "jisp_program": {
-      "code": [
-        [
-          "push",
-          10.0
-        ],
-        [
-          "set",
-          "a"
-        ],
-        [
-          "push",
-          20.0
-        ],
-        [
-          "push",
-          5.0
-        ],
-        [
-          "add"
-        ],
-        [
-          "set",
-          "b"
-        ]
-      ]
-    },
-    "expected_stack": [],
-    "expected_variables": {
-      "a": 10.0,
-      "b": 25.0
-    }
+ {
+  "description": "Canary Test 1: Basic Stack and Variable Manipulation. This test verifies the fundamental operations of pushing values onto the stack, setting variables from the stack, and performing a simple arithmetic operation. It is designed to be extremely strict, asserting the exact final state of both the stack and all variables. If this test fails, it indicates a critical regression in core Jisp functionality. Expected behavior: 1. Push 10.0 to stack. Stack: [10.0]. 2. Set variable 'a' to 10.0. Stack: []. Variables: {'a': 10.0}. 3. Push 20.0 to stack. Stack: [20.0]. 4. Push 5.0 to stack. Stack: [20.0, 5.0]. 5. Add the top two stack values (20.0 + 5.0). Stack: [25.0]. 6. Set variable 'b' to 25.0. Stack: []. Variables: {'a': 10.0, 'b': 25.0}. The final validation schema checks that 'a' is exactly 10.0, 'b' is exactly 25.0, the stack is empty, and no other variables exist.",
+  "jisp_program": {
+   "code": [
+    ["push", 10.0],
+    ["set", "a"],
+    ["push", 20.0],
+    ["push", 5.0],
+    ["add"],
+    ["set", "b"]
+   ]
   },
-  {
-    "description": "Canary Test 2: Nested Object and Array Manipulation. This test verifies the creation of complex data structures and the operators that inspect them (`len`, `keys`). It asserts the exact structure and values of a nested object, the precise content of the `keys` array, and the final state of the stack. A failure here suggests a problem with how Jisp handles nested data or collection-based operations. Expected behavior: 1. Push a nested object to stack. 2. Set variable 'data'. 3. Get the value of 'data.nested.values'. 4. Get its length (3). 5. Set variable 'value_count'. 6. Get the value of 'data.nested'. 7. Get its keys (['values', 'metadata']). 8. Set variable 'nested_keys'. The final validation ensures the 'data' object is unchanged, 'value_count' is 3, 'nested_keys' contains exactly the two specified keys in any order, and the stack is empty.",
-    "jisp_program": {
-      "code": [
-        [
-          "push",
-          {
-            "nested": {
-              "values": [
-                1,
-                2,
-                3
-              ],
-              "metadata": {
-                "source": "test"
-              }
-            }
-          }
-        ],
-        [
-          "set",
-          "data"
-        ],
-        [
-          "get",
-          [
-            "data",
-            "nested",
-            "values"
-          ]
-        ],
-        [
-          "len"
-        ],
-        [
-          "set",
-          "value_count"
-        ],
-        [
-          "get",
-          [
-            "data",
-            "nested"
-          ]
-        ],
-        [
-          "keys"
-        ],
-        [
-          "set",
-          "nested_keys"
-        ]
-      ]
+  "expected_stack": [],
+  "expected_variables": {"a": 10.0, "b": 25.0}
+ },
+ {
+  "description": "Canary Test 2: Nested Object and Array Manipulation. This test verifies the creation of complex data structures and the operators that inspect them (`len`, `keys`). It asserts the exact structure and values of a nested object, the precise content of the `keys` array, and the final state of the stack. A failure here suggests a problem with how Jisp handles nested data or collection-based operations. Expected behavior: 1. Push a nested object to stack. 2. Set variable 'data'. 3. Get the value of 'data.nested.values'. 4. Get its length (3). 5. Set variable 'value_count'. 6. Get the value of 'data.nested'. 7. Get its keys (['values', 'metadata']). 8. Set variable 'nested_keys'. The final validation ensures the 'data' object is unchanged, 'value_count' is 3, 'nested_keys' contains exactly the two specified keys in any order, and the stack is empty.",
+  "jisp_program": {
+   "code": [
+    ["push", {"nested": {"values": [1, 2, 3], "metadata": {"source": "test"}}}],
+    ["set", "data"],
+    ["get", ["data", "nested", "values"]],
+    ["len"],
+    ["set", "value_count"],
+    ["get", ["data", "nested"]],
+    ["keys"],
+    ["set", "nested_keys"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "stack": {
+     "description": "The stack must be empty at the end of execution.",
+     "type": "array",
+     "maxItems": 0
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "description": "The stack must be empty at the end of execution.",
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "description": "Must contain 'data', 'value_count', and 'nested_keys' with their exact, final values.",
-          "type": "object",
-          "properties": {
-            "data": {
-              "description": "The 'data' object must be structurally identical to the initial pushed value, ensuring it was not mutated.",
-              "type": "object",
-              "const": {
-                "nested": {
-                  "values": [
-                    1,
-                    2,
-                    3
-                  ],
-                  "metadata": {
-                    "source": "test"
-                  }
-                }
-              }
-            },
-            "value_count": {
-              "description": "Must be the number 3.0, representing the length of the 'data.nested.values' array.",
-              "type": "number",
-              "const": 3.0
-            },
-            "nested_keys": {
-              "description": "Must be an array containing exactly two unique string keys. The specific keys 'values' and 'metadata' are expected, but this schema only enforces the count and uniqueness due to JSON Schema limitations with 'contains'.",
-              "type": "array",
-              "minItems": 2,
-              "maxItems": 2,
-              "uniqueItems": true,
-              "items": {
-                "type": "string"
-              }
-            }
-          },
-          "required": [
-            "data",
-            "value_count",
-            "nested_keys"
-          ],
-          "additionalProperties": false
-        }
+    "variables": {
+     "description": "Must contain 'data', 'value_count', and 'nested_keys' with their exact, final values.",
+     "type": "object",
+     "properties": {
+      "data": {
+       "description": "The 'data' object must be structurally identical to the initial pushed value, ensuring it was not mutated.",
+       "type": "object",
+       "const": {"nested": {"values": [1, 2, 3], "metadata": {"source": "test"}}}
       },
-      "required": [
-        "stack",
-        "variables"
-      ]
-    }
-  },
-  {
-    "description": "Canary Test 3: Control Flow with 'if' statement. This test verifies the conditional logic of the 'if' operator. It checks both the 'then' and 'else' branches in separate runs by changing the input condition. It asserts that only the correct branch was executed by checking for the existence and value of a variable set within that branch, and the non-existence of a variable from the other branch. A failure indicates a problem with how Jisp evaluates conditions or executes conditional code blocks. Expected behavior: 1. Push `true`. 2. If `true`, push 'then_was_executed' and set var `branch_result`. The `else` block should be skipped. 3. Final state must have `branch_result` = 'then_was_executed' and no `else_branch_var`. The second part of the test (which is implied and tested separately) would push `false` and expect the `else` block to execute.",
-    "jisp_program": {
-      "code": [
-        [
-          "push",
-          true
-        ],
-        [
-          "if",
-          [
-            [
-              "push",
-              "then_was_executed"
-            ],
-            [
-              "set",
-              "branch_result"
-            ]
-          ],
-          [
-            [
-              "push",
-              "else_was_executed"
-            ],
-            [
-              "set",
-              "else_branch_var"
-            ]
-          ]
-        ]
-      ]
-    },
-    "expected_stack": [],
-    "expected_variables": {
-      "branch_result": "then_was_executed"
-    }
-  },
-  {
-    "description": "Canary Test 4: 'for' loop iteration over an array. This test verifies the functionality of the 'for' loop, including variable scoping and correct iteration. It iterates over a simple array, accumulating a sum. The test is extremely strict about the final sum and the final value of the loop variable after the loop has completed. A failure could indicate issues with loop mechanics, variable assignment within loops, or scope management. Expected behavior: 1. Initialize `sum` to 0. 2. Loop three times with `item` taking values 10, 20, and 30. 3. In each iteration, add `item` to `sum`. 4. After the loop, `sum` should be 60. The loop variable `item` should retain its last assigned value, 30. The validation schema asserts these final values with perfect precision.",
-    "jisp_program": {
-      "code": [
-        [
-          "push",
-          0.0
-        ],
-        [
-          "set",
-          "sum"
-        ],
-        [
-          "for",
-          "item",
-          [
-            10.0,
-            20.0,
-            30.0
-          ],
-          [
-            [
-              "get",
-              "sum"
-            ],
-            [
-              "get",
-              "item"
-            ],
-            [
-              "add"
-            ],
-            [
-              "set",
-              "sum"
-            ]
-          ]
-        ]
-      ]
-    },
-    "expected_stack": [],
-    "expected_variables": {
-      "sum": 60.0,
-      "item": 30.0
-    }
-  },
-  {
-    "description": "NEGATIVE Canary Test 5: Forced Failure for Stack State. This test is DESIGNED TO FAIL. It uses the 'assert' command to intentionally cause the Jisp program to exit with a specific error. This verifies that the test harness correctly catches explicit program failures. If this test passes, it means the 'assert' command is working correctly.",
-    "jisp_program": {
-      "code": [
-        [
-          "push",
-          false
-        ],
-        [
-          "assert",
-          "Negative canary test: Intentionally failed assertion for stack state."
-        ]
-      ]
-    },
-    "expected_error_message": "Negative canary test: Intentionally failed assertion for stack state."
-  },
-  {
-    "description": "NEGATIVE Canary Test 6: Forced Failure for Variable Value. This test is DESIGNED TO FAIL. It performs an addition (5 + 5), then asserts that the result is not equal to the expected value, forcing an error. This verifies that the test harness correctly catches logical failures enforced by 'assert'. If this test passes, it confirms that 'assert', 'eq', and arithmetic operations are functioning as expected.",
-    "jisp_program": {
-      "code": [
-        [
-          "push",
-          5.0
-        ],
-        [
-          "push",
-          5.0
-        ],
-        [
-          "add"
-        ],
-        [
-          "set",
-          "result"
-        ],
-        [
-          "get",
-          "result"
-        ],
-        [
-          "push",
-          11.0
-        ],
-        [
-          "eq"
-        ],
-        [
-          "assert",
-          "Negative canary test: Incorrect variable value. Expected 11.0 but got 10.0."
-        ]
-      ]
-    },
-    "expected_error_message": "Negative canary test: Incorrect variable value. Expected 11.0 but got 10.0."
-  },
-  {
-    "description": "NEGATIVE Canary Test 7: Deep Error Reporting Verification. This test verifies that when an error is raised from within a nested function call, the resulting error object contains a detailed and accurate snapshot of the program state. A failure here indicates a problem with the new error reporting mechanism.",
-    "jisp_program": {
-      "variables": {
-        "my_func": [
-          [
-            "push",
-            "arg_for_func"
-          ],
-          [
-            "set",
-            "local_var"
-          ],
-          [
-            "push",
-            "error inside my_func"
-          ],
-          [
-            "raise"
-          ]
-        ]
+      "value_count": {
+       "description": "Must be the number 3.0, representing the length of the 'data.nested.values' array.",
+       "type": "number",
+       "const": 3.0
       },
-      "code": [
-        [
-          "push",
-          "global_value"
-        ],
-        [
-          "set",
-          "global_var"
-        ],
-        [
-          "push",
-          "my_func"
-        ],
-        [
-          "call"
-        ]
-      ]
-    },
-    "expected_error_message": "error inside my_func"
-  },
-  {
-    "description": "NEGATIVE Canary Test 8: Type Error Reporting. This test verifies that an error generated by an operation due to incorrect data types (e.g., adding a string to a number) is caught and reported with detailed context. A failure here points to an issue in how intrinsic operation errors are converted into JispError objects.",
-    "jisp_program": {
-      "code": [
-        [
-          "push",
-          "global_value"
-        ],
-        [
-          "set",
-          "global_var"
-        ],
-        [
-          "push",
-          "hello"
-        ],
-        [
-          "push",
-          123.0
-        ],
-        [
-          "add"
-        ]
-      ]
-    },
-    "expected_error_message": "add error: expected a float64 on stack, got string"
+      "nested_keys": {
+       "description": "Must be an array containing exactly two unique string keys. The specific keys 'values' and 'metadata' are expected, but this schema only enforces the count and uniqueness due to JSON Schema limitations with 'contains'.",
+       "type": "array",
+       "minItems": 2,
+       "maxItems": 2,
+       "uniqueItems": true,
+       "items": {"type": "string"}
+      }
+     },
+     "required": ["data", "value_count", "nested_keys"],
+     "additionalProperties": false
+    }
+   },
+   "required": ["stack", "variables"]
   }
+ },
+ {
+  "description": "Canary Test 3: Control Flow with 'if' statement. This test verifies the conditional logic of the 'if' operator. It checks both the 'then' and 'else' branches in separate runs by changing the input condition. It asserts that only the correct branch was executed by checking for the existence and value of a variable set within that branch, and the non-existence of a variable from the other branch. A failure indicates a problem with how Jisp evaluates conditions or executes conditional code blocks. Expected behavior: 1. Push `true`. 2. If `true`, push 'then_was_executed' and set var `branch_result`. The `else` block should be skipped. 3. Final state must have `branch_result` = 'then_was_executed' and no `else_branch_var`. The second part of the test (which is implied and tested separately) would push `false` and expect the `else` block to execute.",
+  "jisp_program": {
+   "code": [
+    ["push", true],
+    [
+     "if",
+     [["push", "then_was_executed"], ["set", "branch_result"]],
+     [["push", "else_was_executed"], ["set", "else_branch_var"]]
+    ]
+   ]
+  },
+  "expected_stack": [],
+  "expected_variables": {"branch_result": "then_was_executed"}
+ },
+ {
+  "description": "Canary Test 4: 'for' loop iteration over an array. This test verifies the functionality of the 'for' loop, including variable scoping and correct iteration. It iterates over a simple array, accumulating a sum. The test is extremely strict about the final sum and the final value of the loop variable after the loop has completed. A failure could indicate issues with loop mechanics, variable assignment within loops, or scope management. Expected behavior: 1. Initialize `sum` to 0. 2. Loop three times with `item` taking values 10, 20, and 30. 3. In each iteration, add `item` to `sum`. 4. After the loop, `sum` should be 60. The loop variable `item` should retain its last assigned value, 30. The validation schema asserts these final values with perfect precision.",
+  "jisp_program": {
+   "code": [
+    ["push", 0.0],
+    ["set", "sum"],
+    [
+     "for",
+     "item",
+     [10.0, 20.0, 30.0],
+     [["get", "sum"], ["get", "item"], ["add"], ["set", "sum"]]
+    ]
+   ]
+  },
+  "expected_stack": [],
+  "expected_variables": {"sum": 60.0, "item": 30.0}
+ },
+ {
+  "description": "NEGATIVE Canary Test 5: Forced Failure for Stack State. This test is DESIGNED TO FAIL. It uses the 'assert' command to intentionally cause the Jisp program to exit with a specific error. This verifies that the test harness correctly catches explicit program failures. If this test passes, it means the 'assert' command is working correctly.",
+  "jisp_program": {
+   "code": [
+    ["push", false],
+    [
+     "assert",
+     "Negative canary test: Intentionally failed assertion for stack state."
+    ]
+   ]
+  },
+  "expected_error_message": "Negative canary test: Intentionally failed assertion for stack state."
+ },
+ {
+  "description": "NEGATIVE Canary Test 6: Forced Failure for Variable Value. This test is DESIGNED TO FAIL. It performs an addition (5 + 5), then asserts that the result is not equal to the expected value, forcing an error. This verifies that the test harness correctly catches logical failures enforced by 'assert'. If this test passes, it confirms that 'assert', 'eq', and arithmetic operations are functioning as expected.",
+  "jisp_program": {
+   "code": [
+    ["push", 5.0],
+    ["push", 5.0],
+    ["add"],
+    ["set", "result"],
+    ["get", "result"],
+    ["push", 11.0],
+    ["eq"],
+    [
+     "assert",
+     "Negative canary test: Incorrect variable value. Expected 11.0 but got 10.0."
+    ]
+   ]
+  },
+  "expected_error_message": "Negative canary test: Incorrect variable value. Expected 11.0 but got 10.0."
+ },
+ {
+  "description": "NEGATIVE Canary Test 7: Deep Error Reporting Verification. This test verifies that when an error is raised from within a nested function call, the resulting error object contains a detailed and accurate snapshot of the program state. A failure here indicates a problem with the new error reporting mechanism.",
+  "jisp_program": {
+   "variables": {
+    "my_func": [
+     ["push", "arg_for_func"],
+     ["set", "local_var"],
+     ["push", "error inside my_func"],
+     ["raise"]
+    ]
+   },
+   "code": [
+    ["push", "global_value"],
+    ["set", "global_var"],
+    ["push", "my_func"],
+    ["call"]
+   ]
+  },
+  "expected_error_message": "error inside my_func"
+ },
+ {
+  "description": "NEGATIVE Canary Test 8: Type Error Reporting. This test verifies that an error generated by an operation due to incorrect data types (e.g., adding a string to a number) is caught and reported with detailed context. A failure here points to an issue in how intrinsic operation errors are converted into JispError objects.",
+  "jisp_program": {
+   "code": [
+    ["push", "global_value"],
+    ["set", "global_var"],
+    ["push", "hello"],
+    ["push", 123.0],
+    ["add"]
+   ]
+  },
+  "expected_error_message": "add error: expected a float64 on stack, got string"
+ }
 ]

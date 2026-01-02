@@ -1,260 +1,212 @@
 [
-  {
-    "description": "Call and return - basic function call with argument and return value.",
-    "jisp_program": {
-      "variables": {
-        "add_one_func": [
-          ["set", "x"],
-          ["get", "x"],
-          ["push", 1.0],
-          ["add"],
-          ["return"]
-        ]
-      },
-      "code": [
-        ["push", 5.0],
-        ["push", "add_one_func"],
-        ["get"],
-        ["call"],
-        ["pop", "result"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "add_one_func": {
-              "type": "array"
-            },
-            "result": {
-              "type": "number",
-              "const": 6.0
-            }
-          },
-          "required": ["add_one_func", "result"],
-          "additionalProperties": false
-        }
-      },
-      "required": ["stack", "variables"]
-    }
+ {
+  "description": "Call and return - basic function call with argument and return value.",
+  "jisp_program": {
+   "variables": {
+    "add_one_func": [["set", "x"], ["get", "x"], ["push", 1.0], ["add"], ["return"]]
+   },
+   "code": [
+    ["push", 5.0],
+    ["push", "add_one_func"],
+    ["get"],
+    ["call"],
+    ["pop", "result"]
+   ]
   },
-  {
-    "description": "Call and return - basic function call with argument and return value.",
-    "jisp_program": {
-      "variables": {
-        "add_one_func": [
-          ["set", "x"],
-          ["get", "x"],
-          ["push", 1.0],
-          ["add"],
-          ["return"]
-        ]
-      },
-      "code": [
-        ["push", 5.0],
-        ["push", "add_one_func"],
-        ["get"],
-        ["call"],
-        ["push", "add_one_func"],
-        ["get"],
-        ["call"],
-        ["pop", "result"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "add_one_func": {
-              "type": "array"
-            },
-            "result": {
-              "type": "number",
-              "const": 7.0
-            }
-          },
-          "required": ["add_one_func", "result"],
-          "additionalProperties": false
-        }
-      },
-      "required": ["stack", "variables"]
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "stack": {"type": "array", "maxItems": 0},
+    "variables": {
+     "type": "object",
+     "properties": {
+      "add_one_func": {"type": "array"},
+      "result": {"type": "number", "const": 6.0}
+     },
+     "required": ["add_one_func", "result"],
+     "additionalProperties": false
     }
-  },
-  {
-    "description": "Call and return - nested function calls, demonstrating local scoping.",
-    "jisp_program": {
-      "variables": {
-        "outer_func": [
-          ["set", "outer_arg"],
-          ["push", 10.0],
-          ["push", "inner_func"],
-          ["get"],
-          ["call"],
-          ["push", "outer_arg"],
-          ["get"],
-          ["add"],
-          ["return"]
-        ],
-        "inner_func": [
-          ["set", "inner_arg"],
-          ["get", "inner_arg"],
-          ["push", 2.0],
-          ["mul"],
-          ["return"]
-        ]
-      },
-      "code": [
-        ["push", 3.0],
-        ["push", "outer_func"],
-        ["get"],
-        ["call"],
-        ["pop", "final_result"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "outer_func": {
-              "type": "array"
-            },
-            "inner_func": {
-              "type": "array"
-            },
-            "final_result": {
-              "type": "number",
-              "const": 23.0
-            }
-          },
-          "required": ["outer_func", "inner_func", "final_result"],
-          "additionalProperties": false
-        }
-      },
-      "required": ["stack", "variables"]
-    }
-  },
-  {
-    "description": "Call and return - function modifying a variable in an outer scope via path.",
-    "jisp_program": {
-      "variables": {
-        "my_object": {
-          "data": 0.0
-        },
-        "modify_func": [
-          ["push", ["my_object", "data"]],
-          ["get"],
-          ["push", 10.0],
-          ["add"],
-          ["push", ["my_object", "data"]],
-          ["set"],
-          ["return"]
-        ]
-      },
-      "code": [
-        ["push", "modify_func"],
-        ["get"],
-        ["call"],
-        ["push", ["my_object", "data"]],
-        ["get"],
-        ["pop", "modified_data"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "maxItems": 0
-        },
-        "variables": {
-          "type": "object",
-          "properties": {
-            "my_object": {
-              "type": "object",
-              "properties": {
-                "data": {
-                  "type": "number",
-                  "const": 10.0
-                }
-              },
-              "required": ["data"]
-            },
-            "modify_func": {
-              "type": "array"
-            },
-            "modified_data": {
-              "type": "number",
-              "const": 10.0
-            }
-          },
-          "required": ["my_object", "modify_func", "modified_data"]
-        }
-      },
-      "required": ["stack", "variables"]
-    }
-  },
-  {
-    "description": "Call and return - factorial function (recursive).",
-    "jisp_program": {
-        "variables": {
-            "factorial_code": [
-                ["set", "n"],
-                ["get", "n"], ["push", 1.0], ["eq"],
-                ["if", [
-                    ["push", 1.0],
-                    ["return"]
-                ], [
-                    ["get", "n"], ["push", 1.0], ["sub"],
-                    ["push", "factorial_code"], ["get"],
-                    ["call"],
-                    ["get", "n"], ["mul"],
-                    ["return"]
-                ]]
-            ]
-        },
-        "code": [
-            ["push", 5.0],
-            ["push", "factorial_code"], ["get"],
-            ["call"],
-            ["pop", "result"]
-        ]
-    },
-    "validation_schema": {
-        "type": "object",
-        "properties": {
-            "stack": {
-                "type": "array",
-                "maxItems": 0
-            },
-            "variables": {
-                "type": "object",
-                "properties": {
-                    "factorial_code": { "type": "array" },
-                    "result": { "type": "number", "const": 120.0 }
-                },
-                "required": ["factorial_code", "result"],
-                "additionalProperties": false
-            }
-        },
-        "required": ["stack", "variables"]
-    }
+   },
+   "required": ["stack", "variables"]
   }
+ },
+ {
+  "description": "Call and return - basic function call with argument and return value.",
+  "jisp_program": {
+   "variables": {
+    "add_one_func": [["set", "x"], ["get", "x"], ["push", 1.0], ["add"], ["return"]]
+   },
+   "code": [
+    ["push", 5.0],
+    ["push", "add_one_func"],
+    ["get"],
+    ["call"],
+    ["push", "add_one_func"],
+    ["get"],
+    ["call"],
+    ["pop", "result"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "stack": {"type": "array", "maxItems": 0},
+    "variables": {
+     "type": "object",
+     "properties": {
+      "add_one_func": {"type": "array"},
+      "result": {"type": "number", "const": 7.0}
+     },
+     "required": ["add_one_func", "result"],
+     "additionalProperties": false
+    }
+   },
+   "required": ["stack", "variables"]
+  }
+ },
+ {
+  "description": "Call and return - nested function calls, demonstrating local scoping.",
+  "jisp_program": {
+   "variables": {
+    "outer_func": [
+     ["set", "outer_arg"],
+     ["push", 10.0],
+     ["push", "inner_func"],
+     ["get"],
+     ["call"],
+     ["push", "outer_arg"],
+     ["get"],
+     ["add"],
+     ["return"]
+    ],
+    "inner_func": [
+     ["set", "inner_arg"],
+     ["get", "inner_arg"],
+     ["push", 2.0],
+     ["mul"],
+     ["return"]
+    ]
+   },
+   "code": [
+    ["push", 3.0],
+    ["push", "outer_func"],
+    ["get"],
+    ["call"],
+    ["pop", "final_result"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "stack": {"type": "array", "maxItems": 0},
+    "variables": {
+     "type": "object",
+     "properties": {
+      "outer_func": {"type": "array"},
+      "inner_func": {"type": "array"},
+      "final_result": {"type": "number", "const": 23.0}
+     },
+     "required": ["outer_func", "inner_func", "final_result"],
+     "additionalProperties": false
+    }
+   },
+   "required": ["stack", "variables"]
+  }
+ },
+ {
+  "description": "Call and return - function modifying a variable in an outer scope via path.",
+  "jisp_program": {
+   "variables": {
+    "my_object": {"data": 0.0},
+    "modify_func": [
+     ["push", ["my_object", "data"]],
+     ["get"],
+     ["push", 10.0],
+     ["add"],
+     ["push", ["my_object", "data"]],
+     ["set"],
+     ["return"]
+    ]
+   },
+   "code": [
+    ["push", "modify_func"],
+    ["get"],
+    ["call"],
+    ["push", ["my_object", "data"]],
+    ["get"],
+    ["pop", "modified_data"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "stack": {"type": "array", "maxItems": 0},
+    "variables": {
+     "type": "object",
+     "properties": {
+      "my_object": {
+       "type": "object",
+       "properties": {"data": {"type": "number", "const": 10.0}},
+       "required": ["data"]
+      },
+      "modify_func": {"type": "array"},
+      "modified_data": {"type": "number", "const": 10.0}
+     },
+     "required": ["my_object", "modify_func", "modified_data"]
+    }
+   },
+   "required": ["stack", "variables"]
+  }
+ },
+ {
+  "description": "Call and return - factorial function (recursive).",
+  "jisp_program": {
+   "variables": {
+    "factorial_code": [
+     ["set", "n"],
+     ["get", "n"],
+     ["push", 1.0],
+     ["eq"],
+     [
+      "if",
+      [["push", 1.0], ["return"]],
+      [
+       ["get", "n"],
+       ["push", 1.0],
+       ["sub"],
+       ["push", "factorial_code"],
+       ["get"],
+       ["call"],
+       ["get", "n"],
+       ["mul"],
+       ["return"]
+      ]
+     ]
+    ]
+   },
+   "code": [
+    ["push", 5.0],
+    ["push", "factorial_code"],
+    ["get"],
+    ["call"],
+    ["pop", "result"]
+   ]
+  },
+  "validation_schema": {
+   "type": "object",
+   "properties": {
+    "stack": {"type": "array", "maxItems": 0},
+    "variables": {
+     "type": "object",
+     "properties": {
+      "factorial_code": {"type": "array"},
+      "result": {"type": "number", "const": 120.0}
+     },
+     "required": ["factorial_code", "result"],
+     "additionalProperties": false
+    }
+   },
+   "required": ["stack", "variables"]
+  }
+ }
 ]
