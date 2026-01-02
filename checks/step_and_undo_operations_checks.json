@@ -610,5 +610,164 @@
       ]
     },
     "expected_error_message": "stack underflow for undo: expected 1 value"
+  },
+  {
+    "description": "Run operation - executes a simple sub-program to completion.",
+    "jisp_program": {
+      "code": [
+        ["push", {
+          "code": [
+            ["push", 5.0],
+            ["push", 3.0],
+            ["add"],
+            ["pop", "result"]
+          ]
+        }],
+        ["run"],
+        ["pop", "final_program"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "variables": {
+          "type": "object",
+          "properties": {
+            "final_program": {
+              "type": "object",
+              "properties": {
+                "stack": { "type": "array", "maxItems": 0 },
+                "variables": {
+                  "type": "object",
+                  "properties": { "result": { "type": "number", "const": 8.0 } },
+                  "required": ["result"]
+                },
+                "call_stack": { "type": "array", "maxItems": 0 }
+              },
+              "required": ["stack", "variables", "call_stack"]
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "description": "Run operation - sub-program with an error.",
+    "jisp_program": {
+      "code": [
+        ["push", {
+          "code": [
+            ["push", "a"],
+            ["push", 1.0],
+            ["add"]
+          ]
+        }],
+        ["run"],
+        ["pop", "final_program"],
+        ["push", 123],
+        ["push", 123],
+        ["add"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "variables": {
+          "type": "object",
+          "properties": {
+            "final_program": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string", "pattern": "add error: expected a float64 on stack, got string" }
+                  },
+                  "required": ["message"]
+                }
+              },
+              "required": ["error"]
+            }
+          }
+        }
+      }
+    },
+    "expected_stack": [246]
+  },
+  {
+    "description": "Run operation - sub-program with an exit.",
+    "jisp_program": {
+      "code": [
+        ["push", {
+          "code": [
+            ["push", "stopping early"],
+            ["pop", "status"],
+            ["exit"]
+          ]
+        }],
+        ["run"],
+        ["pop", "final_program"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "variables": {
+          "type": "object",
+          "properties": {
+            "final_program": {
+              "type": "object",
+              "properties": {
+                "variables": {
+                  "type": "object",
+                  "properties": { "status": { "type": "string", "const": "stopping early" } },
+                  "required": ["status"]
+                }
+              },
+              "required": ["variables"]
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "description": "Run operation - on an already completed program.",
+    "jisp_program": {
+      "code": [
+        ["push", {
+          "code": [["push", 1], ["pop", "a"]],
+          "call_stack": [],
+          "stack": [],
+          "variables": {"a": 1}
+        }],
+        ["step"],
+        ["step"],
+        ["run"],
+        ["pop", "final_program"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "variables": {
+          "type": "object",
+          "properties": {
+            "final_program": {
+              "type": "object",
+              "properties": {
+                "variables": {
+                  "type": "object",
+                  "properties": { "a": { "type": "number", "const": 1 } },
+                  "required": ["a"]
+                },
+                "call_stack": { "type": "array", "maxItems": 0 }
+              },
+              "required": ["variables", "call_stack"]
+            }
+          }
+        }
+      }
+    }
   }
 ]

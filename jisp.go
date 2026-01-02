@@ -415,6 +415,90 @@ func undoOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
+// Run executes the Jisp program to completion or until an error occurs.
+// It will start from the beginning if the program has not started, or resume
+// from the current instruction pointer if it's already in progress.
+func (jp *JispProgram) Run() error {
+	if jp.currentFrame() == nil {
+		if len(jp.Code) == 0 {
+			return nil
+		}
+		// Program hasn't started, create initial frame.
+		frame := &CallFrame{
+			Ops:       jp.Code,
+			Ip:        0,
+			basePath:  []interface{}{"code"},
+			Variables: jp.Variables,
+		}
+		jp.CallStack = append(jp.CallStack, frame)
+	}
+
+	for {
+		frame := jp.currentFrame()
+		if frame == nil {
+			return nil // Execution finished.
+		}
+
+		// Check if current frame is finished
+		if frame.Ip >= len(frame.Ops) {
+			jp.CallStack = jp.CallStack[:len(jp.CallStack)-1] // Pop frame
+			continue
+		}
+
+		if jp.Error != nil {
+			return nil // Program has an error, stop.
+		}
+
+		err := jp.executeSingleInstruction()
+		if err != nil {
+			if errors.Is(err, ErrReturn) {
+				jp.CallStack = jp.CallStack[:len(jp.CallStack)-1] // Pop frame on return
+				continue
+			}
+			if errors.Is(err, ErrExit) {
+				return ErrExit // Exit signal
+			}
+			// For unhandled control flow like break/continue outside a loop, create an error.
+			if jp.Error == nil {
+				// IP was already advanced in executeSingleInstruction
+				op := &frame.Ops[frame.Ip-1]
+				jp.Error = jp.newError(op, err.Error())
+			}
+			return nil
+		}
+	}
+}
+
+func runOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("run error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	subProgramVal, err := jp.popValue("run")
+	if err != nil {
+		return err
+	}
+
+	subProgramBytes, err := json.Marshal(subProgramVal)
+	if err != nil {
+		return fmt.Errorf("run error: failed to marshal sub-program value: %w", err)
+	}
+
+	subProgram, err := jispProgramFromBytes(subProgramBytes)
+	if err != nil {
+		return fmt.Errorf("run error: could not reconstruct sub-program from stack value: %w", err)
+	}
+
+	err = subProgram.Run()
+	// The only error Run is expected to return is ErrExit. Others are stored in subProgram.Error
+	if err != nil && !errors.Is(err, ErrExit) {
+		return fmt.Errorf("run error: unexpected error during sub-program execution: %w", err)
+	}
+
+	jp.Push(subProgram)
+	return nil
+}
+
 func toStringOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) > 0 {
 		return fmt.Errorf("to_string error: expected 0 arguments, got %d", len(op.Args))
@@ -562,6 +646,7 @@ func init() {
 	"exit":         exitOp,
 	"step":         stepOp,
 	"undo":         undoOp,
+	"run":          runOp,
 	"to_string": 	toStringOp,
 	"concat": 		concatOp,
 	"try":  		tryOp,
