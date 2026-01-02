@@ -17,7 +17,7 @@ Jisp is a programming _system_ which uses the **JSON data model** as its "atomic
 
 The core philosophy is to maintain all program state (including code, variables, and execution flow) in a single self-contained JSON object. This design ensures that every aspect of a **running** Jisp program can be effortlessly exported, imported, saved, loaded, diffed, restored, etc. at ***any point*** during execution.
 
-This approach makes it easier to debug, integrate with other tools, and eliminates LLM syntax errors. The strict, simple, universally understandable grammar is perfect for LLM outputs.
+This approach makes it easier to debug, integrate with other tools, and the strict, simple, universally understandable grammar is perfect for LLM outputs.
 
 ### Why JSON?
 
