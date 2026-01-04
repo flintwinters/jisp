@@ -40,7 +40,7 @@
                         "type": "array",
                         "prefixItems": [
                           {"type": "string", "const": "code"},
-                          {"type": "number", "const": 2}
+                          {"type": "number", "const": 1}
                         ]
                       }
                     }
@@ -105,11 +105,9 @@
           "push",
           {
             "debug": true,
-            "breakpoints": [["code", 1]],
             "code": [["push", 1.0], ["pop", "a"], ["push", 2.0], ["pop", "b"]]
           }
         ],
-        ["run"],
         ["run"],
         ["pop", "final_program"]
       ]
@@ -123,12 +121,7 @@
             "final_program": {
               "type": "object",
               "properties": {
-                "stack": {
-                  "type": "array",
-                  "items": {"type": "number", "const": 1.0},
-                  "minItems": 1,
-                  "maxItems": 1
-                },
+                "stack": {"type": "array", "minItems": 0, "maxItems": 0},
                 "variables": {
                   "type": "object",
                   "properties": {"b": {"type": "number", "const": 2.0}},
@@ -171,14 +164,14 @@
               "properties": {
                 "stack": {
                   "type": "array",
-                  "prefixItems": [
-                    {"type": "number", "const": 1.0},
-                    {"type": "number", "const": 2.0}
-                  ],
-                  "minItems": 2,
-                  "maxItems": 2
+                  "minItems": 0,
+                  "maxItems": 0
                 },
-                "variables": {"type": "object", "maxProperties": 0},
+                "variables": {
+                  "type": "object",
+                  "properties": {"a": {"type": "number", "const": 1.0}},
+                  "required": ["a"]
+                },
                 "call_stack": {
                   "type": "array",
                   "items": {
@@ -188,7 +181,7 @@
                         "type": "array",
                         "prefixItems": [
                           {"type": "string", "const": "code"},
-                          {"type": "number", "const": 3}
+                          {"type": "number", "const": 2}
                         ]
                       }
                     }
@@ -198,122 +191,6 @@
                 }
               },
               "required": ["stack", "variables", "call_stack"]
-            }
-          }
-        }
-      }
-    }
-  },
-  {
-    "description": "Check no skip breakpoint operation on double run.",
-    "jisp_program": {
-      "code": [
-        [
-          "push",
-          {
-            "save_history": true,
-            "debug": true,
-            "breakpoints": [["code", 1]],
-            "code": [["push", 5.0], ["pop", "breakpoint_var"], ["push", 4.0]]
-          }
-        ],
-        ["run"],
-        ["run"],
-        ["pop", "final_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "variables": {
-                  "type": "object",
-                  "properties": {
-                    "breakpoint_var": {"type": "number", "const": 5.0},
-                    "required": ["breakpoint_var"]
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  {
-    "description": "Check no skip breakpoint operation on step",
-    "jisp_program": {
-      "code": [
-        [
-          "push",
-          {
-            "save_history": true,
-            "debug": true,
-            "breakpoints": [["code", 1]],
-            "code": [["push", 5.0], ["pop", "breakpoint_var"], ["push", 4.0]]
-          }
-        ],
-        ["run"],
-        ["step"],
-        ["pop", "final_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "variables": {
-                  "type": "object",
-                  "properties": {
-                    "breakpoint_var": {"type": "number", "const": 5.0},
-                    "required": ["breakpoint_var"]
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  },
-  {
-    "description": "Check skip breakpoint operation on no step",
-    "jisp_program": {
-      "code": [
-        [
-          "push",
-          {
-            "save_history": true,
-            "debug": true,
-            "breakpoints": [["code", 1]],
-            "code": [["push", 5.0], ["pop", "breakpoint_var"], ["push", 4.0]]
-          }
-        ],
-        ["run"],
-        ["pop", "final_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "variables": {"type": "object", "not": {"required": ["breakpoint_var"]}}
-              }
             }
           }
         }

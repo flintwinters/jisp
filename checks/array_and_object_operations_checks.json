@@ -140,17 +140,8 @@
         ["filter"]
       ]
     },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "stack": {
-          "type": "array",
-          "minItems": 1,
-          "maxItems": 1,
-          "items": {"type": "array", "const": [1.0, 3.0, 5.0]}
-        }
-      }
-    }
+    "expected_stack": [[1.0, 3.0, 5.0]],
+    "expected_variables": {"item": 5}
   },
   {
     "description": "Map operation - squares each number.",
