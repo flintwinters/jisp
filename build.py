@@ -58,42 +58,51 @@ def _print_test_failure(description: str, checks_filepath: str, message: str):
     console.print(f"  [bold red]❌ Test '{description}'\n[bold blue]{checks_filepath}[/bold blue] {message}[/bold red]")
 
 
-def _generate_validation_schema(check):
+def _generate_validation_schema(check, base_schema=None):
+    # Start with a deep copy of the base schema if provided, otherwise start fresh.
+    schema = json.loads(json.dumps(base_schema)) if base_schema else {
+        "type": "object",
+        "properties": {},
+        "required": []
+    }
+
     expected_stack = check.get("expected_stack")
     expected_variables = check.get("expected_variables")
 
-    if expected_stack is None and expected_variables is None:
-        return None
-
-    schema = {
-        "type": "object",
-        "properties": {},
-        "required": ["stack", "variables"]
-    }
+    # Ensure 'properties' key exists
+    if "properties" not in schema:
+        schema["properties"] = {}
 
     # Handle stack validation
     if expected_stack is not None:
-        schema['properties']['stack'] = {'const': expected_stack}
-    else:
-        # Default: stack must be empty if not specified
-        schema['properties']['stack'] = {'type': 'array', 'maxItems': 0}
+        schema["properties"]["stack"] = {"const": expected_stack}
+    elif "stack" not in schema["properties"]:
+        # Default: stack must be empty if not specified and not already defined
+        schema["properties"]["stack"] = {"type": "array", "maxItems": 0}
 
     # Handle variables validation
     if expected_variables is not None:
-        variable_properties = {
-            key: {"const": value} for key, value in expected_variables.items()
+        variable_properties = {key: {"const": value} for key, value in expected_variables.items()}
+        schema["properties"]["variables"] = {
+            "type": "object",
+            "properties": variable_properties,
+            "required": list(expected_variables.keys()),
+            "additionalProperties": False,
         }
-        schema['properties']['variables'] = {
-            'type': 'object',
-            'properties': variable_properties,
-            'required': list(expected_variables.keys()),
-            'additionalProperties': False,
-        }
-    else:
-        # Default: variables must be empty if not specified
-        schema['properties']['variables'] = {'type': 'object', 'maxProperties': 0}
+    elif "variables" not in schema["properties"]:
+        # Default: variables must be empty if not specified and not already defined
+        schema["properties"]["variables"] = {"type": "object", "maxProperties": 0}
+
+    # Ensure top-level 'required' key exists and contains 'stack' and 'variables'
+    if "required" not in schema:
+        schema["required"] = []
+    if "stack" not in schema["required"]:
+        schema["required"].append("stack")
+    if "variables" not in schema["required"]:
+        schema["required"].append("variables")
 
     return schema
+
 
 
 def compile_go_program():
@@ -149,8 +158,8 @@ def run_all_checks(fail_fast=False):
                 validation_schema = check.get("validation_schema")
                 expected_error_message = check.get("expected_error_message")
 
-                if not validation_schema and ("expected_stack" in check or "expected_variables" in check):
-                    validation_schema = _generate_validation_schema(check)
+                if "expected_stack" in check or "expected_variables" in check:
+                    validation_schema = _generate_validation_schema(check, base_schema=validation_schema)
 
                 if not jisp_program:
                     console.print(SKIPPING_TEST_MISSING_PROGRAM.format(description=description, filepath=checks_filepath))
