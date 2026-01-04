@@ -1,67 +1,67 @@
 [
- {
-  "description": "Trim operation - removes leading/trailing spaces.",
-  "jisp_program": {"code": [["push", "  hello world  "], ["trim"], ["pop", "trimmed_string"]]},
-  "expected_stack": [],
-  "expected_variables": {"trimmed_string": "hello world"}
- },
- {
-  "description": "Lower operation - converts string to lowercase.",
-  "jisp_program": {"code": [["push", "Hello World"], ["lower"], ["pop", "lowercased_string"]]},
-  "expected_stack": [],
-  "expected_variables": {"lowercased_string": "hello world"}
- },
- {
-  "description": "Upper operation - converts string to uppercase.",
-  "jisp_program": {"code": [["push", "Hello World"], ["upper"], ["pop", "uppercased_string"]]},
-  "expected_stack": [],
-  "expected_variables": {"uppercased_string": "HELLO WORLD"}
- },
- {
-  "description": "ToString operation - converts integer to string.",
-  "jisp_program": {"code": [["push", 123.0], ["to_string"], ["pop", "string_from_int"]]},
-  "expected_stack": [],
-  "expected_variables": {"string_from_int": "123"}
- },
- {
-  "description": "Concat operation - concatenates two strings.",
-  "jisp_program": {
-   "code": [
-    ["push", "hello "],
-    ["push", "world"],
-    ["concat"],
-    ["pop", "concatenated_string"]
-   ]
+  {
+    "description": "Trim operation - removes leading/trailing spaces.",
+    "jisp_program": {"code": [["push", "  hello world  "], ["trim"], ["pop", "trimmed_string"]]},
+    "expected_stack": [],
+    "expected_variables": {"trimmed_string": "hello world"}
   },
-  "expected_stack": [],
-  "expected_variables": {"concatenated_string": "hello world"}
- },
- {
-  "description": "Replace operation - replaces all occurrences of a substring.",
-  "jisp_program": {
-   "code": [
-    ["push", "hello world hello"],
-    ["push", "hello"],
-    ["push", "hi"],
-    ["replace"],
-    ["pop", "replaced_string"]
-   ]
+  {
+    "description": "Lower operation - converts string to lowercase.",
+    "jisp_program": {"code": [["push", "Hello World"], ["lower"], ["pop", "lowercased_string"]]},
+    "expected_stack": [],
+    "expected_variables": {"lowercased_string": "hello world"}
   },
-  "expected_stack": [],
-  "expected_variables": {"replaced_string": "hi world hi"}
- },
- {
-  "description": "Slice operation - slice a string with start and end index.",
-  "jisp_program": {
-   "code": [
-    ["push", "hello world"],
-    ["push", 0.0],
-    ["push", 5.0],
-    ["slice"],
-    ["pop", "sliced_string"]
-   ]
+  {
+    "description": "Upper operation - converts string to uppercase.",
+    "jisp_program": {"code": [["push", "Hello World"], ["upper"], ["pop", "uppercased_string"]]},
+    "expected_stack": [],
+    "expected_variables": {"uppercased_string": "HELLO WORLD"}
   },
-  "expected_stack": [],
-  "expected_variables": {"sliced_string": "hello"}
- }
+  {
+    "description": "ToString operation - converts integer to string.",
+    "jisp_program": {"code": [["push", 123.0], ["to_string"], ["pop", "string_from_int"]]},
+    "expected_stack": [],
+    "expected_variables": {"string_from_int": "123"}
+  },
+  {
+    "description": "Concat operation - concatenates two strings.",
+    "jisp_program": {
+      "code": [
+        ["push", "hello "],
+        ["push", "world"],
+        ["concat"],
+        ["pop", "concatenated_string"]
+      ]
+    },
+    "expected_stack": [],
+    "expected_variables": {"concatenated_string": "hello world"}
+  },
+  {
+    "description": "Replace operation - replaces all occurrences of a substring.",
+    "jisp_program": {
+      "code": [
+        ["push", "hello world hello"],
+        ["push", "hello"],
+        ["push", "hi"],
+        ["replace"],
+        ["pop", "replaced_string"]
+      ]
+    },
+    "expected_stack": [],
+    "expected_variables": {"replaced_string": "hi world hi"}
+  },
+  {
+    "description": "Slice operation - slice a string with start and end index.",
+    "jisp_program": {
+      "code": [
+        ["push", "hello world"],
+        ["push", 0.0],
+        ["push", 5.0],
+        ["slice"],
+        ["pop", "sliced_string"]
+      ]
+    },
+    "expected_stack": [],
+    "expected_variables": {"sliced_string": "hello"}
+  }
 ]

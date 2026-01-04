@@ -1,312 +1,312 @@
 [
- {
-  "description": "Variable assignment and retrieval.",
-  "jisp_program": {
-   "code": [
-    ["push", "Hello, JISP!"],
-    ["push", "my_variable"],
-    ["set"],
-    ["push", "my_variable"],
-    ["get"],
-    ["pop", "retrieved_message"]
-   ]
+  {
+    "description": "Variable assignment and retrieval.",
+    "jisp_program": {
+      "code": [
+        ["push", "Hello, JISP!"],
+        ["push", "my_variable"],
+        ["set"],
+        ["push", "my_variable"],
+        ["get"],
+        ["pop", "retrieved_message"]
+      ]
+    },
+    "expected_stack": [],
+    "expected_variables": {"my_variable": "Hello, JISP!", "retrieved_message": "Hello, JISP!"}
   },
-  "expected_stack": [],
-  "expected_variables": {"my_variable": "Hello, JISP!", "retrieved_message": "Hello, JISP!"}
- },
- {
-  "description": "Exists operation - variable exists.",
-  "jisp_program": {
-   "code": [
-    ["push", "some_value"],
-    ["push", "existing_var"],
-    ["set"],
-    ["push", "existing_var"],
-    ["exists"]
-   ]
+  {
+    "description": "Exists operation - variable exists.",
+    "jisp_program": {
+      "code": [
+        ["push", "some_value"],
+        ["push", "existing_var"],
+        ["set"],
+        ["push", "existing_var"],
+        ["exists"]
+      ]
+    },
+    "expected_stack": [true],
+    "expected_variables": {"existing_var": "some_value"}
   },
-  "expected_stack": [true],
-  "expected_variables": {"existing_var": "some_value"}
- },
- {
-  "description": "Exists operation - variable does not exist.",
-  "jisp_program": {"code": [["push", "non_existent_var"], ["exists"]]},
-  "expected_stack": [false],
-  "expected_variables": {}
- },
- {
-  "description": "Delete operation.",
-  "jisp_program": {
-   "code": [
-    ["push", "value_to_delete"],
-    ["push", "var_to_delete"],
-    ["set"],
-    ["push", "var_to_delete"],
-    ["delete"]
-   ]
+  {
+    "description": "Exists operation - variable does not exist.",
+    "jisp_program": {"code": [["push", "non_existent_var"], ["exists"]]},
+    "expected_stack": [false],
+    "expected_variables": {}
   },
-  "expected_stack": [],
-  "expected_variables": {}
- },
- {
-  "description": "Get operation - no arguments, path from stack (string).",
-  "jisp_program": {
-   "code": [
-    ["push", "stack_value"],
-    ["push", "my_var"],
-    ["set"],
-    ["push", "my_var"],
-    ["get"],
-    ["pop", "retrieved_value"]
-   ]
+  {
+    "description": "Delete operation.",
+    "jisp_program": {
+      "code": [
+        ["push", "value_to_delete"],
+        ["push", "var_to_delete"],
+        ["set"],
+        ["push", "var_to_delete"],
+        ["delete"]
+      ]
+    },
+    "expected_stack": [],
+    "expected_variables": {}
   },
-  "expected_stack": [],
-  "expected_variables": {"my_var": "stack_value", "retrieved_value": "stack_value"}
- },
- {
-  "description": "Get operation - no arguments, path from stack (array).",
-  "jisp_program": {
-   "code": [
-    ["push", {"nested": {"field": "nested_value"}}],
-    ["push", "my_object"],
-    ["set"],
-    ["push", ["my_object", "nested", "field"]],
-    ["get"],
-    ["pop", "retrieved_nested_value"]
-   ]
+  {
+    "description": "Get operation - no arguments, path from stack (string).",
+    "jisp_program": {
+      "code": [
+        ["push", "stack_value"],
+        ["push", "my_var"],
+        ["set"],
+        ["push", "my_var"],
+        ["get"],
+        ["pop", "retrieved_value"]
+      ]
+    },
+    "expected_stack": [],
+    "expected_variables": {"my_var": "stack_value", "retrieved_value": "stack_value"}
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {
-      "my_object": {
-       "type": "object",
-       "properties": {
-        "nested": {
-         "type": "object",
-         "properties": {"field": {"type": "string", "const": "nested_value"}}
+  {
+    "description": "Get operation - no arguments, path from stack (array).",
+    "jisp_program": {
+      "code": [
+        ["push", {"nested": {"field": "nested_value"}}],
+        ["push", "my_object"],
+        ["set"],
+        ["push", ["my_object", "nested", "field"]],
+        ["get"],
+        ["pop", "retrieved_nested_value"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {
+            "my_object": {
+              "type": "object",
+              "properties": {
+                "nested": {
+                  "type": "object",
+                  "properties": {"field": {"type": "string", "const": "nested_value"}}
+                }
+              }
+            },
+            "retrieved_nested_value": {"type": "string", "const": "nested_value"}
+          },
+          "required": ["my_object", "retrieved_nested_value"]
         }
-       }
       },
-      "retrieved_nested_value": {"type": "string", "const": "nested_value"}
-     },
-     "required": ["my_object", "retrieved_nested_value"]
+      "required": ["stack", "variables"]
     }
-   },
-   "required": ["stack", "variables"]
-  }
- },
- {
-  "description": "Get operation - one argument (hardcoded string path).",
-  "jisp_program": {
-   "code": [
-    ["push", "arg_value"],
-    ["push", "another_var"],
-    ["set"],
-    ["get", "another_var"],
-    ["pop", "retrieved_arg_value"]
-   ]
   },
-  "expected_stack": [],
-  "expected_variables": {"another_var": "arg_value", "retrieved_arg_value": "arg_value"}
- },
- {
-  "description": "Get operation - one argument (hardcoded array path).",
-  "jisp_program": {
-   "code": [
-    ["push", {"deep": {"path": "deep_value"}}],
-    ["push", "obj_var"],
-    ["set"],
-    ["get", ["obj_var", "deep", "path"]],
-    ["pop", "retrieved_deep_value"]
-   ]
+  {
+    "description": "Get operation - one argument (hardcoded string path).",
+    "jisp_program": {
+      "code": [
+        ["push", "arg_value"],
+        ["push", "another_var"],
+        ["set"],
+        ["get", "another_var"],
+        ["pop", "retrieved_arg_value"]
+      ]
+    },
+    "expected_stack": [],
+    "expected_variables": {"another_var": "arg_value", "retrieved_arg_value": "arg_value"}
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {
-      "obj_var": {
-       "type": "object",
-       "properties": {
-        "deep": {
-         "type": "object",
-         "properties": {"path": {"type": "string", "const": "deep_value"}}
+  {
+    "description": "Get operation - one argument (hardcoded array path).",
+    "jisp_program": {
+      "code": [
+        ["push", {"deep": {"path": "deep_value"}}],
+        ["push", "obj_var"],
+        ["set"],
+        ["get", ["obj_var", "deep", "path"]],
+        ["pop", "retrieved_deep_value"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {
+            "obj_var": {
+              "type": "object",
+              "properties": {
+                "deep": {
+                  "type": "object",
+                  "properties": {"path": {"type": "string", "const": "deep_value"}}
+                }
+              }
+            },
+            "retrieved_deep_value": {"type": "string", "const": "deep_value"}
+          },
+          "required": ["obj_var", "retrieved_deep_value"]
         }
-       }
       },
-      "retrieved_deep_value": {"type": "string", "const": "deep_value"}
-     },
-     "required": ["obj_var", "retrieved_deep_value"]
+      "required": ["stack", "variables"]
     }
-   },
-   "required": ["stack", "variables"]
-  }
- },
- {
-  "description": "Get operation - multiple arguments (hardcoded string paths).",
-  "jisp_program": {
-   "code": [
-    ["push", 1],
-    ["push", "val_a"],
-    ["set"],
-    ["push", 2],
-    ["push", "val_b"],
-    ["set"],
-    ["push", 3],
-    ["push", "val_c"],
-    ["set"],
-    ["get", "val_a", "val_b", "val_c"],
-    ["pop", "c_val"],
-    ["pop", "b_val"],
-    ["pop", "a_val"]
-   ]
   },
-  "expected_stack": [],
-  "expected_variables": {"val_a": 1, "val_b": 2, "val_c": 3, "c_val": 3, "b_val": 2, "a_val": 1}
- },
- {
-  "description": "Get operation - multiple arguments (mixed string and array paths).",
-  "jisp_program": {
-   "code": [
-    ["push", "first"],
-    ["push", "str_var"],
-    ["set"],
-    ["push", {"x": "second"}],
-    ["push", "obj_var"],
-    ["set"],
-    ["get", "str_var", ["obj_var", "x"]],
-    ["pop", "second_val"],
-    ["pop", "first_val"]
-   ]
+  {
+    "description": "Get operation - multiple arguments (hardcoded string paths).",
+    "jisp_program": {
+      "code": [
+        ["push", 1],
+        ["push", "val_a"],
+        ["set"],
+        ["push", 2],
+        ["push", "val_b"],
+        ["set"],
+        ["push", 3],
+        ["push", "val_c"],
+        ["set"],
+        ["get", "val_a", "val_b", "val_c"],
+        ["pop", "c_val"],
+        ["pop", "b_val"],
+        ["pop", "a_val"]
+      ]
+    },
+    "expected_stack": [],
+    "expected_variables": {"val_a": 1, "val_b": 2, "val_c": 3, "c_val": 3, "b_val": 2, "a_val": 1}
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {
-      "str_var": {"type": "string", "const": "first"},
-      "obj_var": {
-       "type": "object",
-       "properties": {"x": {"type": "string", "const": "second"}}
+  {
+    "description": "Get operation - multiple arguments (mixed string and array paths).",
+    "jisp_program": {
+      "code": [
+        ["push", "first"],
+        ["push", "str_var"],
+        ["set"],
+        ["push", {"x": "second"}],
+        ["push", "obj_var"],
+        ["set"],
+        ["get", "str_var", ["obj_var", "x"]],
+        ["pop", "second_val"],
+        ["pop", "first_val"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {
+            "str_var": {"type": "string", "const": "first"},
+            "obj_var": {
+              "type": "object",
+              "properties": {"x": {"type": "string", "const": "second"}}
+            },
+            "second_val": {"type": "string", "const": "second"},
+            "first_val": {"type": "string", "const": "first"}
+          },
+          "required": ["str_var", "obj_var", "first_val", "second_val"]
+        }
       },
-      "second_val": {"type": "string", "const": "second"},
-      "first_val": {"type": "string", "const": "first"}
-     },
-     "required": ["str_var", "obj_var", "first_val", "second_val"]
+      "required": ["stack", "variables"]
     }
-   },
-   "required": ["stack", "variables"]
-  }
- },
- {
-  "description": "Set operation - no arguments, path from stack (string).",
-  "jisp_program": {"code": [["push", "new_value"], ["push", "new_var"], ["set"]]},
-  "expected_stack": [],
-  "expected_variables": {"new_var": "new_value"}
- },
- {
-  "description": "Set operation - no arguments, path from stack (array).",
-  "jisp_program": {"code": [["push", "deeply_nested"], ["push", ["a", "b", "c"]], ["set"]]},
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {
-      "a": {
-       "type": "object",
-       "properties": {
-        "b": {
-         "type": "object",
-         "properties": {"c": {"type": "string", "const": "deeply_nested"}}
-        }
-       }
-      }
-     },
-     "required": ["a"]
-    }
-   },
-   "required": ["stack", "variables"]
-  }
- },
- {
-  "description": "Set operation - one argument (hardcoded string path).",
-  "jisp_program": {"code": [["push", 42], ["set", "the_answer"]]},
-  "expected_stack": [],
-  "expected_variables": {"the_answer": 42}
- },
- {
-  "description": "Set operation - one argument (hardcoded array path).",
-  "jisp_program": {"code": [["push", "a_chair"], ["set", ["home", "room", "furniture"]]]},
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {
-      "home": {
-       "type": "object",
-       "properties": {
-        "room": {
-         "type": "object",
-         "properties": {"furniture": {"type": "string", "const": "a_chair"}}
-        }
-       }
-      }
-     },
-     "required": ["home"]
-    }
-   },
-   "required": ["stack", "variables"]
-  }
- },
- {
-  "description": "Set operation - multiple arguments (hardcoded string paths).",
-  "jisp_program": {"code": [["push", "value1"], ["push", "value2"], ["set", "key1", "key2"]]},
-  "expected_stack": [],
-  "expected_variables": {"key1": "value1", "key2": "value2"}
- },
- {
-  "description": "Set operation - multiple arguments (mixed string and array paths).",
-  "jisp_program": {
-   "code": [
-    ["push", "simple"],
-    ["push", "complex"],
-    ["set", "simple_var", ["path", "to", "complex_var"]]
-   ]
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {
-      "simple_var": {"type": "string", "const": "simple"},
-      "path": {
-       "type": "object",
-       "properties": {
-        "to": {
-         "type": "object",
-         "properties": {"complex_var": {"type": "string", "const": "complex"}}
+  {
+    "description": "Set operation - no arguments, path from stack (string).",
+    "jisp_program": {"code": [["push", "new_value"], ["push", "new_var"], ["set"]]},
+    "expected_stack": [],
+    "expected_variables": {"new_var": "new_value"}
+  },
+  {
+    "description": "Set operation - no arguments, path from stack (array).",
+    "jisp_program": {"code": [["push", "deeply_nested"], ["push", ["a", "b", "c"]], ["set"]]},
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {
+            "a": {
+              "type": "object",
+              "properties": {
+                "b": {
+                  "type": "object",
+                  "properties": {"c": {"type": "string", "const": "deeply_nested"}}
+                }
+              }
+            }
+          },
+          "required": ["a"]
         }
-       }
-      }
-     },
-     "required": ["simple_var", "path"]
+      },
+      "required": ["stack", "variables"]
     }
-   },
-   "required": ["stack", "variables"]
+  },
+  {
+    "description": "Set operation - one argument (hardcoded string path).",
+    "jisp_program": {"code": [["push", 42], ["set", "the_answer"]]},
+    "expected_stack": [],
+    "expected_variables": {"the_answer": 42}
+  },
+  {
+    "description": "Set operation - one argument (hardcoded array path).",
+    "jisp_program": {"code": [["push", "a_chair"], ["set", ["home", "room", "furniture"]]]},
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {
+            "home": {
+              "type": "object",
+              "properties": {
+                "room": {
+                  "type": "object",
+                  "properties": {"furniture": {"type": "string", "const": "a_chair"}}
+                }
+              }
+            }
+          },
+          "required": ["home"]
+        }
+      },
+      "required": ["stack", "variables"]
+    }
+  },
+  {
+    "description": "Set operation - multiple arguments (hardcoded string paths).",
+    "jisp_program": {"code": [["push", "value1"], ["push", "value2"], ["set", "key1", "key2"]]},
+    "expected_stack": [],
+    "expected_variables": {"key1": "value1", "key2": "value2"}
+  },
+  {
+    "description": "Set operation - multiple arguments (mixed string and array paths).",
+    "jisp_program": {
+      "code": [
+        ["push", "simple"],
+        ["push", "complex"],
+        ["set", "simple_var", ["path", "to", "complex_var"]]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {
+            "simple_var": {"type": "string", "const": "simple"},
+            "path": {
+              "type": "object",
+              "properties": {
+                "to": {
+                  "type": "object",
+                  "properties": {"complex_var": {"type": "string", "const": "complex"}}
+                }
+              }
+            }
+          },
+          "required": ["simple_var", "path"]
+        }
+      },
+      "required": ["stack", "variables"]
+    }
   }
- }
 ]

@@ -1,1145 +1,1188 @@
 [
- {
-  "description": "Test json schema validation - valid",
-  "jisp_program": {
-   "code": [
-    [
-     "push",
-     {
+  {
+    "description": "Test json schema validation - valid",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "type": "object",
+            "properties": {"name": {"type": "string"}, "age": {"type": "number"}},
+            "required": ["name", "age"]
+          }
+        ],
+        ["push", {"name": "John Doe", "age": 30}],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
       "type": "object",
-      "properties": {"name": {"type": "string"}, "age": {"type": "number"}},
-      "required": ["name", "age"]
-     }
-    ],
-    ["push", {"name": "John Doe", "age": 30}],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
     }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Test json schema validation - invalid",
-  "jisp_program": {
-   "code": [
-    [
-     "push",
-     {
+  },
+  {
+    "description": "Test json schema validation - invalid",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "type": "object",
+            "properties": {"name": {"type": "string"}, "age": {"type": "number"}},
+            "required": ["name", "age"]
+          }
+        ],
+        ["push", {"name": "John Doe", "age": "30"}],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
       "type": "object",
-      "properties": {"name": {"type": "string"}, "age": {"type": "number"}},
-      "required": ["name", "age"]
-     }
-    ],
-    ["push", {"name": "John Doe", "age": "30"}],
-    ["valid"]
-   ]
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - string type, valid.",
-  "jisp_program": {"code": [["push", {"type": "string"}], ["push", "hello"], ["valid"]]},
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - string type, invalid (number).",
-  "jisp_program": {"code": [["push", {"type": "string"}], ["push", 123.0], ["valid"]]},
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - number type, valid.",
-  "jisp_program": {"code": [["push", {"type": "number"}], ["push", 123.45], ["valid"]]},
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - number type, invalid (string).",
-  "jisp_program": {"code": [["push", {"type": "number"}], ["push", "123"], ["valid"]]},
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - boolean type, valid.",
-  "jisp_program": {"code": [["push", {"type": "boolean"}], ["push", true], ["valid"]]},
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - boolean type, invalid (number).",
-  "jisp_program": {"code": [["push", {"type": "boolean"}], ["push", 0.0], ["valid"]]},
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - null type, valid.",
-  "jisp_program": {"code": [["push", {"type": "null"}], ["push", null], ["valid"]]},
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - null type, invalid (string).",
-  "jisp_program": {"code": [["push", {"type": "null"}], ["push", "null"], ["valid"]]},
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - enum, valid.",
-  "jisp_program": {
-   "code": [["push", {"enum": ["red", "green", "blue"]}], ["push", "green"], ["valid"]]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - enum, invalid.",
-  "jisp_program": {
-   "code": [["push", {"enum": ["red", "green", "blue"]}], ["push", "yellow"], ["valid"]]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - string minLength, valid.",
-  "jisp_program": {
-   "code": [["push", {"type": "string", "minLength": 3}], ["push", "abc"], ["valid"]]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - string minLength, invalid.",
-  "jisp_program": {
-   "code": [["push", {"type": "string", "minLength": 3}], ["push", "ab"], ["valid"]]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - string maxLength, valid.",
-  "jisp_program": {
-   "code": [["push", {"type": "string", "maxLength": 3}], ["push", "abc"], ["valid"]]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - string maxLength, invalid.",
-  "jisp_program": {
-   "code": [["push", {"type": "string", "maxLength": 3}], ["push", "abcd"], ["valid"]]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - string pattern, valid.",
-  "jisp_program": {
-   "code": [
-    ["push", {"type": "string", "pattern": "^a.*c$"}],
-    ["push", "abc"],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - string pattern, invalid.",
-  "jisp_program": {
-   "code": [
-    ["push", {"type": "string", "pattern": "^a.*c$"}],
-    ["push", "abx"],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - number minimum, valid.",
-  "jisp_program": {
-   "code": [["push", {"type": "number", "minimum": 10.0}], ["push", 10.0], ["valid"]]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - number minimum, invalid.",
-  "jisp_program": {
-   "code": [["push", {"type": "number", "minimum": 10.0}], ["push", 9.9], ["valid"]]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - number maximum, valid.",
-  "jisp_program": {
-   "code": [["push", {"type": "number", "maximum": 10.0}], ["push", 10.0], ["valid"]]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - number maximum, invalid.",
-  "jisp_program": {
-   "code": [["push", {"type": "number", "maximum": 10.0}], ["push", 10.1], ["valid"]]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - number exclusiveMinimum, valid.",
-  "jisp_program": {
-   "code": [
-    ["push", {"type": "number", "exclusiveMinimum": 10.0}],
-    ["push", 10.1],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - number exclusiveMinimum, invalid (on boundary).",
-  "jisp_program": {
-   "code": [
-    ["push", {"type": "number", "exclusiveMinimum": 10.0}],
-    ["push", 10.0],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - number exclusiveMaximum, valid.",
-  "jisp_program": {
-   "code": [
-    ["push", {"type": "number", "exclusiveMaximum": 10.0}],
-    ["push", 9.9],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - number exclusiveMaximum, invalid (on boundary).",
-  "jisp_program": {
-   "code": [
-    ["push", {"type": "number", "exclusiveMaximum": 10.0}],
-    ["push", 10.0],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - array minItems, valid.",
-  "jisp_program": {
-   "code": [["push", {"type": "array", "minItems": 2}], ["push", [1.0, 2.0]], ["valid"]]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - array minItems, invalid.",
-  "jisp_program": {
-   "code": [["push", {"type": "array", "minItems": 2}], ["push", [1.0]], ["valid"]]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - array maxItems, valid.",
-  "jisp_program": {
-   "code": [["push", {"type": "array", "maxItems": 2}], ["push", [1.0, 2.0]], ["valid"]]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - array maxItems, invalid.",
-  "jisp_program": {
-   "code": [
-    ["push", {"type": "array", "maxItems": 2}],
-    ["push", [1.0, 2.0, 3.0]],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - array uniqueItems, valid.",
-  "jisp_program": {
-   "code": [
-    ["push", {"type": "array", "uniqueItems": true}],
-    ["push", [1.0, 2.0, 3.0]],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - array uniqueItems, invalid.",
-  "jisp_program": {
-   "code": [
-    ["push", {"type": "array", "uniqueItems": true}],
-    ["push", [1.0, 2.0, 2.0]],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - array items (schema), valid.",
-  "jisp_program": {
-   "code": [
-    ["push", {"type": "array", "items": {"type": "number"}}],
-    ["push", [1.0, 2.0, 3.0]],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - array items (schema), invalid.",
-  "jisp_program": {
-   "code": [
-    ["push", {"type": "array", "items": {"type": "number"}}],
-    ["push", [1.0, "two", 3.0]],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - object minProperties, valid.",
-  "jisp_program": {
-   "code": [
-    ["push", {"type": "object", "minProperties": 1}],
-    ["push", {"a": 1.0}],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - object minProperties, invalid.",
-  "jisp_program": {
-   "code": [["push", {"type": "object", "minProperties": 1}], ["push", {}], ["valid"]]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - object maxProperties, valid.",
-  "jisp_program": {
-   "code": [
-    ["push", {"type": "object", "maxProperties": 1}],
-    ["push", {"a": 1.0}],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - object maxProperties, invalid.",
-  "jisp_program": {
-   "code": [
-    ["push", {"type": "object", "maxProperties": 1}],
-    ["push", {"a": 1.0, "b": 2.0}],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - object required, valid.",
-  "jisp_program": {
-   "code": [
-    ["push", {"type": "object", "properties": {"a": {}}, "required": ["a"]}],
-    ["push", {"a": 1.0}],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - object required, invalid.",
-  "jisp_program": {
-   "code": [
-    ["push", {"type": "object", "properties": {"a": {}}, "required": ["a"]}],
-    ["push", {}],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - object additionalProperties, valid.",
-  "jisp_program": {
-   "code": [
-    [
-     "push",
-     {"type": "object", "properties": {"a": {}}, "additionalProperties": false}
-    ],
-    ["push", {"a": 1.0}],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - object additionalProperties, invalid.",
-  "jisp_program": {
-   "code": [
-    [
-     "push",
-     {"type": "object", "properties": {"a": {}}, "additionalProperties": false}
-    ],
-    ["push", {"a": 1.0, "b": 2.0}],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - nested object schema, valid.",
-  "jisp_program": {
-   "code": [
-    [
-     "push",
-     {
+  {
+    "description": "Valid operation - string type, valid.",
+    "jisp_program": {"code": [["push", {"type": "string"}], ["push", "hello"], ["valid"]]},
+    "validation_schema": {
       "type": "object",
-      "properties": {"a": {"type": "object", "properties": {"b": {"type": "number"}}}}
-     }
-    ],
-    ["push", {"a": {"b": 1.0}}],
-    ["valid"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
     }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - nested object schema, invalid.",
-  "jisp_program": {
-   "code": [
-    [
-     "push",
-     {
+  },
+  {
+    "description": "Valid operation - string type, invalid (number).",
+    "jisp_program": {"code": [["push", {"type": "string"}], ["push", 123.0], ["valid"]]},
+    "validation_schema": {
       "type": "object",
-      "properties": {"a": {"type": "object", "properties": {"b": {"type": "number"}}}}
-     }
-    ],
-    ["push", {"a": {"b": "not_a_number"}}],
-    ["valid"]
-   ]
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
+  {
+    "description": "Valid operation - number type, valid.",
+    "jisp_program": {"code": [["push", {"type": "number"}], ["push", 123.45], ["valid"]]},
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
     }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - oneOf, valid (first schema).",
-  "jisp_program": {
-   "code": [
-    ["push", {"oneOf": [{"type": "string"}, {"type": "number"}]}],
-    ["push", "hello"],
-    ["valid"]
-   ]
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
+  {
+    "description": "Valid operation - number type, invalid (string).",
+    "jisp_program": {"code": [["push", {"type": "number"}], ["push", "123"], ["valid"]]},
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
     }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - oneOf, valid (second schema).",
-  "jisp_program": {
-   "code": [
-    ["push", {"oneOf": [{"type": "string"}, {"type": "number"}]}],
-    ["push", 123.0],
-    ["valid"]
-   ]
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
+  {
+    "description": "Valid operation - boolean type, valid.",
+    "jisp_program": {"code": [["push", {"type": "boolean"}], ["push", true], ["valid"]]},
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
     }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - oneOf, invalid (multiple valid schemas).",
-  "jisp_program": {
-   "code": [
-    [
-     "push",
-     {
-      "oneOf": [{"type": "string", "minLength": 1}, {"type": "string", "maxLength": 5}]
-     }
-    ],
-    ["push", "test"],
-    ["valid"]
-   ]
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
+  {
+    "description": "Valid operation - boolean type, invalid (number).",
+    "jisp_program": {"code": [["push", {"type": "boolean"}], ["push", 0.0], ["valid"]]},
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
     }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - oneOf, invalid (no valid schema).",
-  "jisp_program": {
-   "code": [
-    ["push", {"oneOf": [{"type": "string"}, {"type": "number"}]}],
-    ["push", true],
-    ["valid"]
-   ]
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
+  {
+    "description": "Valid operation - null type, valid.",
+    "jisp_program": {"code": [["push", {"type": "null"}], ["push", null], ["valid"]]},
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
     }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - anyOf, valid (first schema).",
-  "jisp_program": {
-   "code": [
-    ["push", {"anyOf": [{"type": "string"}, {"type": "number"}]}],
-    ["push", "hello"],
-    ["valid"]
-   ]
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
+  {
+    "description": "Valid operation - null type, invalid (string).",
+    "jisp_program": {"code": [["push", {"type": "null"}], ["push", "null"], ["valid"]]},
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
     }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - anyOf, valid (second schema).",
-  "jisp_program": {
-   "code": [
-    ["push", {"anyOf": [{"type": "string"}, {"type": "number"}]}],
-    ["push", 123.0],
-    ["valid"]
-   ]
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
+  {
+    "description": "Valid operation - enum, valid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"enum": ["red", "green", "blue"]}],
+        ["push", "green"],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
     }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - anyOf, invalid (no valid schema).",
-  "jisp_program": {
-   "code": [
-    ["push", {"anyOf": [{"type": "string"}, {"type": "number"}]}],
-    ["push", true],
-    ["valid"]
-   ]
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
+  {
+    "description": "Valid operation - enum, invalid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"enum": ["red", "green", "blue"]}],
+        ["push", "yellow"],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
     }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - allOf, valid.",
-  "jisp_program": {
-   "code": [
-    [
-     "push",
-     {
-      "allOf": [{"type": "string", "minLength": 1}, {"type": "string", "maxLength": 5}]
-     }
-    ],
-    ["push", "test"],
-    ["valid"]
-   ]
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
+  {
+    "description": "Valid operation - string minLength, valid.",
+    "jisp_program": {
+      "code": [["push", {"type": "string", "minLength": 3}], ["push", "abc"], ["valid"]]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
     }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - allOf, invalid (one schema fails).",
-  "jisp_program": {
-   "code": [
-    [
-     "push",
-     {
-      "allOf": [{"type": "string", "minLength": 1}, {"type": "string", "maxLength": 2}]
-     }
-    ],
-    ["push", "test"],
-    ["valid"]
-   ]
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
+  {
+    "description": "Valid operation - string minLength, invalid.",
+    "jisp_program": {
+      "code": [["push", {"type": "string", "minLength": 3}], ["push", "ab"], ["valid"]]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
     }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - not, valid.",
-  "jisp_program": {"code": [["push", {"not": {"type": "string"}}], ["push", 123.0], ["valid"]]},
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": true},
-     "minItems": 1,
-     "maxItems": 1
-    }
-   },
-   "required": ["stack"]
-  }
- },
- {
-  "description": "Valid operation - not, invalid.",
-  "jisp_program": {
-   "code": [["push", {"not": {"type": "string"}}], ["push", "hello"], ["valid"]]
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {
-     "type": "array",
-     "items": {"type": "boolean", "const": false},
-     "minItems": 1,
-     "maxItems": 1
+  {
+    "description": "Valid operation - string maxLength, valid.",
+    "jisp_program": {
+      "code": [["push", {"type": "string", "maxLength": 3}], ["push", "abc"], ["valid"]]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
     }
-   },
-   "required": ["stack"]
+  },
+  {
+    "description": "Valid operation - string maxLength, invalid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "string", "maxLength": 3}],
+        ["push", "abcd"],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - string pattern, valid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "string", "pattern": "^a.*c$"}],
+        ["push", "abc"],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - string pattern, invalid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "string", "pattern": "^a.*c$"}],
+        ["push", "abx"],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - number minimum, valid.",
+    "jisp_program": {
+      "code": [["push", {"type": "number", "minimum": 10.0}], ["push", 10.0], ["valid"]]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - number minimum, invalid.",
+    "jisp_program": {
+      "code": [["push", {"type": "number", "minimum": 10.0}], ["push", 9.9], ["valid"]]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - number maximum, valid.",
+    "jisp_program": {
+      "code": [["push", {"type": "number", "maximum": 10.0}], ["push", 10.0], ["valid"]]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - number maximum, invalid.",
+    "jisp_program": {
+      "code": [["push", {"type": "number", "maximum": 10.0}], ["push", 10.1], ["valid"]]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - number exclusiveMinimum, valid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "number", "exclusiveMinimum": 10.0}],
+        ["push", 10.1],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - number exclusiveMinimum, invalid (on boundary).",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "number", "exclusiveMinimum": 10.0}],
+        ["push", 10.0],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - number exclusiveMaximum, valid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "number", "exclusiveMaximum": 10.0}],
+        ["push", 9.9],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - number exclusiveMaximum, invalid (on boundary).",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "number", "exclusiveMaximum": 10.0}],
+        ["push", 10.0],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - array minItems, valid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "array", "minItems": 2}],
+        ["push", [1.0, 2.0]],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - array minItems, invalid.",
+    "jisp_program": {
+      "code": [["push", {"type": "array", "minItems": 2}], ["push", [1.0]], ["valid"]]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - array maxItems, valid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "array", "maxItems": 2}],
+        ["push", [1.0, 2.0]],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - array maxItems, invalid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "array", "maxItems": 2}],
+        ["push", [1.0, 2.0, 3.0]],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - array uniqueItems, valid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "array", "uniqueItems": true}],
+        ["push", [1.0, 2.0, 3.0]],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - array uniqueItems, invalid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "array", "uniqueItems": true}],
+        ["push", [1.0, 2.0, 2.0]],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - array items (schema), valid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "array", "items": {"type": "number"}}],
+        ["push", [1.0, 2.0, 3.0]],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - array items (schema), invalid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "array", "items": {"type": "number"}}],
+        ["push", [1.0, "two", 3.0]],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - object minProperties, valid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "object", "minProperties": 1}],
+        ["push", {"a": 1.0}],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - object minProperties, invalid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "object", "minProperties": 1}],
+        ["push", {}],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - object maxProperties, valid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "object", "maxProperties": 1}],
+        ["push", {"a": 1.0}],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - object maxProperties, invalid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "object", "maxProperties": 1}],
+        ["push", {"a": 1.0, "b": 2.0}],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - object required, valid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "object", "properties": {"a": {}}, "required": ["a"]}],
+        ["push", {"a": 1.0}],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - object required, invalid.",
+    "jisp_program": {
+      "code": [
+        ["push", {"type": "object", "properties": {"a": {}}, "required": ["a"]}],
+        ["push", {}],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - object additionalProperties, valid.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "type": "object",
+            "properties": {"a": {}},
+            "additionalProperties": false
+          }
+        ],
+        ["push", {"a": 1.0}],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - object additionalProperties, invalid.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "type": "object",
+            "properties": {"a": {}},
+            "additionalProperties": false
+          }
+        ],
+        ["push", {"a": 1.0, "b": 2.0}],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - nested object schema, valid.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "type": "object",
+            "properties": {"a": {"type": "object", "properties": {"b": {"type": "number"}}}}
+          }
+        ],
+        ["push", {"a": {"b": 1.0}}],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - nested object schema, invalid.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "type": "object",
+            "properties": {"a": {"type": "object", "properties": {"b": {"type": "number"}}}}
+          }
+        ],
+        ["push", {"a": {"b": "not_a_number"}}],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - oneOf, valid (first schema).",
+    "jisp_program": {
+      "code": [
+        ["push", {"oneOf": [{"type": "string"}, {"type": "number"}]}],
+        ["push", "hello"],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - oneOf, valid (second schema).",
+    "jisp_program": {
+      "code": [
+        ["push", {"oneOf": [{"type": "string"}, {"type": "number"}]}],
+        ["push", 123.0],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - oneOf, invalid (multiple valid schemas).",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "oneOf": [
+              {"type": "string", "minLength": 1},
+              {"type": "string", "maxLength": 5}
+            ]
+          }
+        ],
+        ["push", "test"],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - oneOf, invalid (no valid schema).",
+    "jisp_program": {
+      "code": [
+        ["push", {"oneOf": [{"type": "string"}, {"type": "number"}]}],
+        ["push", true],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - anyOf, valid (first schema).",
+    "jisp_program": {
+      "code": [
+        ["push", {"anyOf": [{"type": "string"}, {"type": "number"}]}],
+        ["push", "hello"],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - anyOf, valid (second schema).",
+    "jisp_program": {
+      "code": [
+        ["push", {"anyOf": [{"type": "string"}, {"type": "number"}]}],
+        ["push", 123.0],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - anyOf, invalid (no valid schema).",
+    "jisp_program": {
+      "code": [
+        ["push", {"anyOf": [{"type": "string"}, {"type": "number"}]}],
+        ["push", true],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - allOf, valid.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "allOf": [
+              {"type": "string", "minLength": 1},
+              {"type": "string", "maxLength": 5}
+            ]
+          }
+        ],
+        ["push", "test"],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - allOf, invalid (one schema fails).",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "allOf": [
+              {"type": "string", "minLength": 1},
+              {"type": "string", "maxLength": 2}
+            ]
+          }
+        ],
+        ["push", "test"],
+        ["valid"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - not, valid.",
+    "jisp_program": {
+      "code": [["push", {"not": {"type": "string"}}], ["push", 123.0], ["valid"]]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": true},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
+  },
+  {
+    "description": "Valid operation - not, invalid.",
+    "jisp_program": {
+      "code": [["push", {"not": {"type": "string"}}], ["push", "hello"], ["valid"]]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {
+          "type": "array",
+          "items": {"type": "boolean", "const": false},
+          "minItems": 1,
+          "maxItems": 1
+        }
+      },
+      "required": ["stack"]
+    }
   }
- }
 ]

@@ -1,32 +1,32 @@
 [
- {
-  "description": "Simple stack-based addition.",
-  "jisp_program": {
-   "code": [["push", 5.0], ["push", 3.0], ["add"], ["pop", "result_of_addition"]]
+  {
+    "description": "Simple stack-based addition.",
+    "jisp_program": {
+      "code": [["push", 5.0], ["push", 3.0], ["add"], ["pop", "result_of_addition"]]
+    },
+    "expected_stack": [],
+    "expected_variables": {"result_of_addition": 8.0}
   },
-  "expected_stack": [],
-  "expected_variables": {"result_of_addition": 8.0}
- },
- {
-  "description": "Eq operation - equal values.",
-  "jisp_program": {"code": [["push", 10.0], ["push", 10.0], ["eq"]]},
-  "expected_stack": [true],
-  "expected_variables": {}
- },
- {
-  "description": "Eq operation - unequal values.",
-  "jisp_program": {"code": [["push", 10.0], ["push", 20.0], ["eq"]]},
-  "expected_stack": [false],
-  "expected_variables": {}
- },
- {
-  "description": "NEGATIVE Test: Division by zero should result in an error.",
-  "jisp_program": {"code": [["push", 10.0], ["push", 0.0], ["div"]]},
-  "expected_error_message": "division by zero"
- },
- {
-  "description": "NEGATIVE Test: Modulo by zero should result in an error.",
-  "jisp_program": {"code": [["push", 10.0], ["push", 0.0], ["mod"]]},
-  "expected_error_message": "modulo by zero"
- }
+  {
+    "description": "Eq operation - equal values.",
+    "jisp_program": {"code": [["push", 10.0], ["push", 10.0], ["eq"]]},
+    "expected_stack": [true],
+    "expected_variables": {}
+  },
+  {
+    "description": "Eq operation - unequal values.",
+    "jisp_program": {"code": [["push", 10.0], ["push", 20.0], ["eq"]]},
+    "expected_stack": [false],
+    "expected_variables": {}
+  },
+  {
+    "description": "NEGATIVE Test: Division by zero should result in an error.",
+    "jisp_program": {"code": [["push", 10.0], ["push", 0.0], ["div"]]},
+    "expected_error_message": "division by zero"
+  },
+  {
+    "description": "NEGATIVE Test: Modulo by zero should result in an error.",
+    "jisp_program": {"code": [["push", 10.0], ["push", 0.0], ["mod"]]},
+    "expected_error_message": "modulo by zero"
+  }
 ]

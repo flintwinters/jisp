@@ -1,7 +1,7 @@
 [
- {
-  "description": "Global level return - should cause an error.",
-  "jisp_program": {"code": [["push", "some_value"], ["return"]]},
-  "expected_error_message": "return error: return can only be called within a function execution context"
- }
+  {
+    "description": "Global level return - should cause an error.",
+    "jisp_program": {"code": [["push", "some_value"], ["return"]]},
+    "expected_error_message": "return error: return can only be called within a function execution context"
+  }
 ]

@@ -1,520 +1,531 @@
 [
- {
-  "description": "If operation - true condition, then block executes.",
-  "jisp_program": {
-   "code": [["push", true], ["if", [["push", "then_executed"], ["pop", "if_result"]]]]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {"if_result": {"type": "string", "const": "then_executed"}},
-     "required": ["if_result"]
-    }
-   },
-   "required": ["stack", "variables"]
-  }
- },
- {
-  "description": "If operation - false condition, else block executes.",
-  "jisp_program": {
-   "code": [
-    ["push", false],
-    [
-     "if",
-     [["push", "then_not_executed"], ["pop", "if_result_then"]],
-     [["push", "else_executed"], ["pop", "if_result_else"]]
-    ]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {"if_result_else": {"type": "string", "const": "else_executed"}},
-     "required": ["if_result_else"]
-    }
-   },
-   "required": ["stack", "variables"]
-  }
- },
- {
-  "description": "If operation - false condition, no else block.",
-  "jisp_program": {
-   "code": [
-    ["push", false],
-    ["if", [["push", "should_not_execute"], ["pop", "if_result_no_else"]]]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {"type": "object", "maxProperties": 0}
-   },
-   "required": ["stack", "variables"]
-  }
- },
- {
-  "description": "While operation - decrements counter.",
-  "jisp_program": {
-   "code": [
-    ["push", 3.0],
-    ["push", "counter"],
-    ["set"],
-    ["push", true],
-    ["push", "loop_condition"],
-    ["set"],
-    [
-     "while",
-     "loop_condition",
-     [
-      ["push", "counter"],
-      ["get"],
-      ["push", 1.0],
-      ["sub"],
-      ["push", "counter"],
-      ["set"],
-      ["push", "counter"],
-      ["get"],
-      ["push", 0.0],
-      ["eq"],
-      ["if", [["push", false], ["push", "loop_condition"], ["set"]]]
-     ]
-    ],
-    ["push", "counter"],
-    ["get"],
-    ["pop", "final_counter_value"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {
-      "counter": {"type": "number", "const": 0.0},
-      "loop_condition": {"type": "boolean", "const": false},
-      "final_counter_value": {"type": "number", "const": 0.0}
-     },
-     "required": ["counter", "loop_condition", "final_counter_value"]
-    }
-   },
-   "required": ["stack", "variables"]
-  }
- },
- {
-  "description": "Break in While loop - breaks when counter reaches 2.",
-  "jisp_program": {
-   "code": [
-    ["push", 0.0],
-    ["push", "counter"],
-    ["set"],
-    ["push", true],
-    ["push", "loop_condition"],
-    ["set"],
-    [
-     "while",
-     "loop_condition",
-     [
-      ["push", "counter"],
-      ["get"],
-      ["push", 1.0],
-      ["add"],
-      ["push", "counter"],
-      ["set"],
-      ["push", "counter"],
-      ["get"],
-      ["push", 2.0],
-      ["eq"],
-      ["if", [["break"]]],
-      ["push", "counter"],
-      ["get"],
-      ["push", 5.0],
-      ["eq"],
-      ["if", [["push", false], ["push", "loop_condition"], ["set"]]]
-     ]
-    ],
-    ["push", "counter"],
-    ["get"],
-    ["pop", "final_counter_value_break"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {
-      "counter": {"type": "number", "const": 2.0},
-      "loop_condition": {"type": "boolean", "const": true},
-      "final_counter_value_break": {"type": "number", "const": 2.0}
-     },
-     "required": ["counter", "loop_condition", "final_counter_value_break"]
-    }
-   },
-   "required": ["stack", "variables"]
-  }
- },
- {
-  "description": "Continue in While loop - skips even numbers.",
-  "jisp_program": {
-   "code": [
-    ["push", 0.0],
-    ["push", "i"],
-    ["set"],
-    ["push", 0.0],
-    ["push", "sum_of_odd_numbers"],
-    ["set"],
-    ["push", true],
-    ["push", "loop_condition"],
-    ["set"],
-    [
-     "while",
-     "loop_condition",
-     [
-      ["push", "i"],
-      ["get"],
-      ["push", 1.0],
-      ["add"],
-      ["push", "i"],
-      ["set"],
-      ["push", "i"],
-      ["get"],
-      ["push", 5.0],
-      ["gt"],
-      ["if", [["push", false], ["push", "loop_condition"], ["set"]]],
-      ["push", "i"],
-      ["get"],
-      ["push", 2.0],
-      ["mod"],
-      ["push", 0.0],
-      ["eq"],
-      ["if", [["continue"]]],
-      ["push", "sum_of_odd_numbers"],
-      ["get"],
-      ["push", "i"],
-      ["get"],
-      ["add"],
-      ["push", "sum_of_odd_numbers"],
-      ["set"]
-     ]
-    ],
-    ["push", "sum_of_odd_numbers"],
-    ["get"],
-    ["pop", "final_sum_of_odd_numbers"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {
-      "i": {"type": "number", "const": 6.0},
-      "sum_of_odd_numbers": {"type": "number", "const": 9.0},
-      "loop_condition": {"type": "boolean", "const": false},
-      "final_sum_of_odd_numbers": {"type": "number", "const": 9.0}
-     },
-     "required": ["i", "sum_of_odd_numbers", "loop_condition", "final_sum_of_odd_numbers"]
-    }
-   },
-   "required": ["stack", "variables"]
-  }
- },
- {
-  "description": "For operation - iterates over an array and sums values.",
-  "jisp_program": {
-   "code": [
-    ["push", 0.0],
-    ["push", "sum"],
-    ["set"],
-    [
-     "for",
-     "item",
-     [1.0, 2.0, 3.0],
-     [
-      ["push", "sum"],
-      ["get"],
-      ["push", "item"],
-      ["get"],
-      ["add"],
-      ["push", "sum"],
-      ["set"]
-     ]
-    ],
-    ["push", "sum"],
-    ["get"],
-    ["pop", "final_sum"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {
-      "sum": {"type": "number", "const": 6.0},
-      "final_sum": {"type": "number", "const": 6.0}
-     },
-     "required": ["sum", "final_sum"],
-     "additionalProperties": true
-    }
-   },
-   "required": ["stack", "variables"]
-  }
- },
- {
-  "description": "Try operation - catches an error.",
-  "jisp_program": {
-   "code": [
-    [
-     "try",
-     [["push", "non_existent_var"], ["get"]],
-     "caught_error",
-     [["push", "caught"], ["pop", "status"]]
-    ],
-    ["push", "caught_error"],
-    ["get"],
-    ["pop", "error_message"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {
-      "caught_error": {
-       "type": "string",
-       "pattern": "get error: variable 'non_existent_var' not found"
+  {
+    "description": "If operation - true condition, then block executes.",
+    "jisp_program": {
+      "code": [
+        ["push", true],
+        ["if", [["push", "then_executed"], ["pop", "if_result"]]]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {"if_result": {"type": "string", "const": "then_executed"}},
+          "required": ["if_result"]
+        }
       },
-      "status": {"type": "string", "const": "caught"},
-      "error_message": {
-       "type": "string",
-       "pattern": "get error: variable 'non_existent_var' not found"
-      }
-     },
-     "required": ["caught_error", "status", "error_message"]
+      "required": ["stack", "variables"]
     }
-   },
-   "required": ["stack", "variables"]
-  }
- },
- {
-  "description": "Try operation - no error, try block completes.",
-  "jisp_program": {
-   "code": [
-    [
-     "try",
-     [["push", 1], ["push", "successful_result"], ["set"]],
-     "no_error_var",
-     [["push", "this should not execute"], ["pop", "unexpected_status"]]
-    ],
-    ["push", "successful_result"],
-    ["get"],
-    ["pop", "final_status"]
-   ]
   },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {
-      "successful_result": {"type": "number", "const": 1.0},
-      "final_status": {"type": "number", "const": 1.0}
-     },
-     "required": ["successful_result", "final_status"]
-    }
-   },
-   "required": ["stack", "variables"]
-  }
- },
- {
-  "description": "Error handling - getting a non-existent variable.",
-  "jisp_program": {"code": [["push", "non_existent_var"], ["get"]]},
-  "expected_error_message": "get error: variable 'non_existent_var' not found"
- },
- {
-  "description": "Raise operation - raises a custom error.",
-  "jisp_program": {"code": [["push", "this is a custom error"], ["raise"]]},
-  "expected_error_message": "this is a custom error"
- },
- {
-  "description": "Assert operation - positive case.",
-  "jisp_program": {"code": [["push", true], ["assert"]]},
-  "validation_schema": {"type": "object", "properties": {"stack": {"type": "array", "maxItems": 0}}}
- },
- {
-  "description": "Assert operation - negative case with default message.",
-  "jisp_program": {"code": [["push", false], ["assert"]]},
-  "expected_error_message": "assertion failed"
- },
- {
-  "description": "Assert operation - negative case with custom message.",
-  "jisp_program": {"code": [["push", false], ["assert", "custom assertion message"]]},
-  "expected_error_message": "custom assertion message"
- },
- {
-  "description": "Break in For loop - breaks when item reaches 3.",
-  "jisp_program": {
-   "code": [
-    ["push", 0.0],
-    ["push", "sum"],
-    ["set"],
-    [
-     "for",
-     "item",
-     [1.0, 2.0, 3.0, 4.0, 5.0],
-     [
-      ["push", "item"],
-      ["get"],
-      ["push", 3.0],
-      ["eq"],
-      ["if", [["break"]]],
-      ["push", "sum"],
-      ["get"],
-      ["push", "item"],
-      ["get"],
-      ["add"],
-      ["push", "sum"],
-      ["set"]
-     ]
-    ],
-    ["push", "sum"],
-    ["get"],
-    ["pop", "final_sum_break"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {
-      "sum": {"type": "number", "const": 3.0},
-      "final_sum_break": {"type": "number", "const": 3.0}
-     },
-     "required": ["sum", "final_sum_break"]
-    }
-   },
-   "required": ["stack", "variables"]
-  }
- },
- {
-  "description": "Continue in For loop - skips even numbers.",
-  "jisp_program": {
-   "code": [
-    ["push", 0.0],
-    ["push", "sum"],
-    ["set"],
-    [
-     "for",
-     "item",
-     [1.0, 2.0, 3.0, 4.0, 5.0],
-     [
-      ["push", "item"],
-      ["get"],
-      ["push", 2.0],
-      ["mod"],
-      ["push", 0.0],
-      ["eq"],
-      ["if", [["continue"]]],
-      ["push", "sum"],
-      ["get"],
-      ["push", "item"],
-      ["get"],
-      ["add"],
-      ["push", "sum"],
-      ["set"]
-     ]
-    ],
-    ["push", "sum"],
-    ["get"],
-    ["pop", "final_sum_continue"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {
-      "sum": {"type": "number", "const": 9.0},
-      "final_sum_continue": {"type": "number", "const": 9.0}
-     },
-     "required": ["sum", "final_sum_continue"]
-    }
-   },
-   "required": ["stack", "variables"]
-  }
- },
- {
-  "description": "For operation - iterates over an object and sums values by key.",
-  "jisp_program": {
-   "code": [
-    ["push", 0.0],
-    ["push", "sum_of_object_values"],
-    ["set"],
-    ["push", {"a": 10.0, "b": 20.0, "c": 30.0}],
-    ["push", "my_object"],
-    ["set"],
-    [
-     "for",
-     "key",
-     "my_object",
-     [
-      ["push", "sum_of_object_values"],
-      ["get"],
-      ["push", "key_value"],
-      ["get"],
-      ["add"],
-      ["push", "sum_of_object_values"],
-      ["set"]
-     ]
-    ],
-    ["push", "sum_of_object_values"],
-    ["get"],
-    ["pop", "final_sum_of_object_values"]
-   ]
-  },
-  "validation_schema": {
-   "type": "object",
-   "properties": {
-    "stack": {"type": "array", "maxItems": 0},
-    "variables": {
-     "type": "object",
-     "properties": {
-      "my_object": {
-       "type": "object",
-       "properties": {
-        "a": {"type": "number", "const": 10.0},
-        "b": {"type": "number", "const": 20.0},
-        "c": {"type": "number", "const": 30.0}
-       },
-       "required": ["a", "b", "c"]
+  {
+    "description": "If operation - false condition, else block executes.",
+    "jisp_program": {
+      "code": [
+        ["push", false],
+        [
+          "if",
+          [["push", "then_not_executed"], ["pop", "if_result_then"]],
+          [["push", "else_executed"], ["pop", "if_result_else"]]
+        ]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {"if_result_else": {"type": "string", "const": "else_executed"}},
+          "required": ["if_result_else"]
+        }
       },
-      "sum_of_object_values": {"type": "number", "const": 60.0},
-      "final_sum_of_object_values": {"type": "number", "const": 60.0}
-     },
-     "required": ["sum_of_object_values", "final_sum_of_object_values", "my_object"],
-     "additionalProperties": true
+      "required": ["stack", "variables"]
     }
-   },
-   "required": ["stack", "variables"]
+  },
+  {
+    "description": "If operation - false condition, no else block.",
+    "jisp_program": {
+      "code": [
+        ["push", false],
+        ["if", [["push", "should_not_execute"], ["pop", "if_result_no_else"]]]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {"type": "object", "maxProperties": 0}
+      },
+      "required": ["stack", "variables"]
+    }
+  },
+  {
+    "description": "While operation - decrements counter.",
+    "jisp_program": {
+      "code": [
+        ["push", 3.0],
+        ["push", "counter"],
+        ["set"],
+        ["push", true],
+        ["push", "loop_condition"],
+        ["set"],
+        [
+          "while",
+          "loop_condition",
+          [
+            ["push", "counter"],
+            ["get"],
+            ["push", 1.0],
+            ["sub"],
+            ["push", "counter"],
+            ["set"],
+            ["push", "counter"],
+            ["get"],
+            ["push", 0.0],
+            ["eq"],
+            ["if", [["push", false], ["push", "loop_condition"], ["set"]]]
+          ]
+        ],
+        ["push", "counter"],
+        ["get"],
+        ["pop", "final_counter_value"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {
+            "counter": {"type": "number", "const": 0.0},
+            "loop_condition": {"type": "boolean", "const": false},
+            "final_counter_value": {"type": "number", "const": 0.0}
+          },
+          "required": ["counter", "loop_condition", "final_counter_value"]
+        }
+      },
+      "required": ["stack", "variables"]
+    }
+  },
+  {
+    "description": "Break in While loop - breaks when counter reaches 2.",
+    "jisp_program": {
+      "code": [
+        ["push", 0.0],
+        ["push", "counter"],
+        ["set"],
+        ["push", true],
+        ["push", "loop_condition"],
+        ["set"],
+        [
+          "while",
+          "loop_condition",
+          [
+            ["push", "counter"],
+            ["get"],
+            ["push", 1.0],
+            ["add"],
+            ["push", "counter"],
+            ["set"],
+            ["push", "counter"],
+            ["get"],
+            ["push", 2.0],
+            ["eq"],
+            ["if", [["break"]]],
+            ["push", "counter"],
+            ["get"],
+            ["push", 5.0],
+            ["eq"],
+            ["if", [["push", false], ["push", "loop_condition"], ["set"]]]
+          ]
+        ],
+        ["push", "counter"],
+        ["get"],
+        ["pop", "final_counter_value_break"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {
+            "counter": {"type": "number", "const": 2.0},
+            "loop_condition": {"type": "boolean", "const": true},
+            "final_counter_value_break": {"type": "number", "const": 2.0}
+          },
+          "required": ["counter", "loop_condition", "final_counter_value_break"]
+        }
+      },
+      "required": ["stack", "variables"]
+    }
+  },
+  {
+    "description": "Continue in While loop - skips even numbers.",
+    "jisp_program": {
+      "code": [
+        ["push", 0.0],
+        ["push", "i"],
+        ["set"],
+        ["push", 0.0],
+        ["push", "sum_of_odd_numbers"],
+        ["set"],
+        ["push", true],
+        ["push", "loop_condition"],
+        ["set"],
+        [
+          "while",
+          "loop_condition",
+          [
+            ["push", "i"],
+            ["get"],
+            ["push", 1.0],
+            ["add"],
+            ["push", "i"],
+            ["set"],
+            ["push", "i"],
+            ["get"],
+            ["push", 5.0],
+            ["gt"],
+            ["if", [["push", false], ["push", "loop_condition"], ["set"]]],
+            ["push", "i"],
+            ["get"],
+            ["push", 2.0],
+            ["mod"],
+            ["push", 0.0],
+            ["eq"],
+            ["if", [["continue"]]],
+            ["push", "sum_of_odd_numbers"],
+            ["get"],
+            ["push", "i"],
+            ["get"],
+            ["add"],
+            ["push", "sum_of_odd_numbers"],
+            ["set"]
+          ]
+        ],
+        ["push", "sum_of_odd_numbers"],
+        ["get"],
+        ["pop", "final_sum_of_odd_numbers"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {
+            "i": {"type": "number", "const": 6.0},
+            "sum_of_odd_numbers": {"type": "number", "const": 9.0},
+            "loop_condition": {"type": "boolean", "const": false},
+            "final_sum_of_odd_numbers": {"type": "number", "const": 9.0}
+          },
+          "required": [
+            "i",
+            "sum_of_odd_numbers",
+            "loop_condition",
+            "final_sum_of_odd_numbers"
+          ]
+        }
+      },
+      "required": ["stack", "variables"]
+    }
+  },
+  {
+    "description": "For operation - iterates over an array and sums values.",
+    "jisp_program": {
+      "code": [
+        ["push", 0.0],
+        ["push", "sum"],
+        ["set"],
+        [
+          "for",
+          "item",
+          [1.0, 2.0, 3.0],
+          [
+            ["push", "sum"],
+            ["get"],
+            ["push", "item"],
+            ["get"],
+            ["add"],
+            ["push", "sum"],
+            ["set"]
+          ]
+        ],
+        ["push", "sum"],
+        ["get"],
+        ["pop", "final_sum"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {
+            "sum": {"type": "number", "const": 6.0},
+            "final_sum": {"type": "number", "const": 6.0}
+          },
+          "required": ["sum", "final_sum"],
+          "additionalProperties": true
+        }
+      },
+      "required": ["stack", "variables"]
+    }
+  },
+  {
+    "description": "Try operation - catches an error.",
+    "jisp_program": {
+      "code": [
+        [
+          "try",
+          [["push", "non_existent_var"], ["get"]],
+          "caught_error",
+          [["push", "caught"], ["pop", "status"]]
+        ],
+        ["push", "caught_error"],
+        ["get"],
+        ["pop", "error_message"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {
+            "caught_error": {
+              "type": "string",
+              "pattern": "get error: variable 'non_existent_var' not found"
+            },
+            "status": {"type": "string", "const": "caught"},
+            "error_message": {
+              "type": "string",
+              "pattern": "get error: variable 'non_existent_var' not found"
+            }
+          },
+          "required": ["caught_error", "status", "error_message"]
+        }
+      },
+      "required": ["stack", "variables"]
+    }
+  },
+  {
+    "description": "Try operation - no error, try block completes.",
+    "jisp_program": {
+      "code": [
+        [
+          "try",
+          [["push", 1], ["push", "successful_result"], ["set"]],
+          "no_error_var",
+          [["push", "this should not execute"], ["pop", "unexpected_status"]]
+        ],
+        ["push", "successful_result"],
+        ["get"],
+        ["pop", "final_status"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {
+            "successful_result": {"type": "number", "const": 1.0},
+            "final_status": {"type": "number", "const": 1.0}
+          },
+          "required": ["successful_result", "final_status"]
+        }
+      },
+      "required": ["stack", "variables"]
+    }
+  },
+  {
+    "description": "Error handling - getting a non-existent variable.",
+    "jisp_program": {"code": [["push", "non_existent_var"], ["get"]]},
+    "expected_error_message": "get error: variable 'non_existent_var' not found"
+  },
+  {
+    "description": "Raise operation - raises a custom error.",
+    "jisp_program": {"code": [["push", "this is a custom error"], ["raise"]]},
+    "expected_error_message": "this is a custom error"
+  },
+  {
+    "description": "Assert operation - positive case.",
+    "jisp_program": {"code": [["push", true], ["assert"]]},
+    "validation_schema": {
+      "type": "object",
+      "properties": {"stack": {"type": "array", "maxItems": 0}}
+    }
+  },
+  {
+    "description": "Assert operation - negative case with default message.",
+    "jisp_program": {"code": [["push", false], ["assert"]]},
+    "expected_error_message": "assertion failed"
+  },
+  {
+    "description": "Assert operation - negative case with custom message.",
+    "jisp_program": {"code": [["push", false], ["assert", "custom assertion message"]]},
+    "expected_error_message": "custom assertion message"
+  },
+  {
+    "description": "Break in For loop - breaks when item reaches 3.",
+    "jisp_program": {
+      "code": [
+        ["push", 0.0],
+        ["push", "sum"],
+        ["set"],
+        [
+          "for",
+          "item",
+          [1.0, 2.0, 3.0, 4.0, 5.0],
+          [
+            ["push", "item"],
+            ["get"],
+            ["push", 3.0],
+            ["eq"],
+            ["if", [["break"]]],
+            ["push", "sum"],
+            ["get"],
+            ["push", "item"],
+            ["get"],
+            ["add"],
+            ["push", "sum"],
+            ["set"]
+          ]
+        ],
+        ["push", "sum"],
+        ["get"],
+        ["pop", "final_sum_break"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {
+            "sum": {"type": "number", "const": 3.0},
+            "final_sum_break": {"type": "number", "const": 3.0}
+          },
+          "required": ["sum", "final_sum_break"]
+        }
+      },
+      "required": ["stack", "variables"]
+    }
+  },
+  {
+    "description": "Continue in For loop - skips even numbers.",
+    "jisp_program": {
+      "code": [
+        ["push", 0.0],
+        ["push", "sum"],
+        ["set"],
+        [
+          "for",
+          "item",
+          [1.0, 2.0, 3.0, 4.0, 5.0],
+          [
+            ["push", "item"],
+            ["get"],
+            ["push", 2.0],
+            ["mod"],
+            ["push", 0.0],
+            ["eq"],
+            ["if", [["continue"]]],
+            ["push", "sum"],
+            ["get"],
+            ["push", "item"],
+            ["get"],
+            ["add"],
+            ["push", "sum"],
+            ["set"]
+          ]
+        ],
+        ["push", "sum"],
+        ["get"],
+        ["pop", "final_sum_continue"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {
+            "sum": {"type": "number", "const": 9.0},
+            "final_sum_continue": {"type": "number", "const": 9.0}
+          },
+          "required": ["sum", "final_sum_continue"]
+        }
+      },
+      "required": ["stack", "variables"]
+    }
+  },
+  {
+    "description": "For operation - iterates over an object and sums values by key.",
+    "jisp_program": {
+      "code": [
+        ["push", 0.0],
+        ["push", "sum_of_object_values"],
+        ["set"],
+        ["push", {"a": 10.0, "b": 20.0, "c": 30.0}],
+        ["push", "my_object"],
+        ["set"],
+        [
+          "for",
+          "key",
+          "my_object",
+          [
+            ["push", "sum_of_object_values"],
+            ["get"],
+            ["push", "key_value"],
+            ["get"],
+            ["add"],
+            ["push", "sum_of_object_values"],
+            ["set"]
+          ]
+        ],
+        ["push", "sum_of_object_values"],
+        ["get"],
+        ["pop", "final_sum_of_object_values"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "stack": {"type": "array", "maxItems": 0},
+        "variables": {
+          "type": "object",
+          "properties": {
+            "my_object": {
+              "type": "object",
+              "properties": {
+                "a": {"type": "number", "const": 10.0},
+                "b": {"type": "number", "const": 20.0},
+                "c": {"type": "number", "const": 30.0}
+              },
+              "required": ["a", "b", "c"]
+            },
+            "sum_of_object_values": {"type": "number", "const": 60.0},
+            "final_sum_of_object_values": {"type": "number", "const": 60.0}
+          },
+          "required": ["sum_of_object_values", "final_sum_of_object_values", "my_object"],
+          "additionalProperties": true
+        }
+      },
+      "required": ["stack", "variables"]
+    }
   }
- }
 ]
