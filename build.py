@@ -58,52 +58,62 @@ def _print_test_failure(description: str, checks_filepath: str, message: str):
     console.print(f"  [bold red]❌ Test '{description}'\n[bold blue]{checks_filepath}[/bold blue] {message}[/bold red]")
 
 
-def _generate_validation_schema(check, base_schema=None):
-    # Start with a deep copy of the base schema if provided, otherwise start fresh.
-    schema = json.loads(json.dumps(base_schema)) if base_schema else {
-        "type": "object",
-        "properties": {},
-        "required": []
-    }
+def _merge_schemas(base, new):
+    """Recursively merges the 'new' schema into the 'base' schema."""
+    if not isinstance(base, dict) or not isinstance(new, dict):
+        return new
+    
+    merged = base.copy()
+    for key, new_val in new.items():
+        if key in merged:
+            merged[key] = _merge_schemas(merged[key], new_val)
+        else:
+            merged[key] = new_val
+    return merged
 
-    expected_stack = check.get("expected_stack")
-    expected_variables = check.get("expected_variables")
+def _combine_schemas(check):
+    base_schema = check.get("validation_schema")
+    # Make a deep copy to avoid side effects
+    schema = json.loads(json.dumps(base_schema)) if base_schema else {}
 
-    # Ensure 'properties' key exists
-    if "properties" not in schema:
-        schema["properties"] = {}
+    # Ensure basic structure
+    schema.setdefault("type", "object")
+    properties = schema.setdefault("properties", {})
 
-    # Handle stack validation
-    if expected_stack is not None:
-        schema["properties"]["stack"] = {"const": expected_stack}
-    elif "stack" not in schema["properties"]:
-        # Default: stack must be empty if not specified and not already defined
-        schema["properties"]["stack"] = {"type": "array", "maxItems": 0}
+    # Handle expected_stack (replaces any existing stack rule)
+    if "expected_stack" in check:
+        properties["stack"] = {"const": check["expected_stack"]}
+    
+    # Handle expected_variables (merges with existing variables rules)
+    if "expected_variables" in check:
+        variables_schema = properties.setdefault("variables", {})
+        variables_schema.setdefault("type", "object")
+        
+        # Merge properties from expected_variables
+        variable_props = variables_schema.setdefault("properties", {})
+        for key, value in check["expected_variables"].items():
+            variable_props[key] = {"const": value}
+            
+        # Merge required keys from expected_variables
+        variable_req = variables_schema.setdefault("required", [])
+        for key in check["expected_variables"]:
+            if key not in variable_req:
+                variable_req.append(key)
 
-    # Handle variables validation
-    if expected_variables is not None:
-        variable_properties = {key: {"const": value} for key, value in expected_variables.items()}
-        schema["properties"]["variables"] = {
-            "type": "object",
-            "properties": variable_properties,
-            "required": list(expected_variables.keys()),
-            "additionalProperties": False,
-        }
-    elif "variables" not in schema["properties"]:
-        # Default: variables must be empty if not specified and not already defined
-        schema["properties"]["variables"] = {"type": "object", "maxProperties": 0}
+    # If no schema existed and no shorthands were provided, return None
+    if not base_schema and "expected_stack" not in check and "expected_variables" not in check:
+        return None
+        
+    # Apply defaults if sections are missing
+    if "stack" not in properties:
+        properties["stack"] = {"type": "array", "maxItems": 0}
 
-    # Ensure top-level 'required' key exists and contains 'stack' and 'variables'
-    if "required" not in schema:
-        schema["required"] = []
-    if "stack" not in schema["required"]:
-        schema["required"].append("stack")
-    if "variables" not in schema["required"]:
-        schema["required"].append("variables")
+    # Ensure top-level required fields
+    required = schema.setdefault("required", [])
+    if "stack" not in required: required.append("stack")
+    if "variables" not in required: required.append("variables")
 
     return schema
-
-
 
 def compile_go_program():
     if os.path.exists(BINARY_NAME) and os.path.getmtime(GO_SOURCE_FILE) < os.path.getmtime(BINARY_NAME):
@@ -155,11 +165,8 @@ def run_all_checks(fail_fast=False):
                 total_tests += 1
                 description = check.get("description", f"Unnamed test {i+1}")
                 jisp_program = check.get("jisp_program")
-                validation_schema = check.get("validation_schema")
+                validation_schema = _combine_schemas(check)
                 expected_error_message = check.get("expected_error_message")
-
-                if "expected_stack" in check or "expected_variables" in check:
-                    validation_schema = _generate_validation_schema(check, base_schema=validation_schema)
 
                 if not jisp_program:
                     console.print(SKIPPING_TEST_MISSING_PROGRAM.format(description=description, filepath=checks_filepath))
