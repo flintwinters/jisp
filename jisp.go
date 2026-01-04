@@ -325,7 +325,7 @@ func stepOp(jp *JispProgram, op *JispOperation) error {
 			}
 	
 			err = subProgram.executeSingleInstruction() // Execute one instruction
-			if err != nil {
+			if err != nil && !errors.Is(err, ErrBreakpoint) {
 				return fmt.Errorf("step error: during single instruction execution: %w", err)
 			}
 	
@@ -346,7 +346,7 @@ func stepOp(jp *JispProgram, op *JispOperation) error {
 			subProgram.History = append(subProgram.History, patchBytes)
 		} else if frame != nil && frame.Ip < len(frame.Ops) {
 			err := subProgram.executeSingleInstruction() // Execute one instruction
-			if err != nil {
+			if err != nil && !errors.Is(err, ErrBreakpoint) {
 				return fmt.Errorf("step error: during single instruction execution: %w", err)
 			}
 		}
@@ -457,10 +457,6 @@ func (jp *JispProgram) Run() error {
 		err := jp.executeSingleInstruction()
 		if err != nil {
 			if errors.Is(err, ErrBreakpoint) {
-				frame := jp.currentFrame()
-				if frame != nil {
-					frame.Ip++ // Increment IP when breakpoint is hit so next run/step continues past it.
-				}
 				return nil // Breakpoint hit, stop execution gracefully.
 			}
 			if errors.Is(err, ErrReturn) {
@@ -471,11 +467,6 @@ func (jp *JispProgram) Run() error {
 				return ErrExit // Exit signal
 			}
 			// For unhandled control flow like break/continue outside a loop, create an error.
-			if jp.Error == nil {
-				// IP was already advanced in executeSingleInstruction
-				op := &frame.Ops[frame.Ip-1]
-				jp.Error = jp.newError(op, err.Error())
-			}
 			return nil
 		}
 	}
@@ -1233,39 +1224,57 @@ func (jp *JispProgram) executeOperationsWithPathSegment(ops []JispOperation, seg
 // and returns control flow errors to be handled by the execution loop.
 func (jp *JispProgram) executeSingleInstruction() error {
 	frame := jp.currentFrame()
-	if jp.Debug && len(jp.Breakpoints) > 0 {
-		currentPath := jp.currentInstructionPath()
-		for _, bp := range jp.Breakpoints {
-			if pathsEqual(currentPath, bp) {
-				return ErrBreakpoint
-			}
-		}
-	}
-
 	op := frame.Ops[frame.Ip]
 
 	handler, found := operations[op.Name]
 	if !found {
 		jp.Error = jp.newError(&op, fmt.Sprintf("unknown operation: %s", op.Name))
-		frame.Ip++ // Consume the invalid instruction
+		frame.Ip++ // Consume the invalid instruction and stop for now.
 		return nil
 	}
 
+	// Execute the operation first.
 	err := handler(jp, &op)
+
+	// Now, handle errors and IP increment.
+	// We always advance the IP, even on JispError, to prevent infinite loops.
+	frame.Ip++
+
 	if err != nil {
 		var jispErr *JispError
 		switch {
-		case errors.Is(err, ErrBreak), errors.Is(err, ErrContinue), errors.Is(err, ErrReturn), errors.Is(err, ErrExit), errors.Is(err, ErrBreakpoint):
-			return err // Propagate control flow signals including breakpoint
+		// Control flow signals are propagated up to be handled by the execution loops (Run, For, etc.)
+		case errors.Is(err, ErrBreak), errors.Is(err, ErrContinue), errors.Is(err, ErrReturn), errors.Is(err, ErrExit):
+			return err
+		// A breakpoint from a `breakpoint` instruction is also a control flow signal.
+		case errors.Is(err, ErrBreakpoint):
+			return err
+		// JispErrors are caught by 'try' or halt execution. We set them on the program state.
 		case errors.As(err, &jispErr):
 			jp.Error = jispErr
+		// Any other error is a runtime error that becomes a JispError.
 		default:
 			jp.Error = jp.newError(&op, err.Error())
 		}
-		frame.Ip++ // Consume the invalid instruction
+		// After setting the error, we stop further execution in the current frame.
 		return nil
 	}
-	frame.Ip++ // Always advance IP after a successful instruction or handled error
+
+	// AFTER successful execution and IP increment, check if the NEXT instruction is a breakpoint.
+	if jp.Debug && len(jp.Breakpoints) > 0 {
+		// Check if we're still inside the code boundary.
+		if frame.Ip < len(frame.Ops) {
+			currentPath := jp.currentInstructionPath()
+			for _, bp := range jp.Breakpoints {
+				if pathsEqual(currentPath, bp) {
+					// We've landed on a breakpoint, so we signal to the caller to stop.
+					return ErrBreakpoint
+				}
+			}
+		}
+	}
+
+	// No errors, no breakpoint, continue execution.
 	return nil
 }
 
