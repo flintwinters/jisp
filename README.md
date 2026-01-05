@@ -4,12 +4,11 @@
 
 # JISP
 
+[https://jisp.world](https://jisp.world)
+
 ![Discord](https://img.shields.io/discord/1392579835012055131?logo=discord&logoColor=white&color=7289DA)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![GitHub Repo stars](https://img.shields.io/github/stars/flintwinters/jisp)
-<!-- ![Web Demo](https://img.shields.io/website?url=https%3A%2F%2Fqforj.com) -->
-<!-- ![Read the Docs](https://img.shields.io/readthedocs/:jisp) -->
-
 
 </div>
 
