@@ -12,7 +12,7 @@
 
 </div>
 
-Jisp is a programming _system_ which uses the **JSON data model** as its "atomic fabric".
+Jisp is a programming _system_ which uses the **JSON data model** as its "atomic fabric".  You can write Jisp code in any JSON-compatible data format - [ION](https://amazon-ion.github.io/ion-docs/), TOML, YAML, TOON, JSON, etc.
 
 The core philosophy is to maintain all program state (including code, variables, and execution flow) in a single self-contained JSON object. This design ensures that every aspect of a **running** Jisp program can be effortlessly exported, imported, saved, loaded, diffed, restored, etc. at ***any point*** during execution.
 
@@ -31,10 +31,10 @@ Jisp offers powerful debugging features thanks to its use of JSON for the entire
 
 * **Full Inspection**: Inspect and manipulate any part of the program (variables, functions, memory) at any time, all through the transparent structure of JSON.
 
-* ***Automated* Debugging**: Scripts and LLMs can programmatically inspect program states, enabling automated debugging.
+* ***Automated* Debugging**: Scripts and LLMs can programmatically inspect program states, enabling automated use of the debugger.
 
 #### 2. Easy Integration:
-Jisp’s use of JSON makes it easy to work with other systems and tools, such as APIs or language models. JSON is a common format for data exchange, so connecting Jisp with external tools is seamless.
+Jisp’s use of JSON makes it easy to work with other systems and tools, such as APIs or language models. JSON is a universal format for data exchange, so connecting Jisp with external tools is seamless.
 
 #### 3. Simple, Readable Code:
 Jisp programs are written in JSON, a format most developers are already familiar with. This makes the code easy to read and understand without dealing with new syntax.
@@ -49,49 +49,66 @@ Run all checks:
 
 `python3 build.py`
 
-### TODO
+### Examples
 
-Make a decision on the ergonomics of map, filter, and reduce operations:
+These are directly taken from the demos at [https://jisp.world](https://jisp.world)
+
+#### Json Schema Validation
+
+Demonstrates schema validation using the 'valid' operation. It defines a schema for a user object in the 'variables' section and then tests both a valid and an invalid object against it. The boolean results of the validation are stored in variables.
+
+You can of course use this to validate Jisp code structure itself.
 
 ```json
-["push", [1.0, 2.0, 3.0, 4.0]],
-["push", "item"],
-[
-    "push", [
-        ["push", "item"],
-        ["get"],
-        ["push", "item"],
-        ["get"],
-        ["mul"]
+{
+    "variables": {
+        "user_schema": {
+            "type": "object",
+            "properties": {
+                "username": {"type": "string", "minLength": 3},
+                "email": {"type": "string", "format": "email"},
+                "age": {"type": "number", "minimum": 18}
+            },
+            "required": ["username", "email", "age"]
+        }
+    },
+    "code": [
+    ["get", "user_schema"],
+    ["push", {"username": "jdoe", "email": "jdoe@example.com", "age": 30}],
+    ["valid"],
+    ["pop", "valid_user_check"],
+    
+    ["get", "user_schema"],
+    ["push", {"username": "jsmith", "email": "not-an-email", "age": 17}],
+    ["valid"],
+    ["pop", "invalid_user_check"]
     ]
-],
-["map"]
+}
 ```
 
-Not happy with this explicit variable declaration.
+#### Reversible debugging:
 
-#### Implementation TODOs:
-- [x] `step`
-- [x] `undo`
-- [x] `exit`
-- [x] `for`
-- [x] `foreach`
-- [x] `try`
-- [x] `replace`
-- [x] `len`
-- [x] `slice`
-- [x] `map`
-- [x] `filter`
-- [x] `reduce`
-- [x] `sort`
-- [x] `keys`
-- [x] `values`
-- [x] `union`
-- [x] `intersection`
-- [x] `difference`
-- [x] `join`
-- [x] `range`
-- [x] `noop`
-- [x] `valid`
-- [x] `raise`
-- [x] `assert`
+Demonstrates procedural and reversible debugging. A sub-program is executed with a breakpoint, which causes an instruction to be skipped. The program is then advanced with 'step' and reverted with 'undo' to showcase time-travel debugging. The final state is captured for inspection.
+
+```json
+{
+    "code": [
+    ["push", {
+        "save_history": true,
+        "debug": true,
+        "breakpoints": [["code", 1]],
+        "code": [
+            ["push", 5.0],
+            ["pop", "a"],
+            ["push", 10.0],
+            ["pop", "b"]
+        ]
+    }],
+    ["run"],
+    ["step"],
+    ["step"],
+    ["undo"],
+    ["pop", "final_debug_state"]
+    ]
+}
+```
