@@ -1,7 +1,7 @@
 [
   {
     "description": "keys returns array of object keys (order-independent)",
-    "program": {
+    "jisp_program": {
       "code": [
         ["push", {"a": 1, "b": 2}],
         ["keys"],
@@ -9,55 +9,25 @@
         ["set", "out"]
       ]
     },
-    "schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "out": {
-              "type": "array",
-              "items": { "enum": ["a", "b"] },
-              "minItems": 2,
-              "maxItems": 2,
-              "uniqueItems": true
-            }
-          },
-          "required": ["out"]
-        }
-      },
-      "required": ["variables"]
+    "expected_stack": [],
+    "expected_variables": {
+      "out": ["a", "b"]
     }
   },
   {
     "description": "range produces a numeric sequence from start (inclusive) to stop (exclusive) by step",
-    "program": {
+    "jisp_program": {
       "code": [
-        ["push", 0],
-        ["push", 5],
-        ["push", 1],
+        ["push", 0.0],
+        ["push", 5.0],
+        ["push", 1.0],
         ["range"],
         ["set", "out"]
       ]
     },
-    "schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "out": {
-              "type": "array",
-              "items": { "enum": [0, 1, 2, 3, 4] },
-              "minItems": 5,
-              "maxItems": 5,
-              "uniqueItems": true
-            }
-          },
-          "required": ["out"]
-        }
-      },
-      "required": ["variables"]
+    "expected_stack": [],
+    "expected_variables": {
+      "out": [0.0, 1.0, 2.0, 3.0, 4.0]
     }
   }
 ]
