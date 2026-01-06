@@ -13,13 +13,150 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/evanphx/json-patch/v5"
 	"github.com/santhosh-tekuri/jsonschema/v5"
-	"github.com/wI2L/jsondiff"
 )
+
+// Operation represents a single JSON Patch operation.
+type Operation struct {
+	Op    string      `json:"op"`
+	Path  string      `json:"path"`
+	Value interface{} `json:"value,omitempty"`
+}
+
+// Patch is a slice of Operations.
+type Patch []Operation
+
+// CreatePatch generates a JSON Patch to transform the 'before' document into the 'after' document.
+func CreatePatch(before, after []byte) (Patch, error) {
+	var beforeData, afterData interface{}
+	if err := json.Unmarshal(before, &beforeData); err != nil {
+		return nil, fmt.Errorf("error unmarshaling before document: %w", err)
+	}
+	if err := json.Unmarshal(after, &afterData); err != nil {
+		return nil, fmt.Errorf("error unmarshaling after document: %w", err)
+	}
+
+	return diff("", beforeData, afterData), nil
+}
+
+func diff(path string, before, after interface{}) Patch {
+	var patch Patch
+
+	if !reflect.DeepEqual(before, after) {
+		beforeMap, beforeIsMap := before.(map[string]interface{})
+		afterMap, afterIsMap := after.(map[string]interface{})
+
+		if beforeIsMap && afterIsMap {
+			for key, valBefore := range beforeMap {
+				currentPath := path + "/" + key
+				if valAfter, ok := afterMap[key]; ok {
+					patch = append(patch, diff(currentPath, valBefore, valAfter)...)
+				} else {
+					patch = append(patch, Operation{Op: "remove", Path: currentPath})
+				}
+			}
+			for key, valAfter := range afterMap {
+				currentPath := path + "/" + key
+				if _, ok := beforeMap[key]; !ok {
+					patch = append(patch, Operation{Op: "add", Path: currentPath, Value: valAfter})
+				}
+			}
+		} else {
+			patch = append(patch, Operation{Op: "replace", Path: path, Value: after})
+		}
+	}
+	return patch
+}
+
+// Apply applies a patch to a document.
+func (p Patch) Apply(doc []byte) ([]byte, error) {
+	var data interface{}
+	if err := json.Unmarshal(doc, &data); err != nil {
+		return nil, fmt.Errorf("error unmarshaling document: %w", err)
+	}
+
+	for _, op := range p {
+		if err := applyOp(&data, op); err != nil {
+			return nil, fmt.Errorf("error applying operation %v: %w", op, err)
+		}
+	}
+
+	return json.Marshal(data)
+}
+
+func applyOp(doc *interface{}, op Operation) error {
+	parts := strings.Split(op.Path, "/")[1:]
+	
+	container, key, err := findContainer(*doc, parts)
+	if err != nil {
+		return err
+	}
+	
+	switch op.Op {
+	case "add", "replace":
+		m, ok := container.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("container is not a map for path %s", op.Path)
+		}
+		m[key] = op.Value
+	case "remove":
+		m, ok := container.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("container is not a map for path %s", op.Path)
+		}
+		delete(m, key)
+	default:
+		return fmt.Errorf("unsupported operation: %s", op.Op)
+	}
+	return nil
+}
+
+func findContainer(doc interface{}, pathParts []string) (interface{}, string, error) {
+	if len(pathParts) == 0 {
+		return nil, "", fmt.Errorf("empty path")
+	}
+
+	current := doc
+	for i := 0; i < len(pathParts)-1; i++ {
+		part := pathParts[i]
+		switch c := current.(type) {
+		case map[string]interface{}:
+			var ok bool
+			current, ok = c[part]
+			if !ok {
+				return nil, "", fmt.Errorf("path not found: %s", part)
+			}
+		case []interface{}:
+			idx, err := strconv.Atoi(part)
+			if err != nil {
+				return nil, "", fmt.Errorf("invalid array index: %s", part)
+			}
+			if idx < 0 || idx >= len(c) {
+				return nil, "", fmt.Errorf("index out of bounds: %d", idx)
+			}
+			current = c[idx]
+		default:
+			return nil, "", fmt.Errorf("invalid path segment %s", part)
+		}
+	}
+	return current, pathParts[len(pathParts)-1], nil
+}
+
+func (p Patch) MarshalJSON() ([]byte, error) {
+	return json.Marshal([]Operation(p))
+}
+
+func DecodePatch(data []byte) (Patch, error) {
+	var p Patch
+	if err := json.Unmarshal(data, &p); err != nil {
+		return nil, err
+	}
+	return p, nil
+}
 
 var (
 	ErrBreak      = errors.New("break")
@@ -371,12 +508,12 @@ func stepOp(jp *JispProgram, op *JispOperation) error {
 				return fmt.Errorf("step error: failed to marshal post-execution state: %w", err)
 			}
 	
-			patch, err := jsondiff.CompareJSON(after, before)
+			patch, err := CreatePatch(after, before)
 			if err != nil {
 				return fmt.Errorf("step error: failed to generate diff: %w", err)
 			}
 	
-			patchBytes, err := json.Marshal(patch)
+			patchBytes, err := patch.MarshalJSON()
 			if err != nil {
 				return fmt.Errorf("step error: failed to marshal patch: %w", err)
 			}
@@ -418,7 +555,7 @@ func undoOp(jp *JispProgram, op *JispOperation) error {
 
 	lastPatchBytes := subProgram.History[len(subProgram.History)-1]
 
-	patch, err := jsonpatch.DecodePatch(lastPatchBytes)
+	patch, err := DecodePatch(lastPatchBytes)
 	if err != nil {
 		return fmt.Errorf("undo error: failed to decode patch: %w", err)
 	}
