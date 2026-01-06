@@ -16,8 +16,8 @@ import (
 	"strings"
 
 	"github.com/evanphx/json-patch/v5"
+	"github.com/santhosh-tekuri/jsonschema/v5"
 	"github.com/wI2L/jsondiff"
-	"github.com/xeipuuv/gojsonschema"
 )
 
 var (
@@ -711,16 +711,25 @@ func validOp(jp *JispProgram, op *JispOperation) error {
 	schemaValue := values[0]
 	docValue := values[1]
 
-	// Convert schema and document to gojsonschema Loaders
-	schemaLoader := gojsonschema.NewGoLoader(schemaValue)
-	documentLoader := gojsonschema.NewGoLoader(docValue)
-
-	result, err := gojsonschema.Validate(schemaLoader, documentLoader)
+	// Marshal the schemaValue to JSON string for compilation
+	schemaBytes, err := json.Marshal(schemaValue)
 	if err != nil {
-		return fmt.Errorf("valid error during schema validation: %w", err)
+		return fmt.Errorf("valid error: failed to marshal schema: %w", err)
 	}
 
-	jp.Push(result.Valid())
+	compiler := jsonschema.NewCompiler()
+	if err := compiler.AddResource("schema.json", strings.NewReader(string(schemaBytes))); err != nil {
+		return fmt.Errorf("valid error: failed to add schema resource: %w", err)
+	}
+
+	schema, err := compiler.Compile("schema.json")
+	if err != nil {
+		return fmt.Errorf("valid error: failed to compile schema: %w", err)
+	}
+
+	err = schema.Validate(docValue)
+	jp.Push(err == nil)
+
 	return nil
 }
 
