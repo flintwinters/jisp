@@ -30,7 +30,10 @@
         ],
         ["spawn"],
         ["pop", "busy_process_handle"],
-        ["push", "Main process finished its work while busy process was running"],
+        [
+          "push",
+          "Main process finished its work while busy process was running"
+        ],
         ["pop", "main_process_status"],
         ["get", "busy_process_handle"],
         ["await"],
@@ -52,12 +55,7 @@
               "properties": {
                 "variables": {
                   "type": "object",
-                  "properties": {
-                    "counter": {
-                      "type": "number",
-                      "const": 0.0
-                    }
-                  }
+                  "properties": {"counter": {"type": "number", "const": 0.0}}
                 }
               }
             }
@@ -141,27 +139,11 @@
           "properties": {
             "p1_final": {
               "type": "object",
-              "properties": {
-                "variables": {
-                  "properties": {
-                    "counter1": {
-                      "const": 0.0
-                    }
-                  }
-                }
-              }
+              "properties": {"variables": {"properties": {"counter1": {"const": 0.0}}}}
             },
             "p2_final": {
               "type": "object",
-              "properties": {
-                "variables": {
-                  "properties": {
-                    "counter2": {
-                      "const": 0.0
-                    }
-                  }
-                }
-              }
+              "properties": {"variables": {"properties": {"counter2": {"const": 0.0}}}}
             }
           }
         }

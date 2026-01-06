@@ -5,14 +5,7 @@
       "code": [
         [
           "push",
-          {
-            "code": [
-              ["push", 5.0],
-              ["push", 3.0],
-              ["add"],
-              ["pop", "result"]
-            ]
-          }
+          {"code": [["push", 5.0], ["push", 3.0], ["add"], ["pop", "result"]]}
         ],
         ["spawn"],
         ["await"],
@@ -30,17 +23,10 @@
               "properties": {
                 "variables": {
                   "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "number",
-                      "const": 8.0
-                    }
-                  },
+                  "properties": {"result": {"type": "number", "const": 8.0}},
                   "required": ["result"]
                 },
-                "pid": {
-                  "type": "string"
-                }
+                "pid": {"type": "string"}
               },
               "required": ["variables", "pid"]
             }
@@ -74,15 +60,11 @@
             "spawned_handle": {"type": "object"},
             "result1": {
               "type": "object",
-              "properties": {
-                "variables": {"properties": {"value": {"const": 10.0}}}
-              }
+              "properties": {"variables": {"properties": {"value": {"const": 10.0}}}}
             },
             "result2": {
               "type": "object",
-              "properties": {
-                "variables": {"properties": {"value": {"const": 10.0}}}
-              }
+              "properties": {"variables": {"properties": {"value": {"const": 10.0}}}}
             }
           },
           "required": ["spawned_handle", "result1", "result2"]
@@ -134,7 +116,7 @@
       }
     }
   },
-    {
+  {
     "description": "Concurrency Test: Nested spawn and await.",
     "jisp_program": {
       "code": [
@@ -144,12 +126,7 @@
             "code": [
               [
                 "push",
-                {
-                  "code": [
-                    ["push", "inner_result"],
-                    ["pop", "inner_var"]
-                  ]
-                }
+                {"code": [["push", "inner_result"], ["pop", "inner_var"]]}
               ],
               ["spawn"],
               ["await"],
@@ -179,11 +156,7 @@
                       "properties": {
                         "variables": {
                           "type": "object",
-                          "properties": {
-                            "inner_var": {
-                              "const": "inner_result"
-                            }
-                          }
+                          "properties": {"inner_var": {"const": "inner_result"}}
                         }
                       }
                     }
@@ -199,12 +172,7 @@
   },
   {
     "description": "Negative Concurrency Test: Awaiting a non-spawned program.",
-    "jisp_program": {
-      "code": [
-        ["push", {"code": [["push", 1]]}],
-        ["await"]
-      ]
-    },
+    "jisp_program": {"code": [["push", {"code": [["push", 1]]}], ["await"]]},
     "expected_error_message": "await error: program object on stack has no PID, was it spawned?"
   }
 ]

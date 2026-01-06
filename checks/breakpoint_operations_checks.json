@@ -162,11 +162,7 @@
             "final_program": {
               "type": "object",
               "properties": {
-                "stack": {
-                  "type": "array",
-                  "minItems": 0,
-                  "maxItems": 0
-                },
+                "stack": {"type": "array", "minItems": 0, "maxItems": 0},
                 "variables": {
                   "type": "object",
                   "properties": {"a": {"type": "number", "const": 1.0}},

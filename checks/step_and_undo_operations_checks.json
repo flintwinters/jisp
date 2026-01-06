@@ -570,24 +570,13 @@
             "final_program": {
               "type": "object",
               "properties": {
-                "stack": {
-                  "type": "array",
-                  "maxItems": 0
-                },
+                "stack": {"type": "array", "maxItems": 0},
                 "variables": {
                   "type": "object",
-                  "properties": {
-                    "result": {
-                      "type": "number",
-                      "const": 8.0
-                    }
-                  },
+                  "properties": {"result": {"type": "number", "const": 8.0}},
                   "required": ["result"]
                 },
-                "call_stack": {
-                  "type": "array",
-                  "maxItems": 0
-                }
+                "call_stack": {"type": "array", "maxItems": 0}
               },
               "required": ["stack", "variables", "call_stack"]
             }
@@ -709,82 +698,6 @@
               "required": ["variables", "call_stack"]
             }
           }
-        }
-      }
-    }
-  },
-  {
-    "description": "Spawn and Await operation",
-    "jisp_program": {
-      "code": [
-        [
-          "push",
-          {"code": [["push", 5.0], ["push", 3.0], ["add"], ["pop", "result"]]}
-        ],
-        ["spawn"],
-        ["await"],
-        ["pop", "final_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "stack": {"type": "array", "maxItems": 0},
-                "variables": {
-                  "type": "object",
-                  "properties": {"result": {"type": "number", "const": 8.0}},
-                  "required": ["result"]
-                },
-                "call_stack": {"type": "array", "maxItems": 0}
-              },
-              "required": ["stack", "variables", "call_stack"]
-            }
-          },
-          "required": ["final_program"]
-        }
-      }
-    }
-  },
-  {
-    "description": "Spawn and Await operation",
-    "jisp_program": {
-      "code": [
-        [
-          "push",
-          {"code": [["push", 5.0], ["push", 3.0], ["add"], ["pop", "result"]]}
-        ],
-        ["spawn"],
-        ["await"],
-        ["pop", "final_program"]
-      ]
-    },
-    "validation_schema": {
-      "type": "object",
-      "properties": {
-        "variables": {
-          "type": "object",
-          "properties": {
-            "final_program": {
-              "type": "object",
-              "properties": {
-                "stack": {"type": "array", "maxItems": 0},
-                "variables": {
-                  "type": "object",
-                  "properties": {"result": {"type": "number", "const": 8.0}},
-                  "required": ["result"]
-                },
-                "call_stack": {"type": "array", "maxItems": 0}
-              },
-              "required": ["stack", "variables", "call_stack"]
-            }
-          },
-          "required": ["final_program"]
         }
       }
     }
