@@ -14,6 +14,7 @@ import (
 	"reflect"
 	"sort"
 	"strings"
+	"sync"
 
 	"github.com/evanphx/json-patch/v5"
 	"github.com/santhosh-tekuri/jsonschema/v5"
@@ -27,6 +28,18 @@ var (
 	ErrExit       = errors.New("exit")
 	ErrBreakpoint = errors.New("breakpoint")
 )
+
+type RunningProgram struct {
+	program *JispProgram
+	done    chan struct{}
+}
+
+var (
+	runningPrograms      = make(map[string]*RunningProgram)
+	runningProgramsMutex sync.Mutex
+	nextProgramID        int64 = 0
+)
+
 
 // exitOp stops the program execution.
 func exitOp(jp *JispProgram, op *JispOperation) error {
@@ -509,6 +522,46 @@ func runOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
+func spawnOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("spawn error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	subProgramVal, err := jp.popValue("spawn")
+	if err != nil {
+		return err
+	}
+
+	subProgramBytes, err := json.Marshal(subProgramVal)
+	if err != nil {
+		return fmt.Errorf("spawn error: failed to marshal sub-program value: %w", err)
+	}
+
+	subProgram, err := jispProgramFromBytes(subProgramBytes)
+	if err != nil {
+		return fmt.Errorf("spawn error: could not reconstruct sub-program from stack value: %w", err)
+	}
+
+	runningProgramsMutex.Lock()
+	programID := nextProgramID
+	nextProgramID++
+	idStr := fmt.Sprintf("%d", programID)
+	doneChan := make(chan struct{})
+	runningPrograms[idStr] = &RunningProgram{program: subProgram, done: doneChan}
+	runningProgramsMutex.Unlock()
+
+	go func() {
+		err := subProgram.Run()
+		if err != nil && !errors.Is(err, ErrExit) {
+			log.Printf("spawn error: unexpected error during sub-program execution: %v", err)
+		}
+		close(doneChan)
+	}()
+
+	jp.Push(idStr)
+	return nil
+}
+
 func toStringOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) > 0 {
 		return fmt.Errorf("to_string error: expected 0 arguments, got %d", len(op.Args))
@@ -518,6 +571,35 @@ func toStringOp(jp *JispProgram, op *JispOperation) error {
 		return err
 	}
 	jp.Push(fmt.Sprintf("%v", val))
+	return nil
+}
+
+func awaitOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("await error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	idStr, err := pop[string](jp, "await")
+	if err != nil {
+		return err
+	}
+
+	runningProgramsMutex.Lock()
+	runningProg, found := runningPrograms[idStr]
+	runningProgramsMutex.Unlock()
+
+	if !found {
+		return fmt.Errorf("await error: no running program found for id '%s'", idStr)
+	}
+
+	<-runningProg.done
+
+	jp.Push(runningProg.program)
+
+	runningProgramsMutex.Lock()
+	delete(runningPrograms, idStr)
+	runningProgramsMutex.Unlock()
+
 	return nil
 }
 
@@ -640,6 +722,7 @@ func init() {
 	"while":        whileOp,
 	"raise":        raiseOp,
 	"assert":       assertOp,
+	"await":        awaitOp,
 	"range":        rangeOp,
 	"foreach":      forOp,
 	"filter":       filterOp,
@@ -657,6 +740,7 @@ func init() {
 	"step":         stepOp,
 	"undo":         undoOp,
 	"run":          runOp,
+	"spawn":        spawnOp,
 	"breakpoint":   breakpointOp,
 	"to_string": 	toStringOp,
 	"concat": 		concatOp,
