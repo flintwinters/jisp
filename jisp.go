@@ -72,7 +72,6 @@ func diff(path string, before, after interface{}) Patch {
 	return patch
 }
 
-// Apply applies a patch to a document.
 func (p Patch) Apply(doc []byte) ([]byte, error) {
 	var data interface{}
 	if err := json.Unmarshal(doc, &data); err != nil {
@@ -198,7 +197,6 @@ func (pm *ProcessManager) Get(pid string) (*JispProgram, bool) {
 	return jp, ok
 }
 
-// exitOp stops the program execution.
 func exitOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) > 0 {
 		return fmt.Errorf("exit error: expected 0 arguments, got %d", len(op.Args))
@@ -320,7 +318,6 @@ func (cf *CallFrame) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// currentFrame returns the currently executing frame from the call stack.
 func (jp *JispProgram) currentFrame() *CallFrame {
 	if len(jp.CallStack) == 0 {
 		return nil
@@ -456,32 +453,42 @@ func jispProgramFromBytes(data []byte) (*JispProgram, error) {
 	return &jp, nil
 }
 
+// popSubProgram is a helper to pop a value from the stack and correctly parse it into a JispProgram.
+func (jp *JispProgram) popSubProgram(opName string) (*JispProgram, error) {
+	subProgramVal, err := jp.popValue(opName)
+	if err != nil {
+		return nil, err
+	}
+
+	subProgramBytes, err := json.Marshal(subProgramVal)
+	if err != nil {
+		return nil, fmt.Errorf("%s error: failed to marshal sub-program value: %w", opName, err)
+	}
+
+	subProgram, err := jispProgramFromBytes(subProgramBytes)
+	if err != nil {
+		return nil, fmt.Errorf("%s error: could not reconstruct sub-program from stack value: %w", opName, err)
+	}
+	return subProgram, nil
+}
+
 // stepOp pops a Jisp state object, executes one instruction, and pushes the modified object back.
 func stepOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) != 0 {
 		return fmt.Errorf("step error: expected 0 arguments, got %d", len(op.Args))
 	}
 
-	subProgramVal, err := jp.popValue("step")
+	subProgram, err := jp.popSubProgram("step")
 	if err != nil {
 		return err
 	}
 
-	subProgramBytes, err := json.Marshal(subProgramVal)
-	if err != nil {
-		return fmt.Errorf("step error: failed to marshal sub-program value: %w", err)
+	if len(subProgram.Code) == 0 {
+		jp.Push(subProgram)
+		return nil
 	}
-
-	subProgram, err := jispProgramFromBytes(subProgramBytes)
-	if err != nil {
-		return fmt.Errorf("step error: could not reconstruct sub-program from stack value: %w", err)
-	}
-		if len(subProgram.Code) == 0 {
-			jp.Push(subProgram)
-			return nil
-		}
 	
-		if subProgram.currentFrame() == nil {
+	if subProgram.currentFrame() == nil {
 			// If the sub-program hasn't started yet, initialize its call stack
 			frame := &CallFrame{
 				Ops:       subProgram.Code,
@@ -658,19 +665,9 @@ func runOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("run error: expected 0 arguments, got %d", len(op.Args))
 	}
 
-	subProgramVal, err := jp.popValue("run")
+	subProgram, err := jp.popSubProgram("run")
 	if err != nil {
 		return err
-	}
-
-	subProgramBytes, err := json.Marshal(subProgramVal)
-	if err != nil {
-		return fmt.Errorf("run error: failed to marshal sub-program value: %w", err)
-	}
-
-	subProgram, err := jispProgramFromBytes(subProgramBytes)
-	if err != nil {
-		return fmt.Errorf("run error: could not reconstruct sub-program from stack value: %w", err)
 	}
 
 	err = subProgram.Run()
@@ -688,19 +685,9 @@ func spawnOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("spawn error: expected 0 arguments, got %d", len(op.Args))
 	}
 
-	subProgramVal, err := jp.popValue("spawn")
+	subProgram, err := jp.popSubProgram("spawn")
 	if err != nil {
 		return err
-	}
-
-	subProgramBytes, err := json.Marshal(subProgramVal)
-	if err != nil {
-		return fmt.Errorf("spawn error: failed to marshal sub-program value: %w", err)
-	}
-
-	subProgram, err := jispProgramFromBytes(subProgramBytes)
-	if err != nil {
-		return fmt.Errorf("spawn error: could not reconstruct sub-program from stack value: %w", err)
 	}
 
 	subProgram.done = make(chan struct{})
@@ -818,15 +805,9 @@ func replaceOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) > 0 {
 		return fmt.Errorf("replace error: expected 0 arguments, got %d", len(op.Args))
 	}
-	values, err := jp.popx("replace", 3)
+	str, old, new, err := popThree[string, string, string](jp, "replace")
 	if err != nil {
 		return err
-	}
-	str, okStr := values[0].(string)
-	old, okOld := values[1].(string)
-	new, okNew := values[2].(string)
-	if !okStr || !okOld || !okNew {
-		return fmt.Errorf("replace error: expected three strings on the stack")
 	}
 	jp.Push(strings.ReplaceAll(str, old, new))
 	return nil
@@ -1060,7 +1041,6 @@ func popTwoComparableSlices(jp *JispProgram, opName string) ([]interface{}, []in
 	return a1, a2, nil
 }
 
-// unionOp performs the union of two arrays on the stack.
 func unionOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) != 0 {
 		return fmt.Errorf("union error: expected 0 arguments, got %d", len(op.Args))
@@ -1076,7 +1056,6 @@ func unionOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
-// intersectionOp performs the intersection of two arrays on the stack.
 func intersectionOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) != 0 {
 		return fmt.Errorf("intersection error: expected 0 arguments, got %d", len(op.Args))
@@ -1103,7 +1082,6 @@ func intersectionOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
-// differenceOp performs the set difference (a1 - a2) of two arrays on the stack.
 func differenceOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) != 0 {
 		return fmt.Errorf("difference error: expected 0 arguments, got %d", len(op.Args))
@@ -1399,17 +1377,9 @@ func rangeOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("range error: expected 0 arguments, got %d", len(op.Args))
 	}
 
-	args, err := jp.popx("range", 3)
+	start, stop, step, err := popThree[float64, float64, float64](jp, "range")
 	if err != nil {
 		return err
-	}
-
-	start, okStart := args[0].(float64)
-	stop, okStop := args[1].(float64)
-	step, okStep := args[2].(float64)
-
-	if !okStart || !okStop || !okStep {
-		return fmt.Errorf("range error: all arguments on stack must be numbers")
 	}
 
 	var result []interface{}
@@ -1911,12 +1881,10 @@ func applyCollectionLoop(
 
 // --- Core JISP Logic ---
 
-// Push adds a value to the top of the stack.
 func (jp *JispProgram) Push(value interface{}) {
 	jp.Stack = append(jp.Stack, value)
 }
 
-// Pop removes the top value from the stack and moves it to the program state field specified by fieldName.
 func (jp *JispProgram) Pop(fieldName string) error {
 	value, err := jp.popValue("pop")
 	if err != nil {
@@ -1972,7 +1940,8 @@ func (jp *JispProgram) navigateToParent(path []interface{}, autoVivify bool, opN
 	return current, nil
 }
 
-// Set stores a value from the stack into the Variables map using a key from the stack.
+// setValueForPath stores a value at a given path, which can be a simple string
+// for a variable or a slice representing a nested path.
 func (jp *JispProgram) setValueForPath(pathVal interface{}, value interface{}) error {
 	// TODO: Implement lexical scoping.
 	// 1. For a simple string path, set the variable in the current frame's locals.
@@ -2120,7 +2089,7 @@ func (jp *JispProgram) getValueByPath(path []interface{}) (interface{}, error) {
 	}
 }
 
-// Get retrieves a value from the Variables map and pushes it onto the stack.
+// getValueForPath retrieves a value from the Variables map.
 // The key can be a string for a top-level variable, or an array for a nested value.
 func (jp *JispProgram) getValueForPath(pathVal interface{}) (interface{}, error) {
 	switch path := pathVal.(type) {
@@ -2145,8 +2114,6 @@ func (jp *JispProgram) getValueForPath(pathVal interface{}) (interface{}, error)
 	}
 }
 
-// Get retrieves a value from the Variables map and pushes it onto the stack.
-// The key can be a string for a top-level variable, or an array for a nested value.
 func getOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) == 0 {
 		// No args: use the string or array at the top of the stack as a path.
@@ -2174,7 +2141,6 @@ func getOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
-// Exists checks if a variable exists and pushes the boolean result onto the stack.
 func (jp *JispProgram) Exists() error {
 	key, err := pop[string](jp, "exists")
 	if err != nil {
@@ -2185,7 +2151,6 @@ func (jp *JispProgram) Exists() error {
 	return nil
 }
 
-// Delete removes a variable from the Variables map.
 func (jp *JispProgram) Delete() error {
 	key, err := pop[string](jp, "delete")
 	if err != nil {
@@ -2197,7 +2162,6 @@ func (jp *JispProgram) Delete() error {
 	return nil
 }
 
-// Eq pops two values, checks for strict equality, and pushes the boolean result.
 func (jp *JispProgram) Eq() error {
 	vals, err := jp.popx("eq", 2)
 	if err != nil {
@@ -2207,7 +2171,6 @@ func (jp *JispProgram) Eq() error {
 	return nil
 }
 
-// Lt pops two values, checks if the first is less than the second, and pushes the boolean result.
 func (jp *JispProgram) Lt() error {
 	return jp.applyComparisonOp("lt",
 		func(a, b float64) bool { return a < b },
@@ -2215,7 +2178,6 @@ func (jp *JispProgram) Lt() error {
 	)
 }
 
-// Gt pops two values, checks if the first is greater than the second, and pushes the boolean result.
 func (jp *JispProgram) Gt() error {
 	return jp.applyComparisonOp("gt",
 		func(a, b float64) bool { return a > b },
@@ -2223,28 +2185,24 @@ func (jp *JispProgram) Gt() error {
 	)
 }
 
-// Add pops two numbers, adds them, and pushes the result.
 func (jp *JispProgram) Add() error {
 	return applyBinaryOp[float64](jp, "add", func(a, b float64) (interface{}, error) {
 		return a + b, nil
 	})
 }
 
-// Sub pops two numbers, subtracts them, and pushes the result.
 func (jp *JispProgram) Sub() error {
 	return applyBinaryOp[float64](jp, "sub", func(a, b float64) (interface{}, error) {
 		return a - b, nil
 	})
 }
 
-// Mul pops two numbers, multiplies them, and pushes the result.
 func (jp *JispProgram) Mul() error {
 	return applyBinaryOp[float64](jp, "mul", func(a, b float64) (interface{}, error) {
 		return a * b, nil
 	})
 }
 
-// Div pops two numbers, divides them, and pushes the result.
 func (jp *JispProgram) Div() error {
 	return applyBinaryOp[float64](jp, "div", func(a, b float64) (interface{}, error) {
 		if b == 0 {
@@ -2254,7 +2212,6 @@ func (jp *JispProgram) Div() error {
 	})
 }
 
-// Mod pops two numbers, performs modulo, and pushes the result.
 func (jp *JispProgram) Mod() error {
 	return applyBinaryOp[float64](jp, "mod", func(a, b float64) (interface{}, error) {
 		if b == 0 {
@@ -2264,21 +2221,18 @@ func (jp *JispProgram) Mod() error {
 	})
 }
 
-// And pops two booleans, performs logical AND, and pushes the result.
 func (jp *JispProgram) And() error {
 	return applyBinaryOp[bool](jp, "and", func(a, b bool) (interface{}, error) {
 		return a && b, nil
 	})
 }
 
-// Or pops two booleans, performs logical OR, and pushes the result.
 func (jp *JispProgram) Or() error {
 	return applyBinaryOp[bool](jp, "or", func(a, b bool) (interface{}, error) {
 		return a || b, nil
 	})
 }
 
-// Not pops a boolean, performs logical NOT, and pushes the result.
 func (jp *JispProgram) Not() error {
 	val, err := pop[bool](jp, "not")
 	if err != nil {
@@ -2288,7 +2242,6 @@ func (jp *JispProgram) Not() error {
 	return nil
 }
 
-// If conditionally executes operations based on a boolean popped from the stack.
 func (jp *JispProgram) If(thenBody, elseBody []JispOperation) error {
 	conditionVal, err := jp.popValue("if")
 	if err != nil {
@@ -2432,6 +2385,34 @@ func popTwo[T any](jp *JispProgram, opName string) (T, T, error) {
 	}
 
 	return a, b, nil
+}
+
+// popThree pops three values of potentially different types from the stack.
+func popThree[T1 any, T2 any, T3 any](jp *JispProgram, opName string) (T1, T2, T3, error) {
+	var zero1 T1
+	var zero2 T2
+	var zero3 T3
+
+	if len(jp.Stack) < 3 {
+		return zero1, zero2, zero3, fmt.Errorf("stack underflow for %s: expected 3 values", opName)
+	}
+
+	c, err := pop[T3](jp, opName)
+	if err != nil {
+		return zero1, zero2, zero3, err
+	}
+
+	b, err := pop[T2](jp, opName)
+	if err != nil {
+		return zero1, zero2, zero3, err
+	}
+
+	a, err := pop[T1](jp, opName)
+	if err != nil {
+		return zero1, zero2, zero3, err
+	}
+
+	return a, b, c, nil
 }
 
 // popx pops n values from the stack and returns them as a slice.
