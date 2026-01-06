@@ -27,19 +27,39 @@ var (
 	ErrReturn     = errors.New("return")
 	ErrExit       = errors.New("exit")
 	ErrBreakpoint = errors.New("breakpoint")
+
+	processManager = &ProcessManager{
+		programs: make(map[string]*JispProgram),
+	}
+	pidCounter int
+	pidMutex   sync.Mutex
 )
 
-type RunningProgram struct {
-	program *JispProgram
-	done    chan struct{}
+// ProcessManager handles the lifecycle of spawned Jisp programs.
+type ProcessManager struct {
+	programs map[string]*JispProgram
+	mutex    sync.RWMutex
 }
 
-var (
-	runningPrograms      = make(map[string]*RunningProgram)
-	runningProgramsMutex sync.Mutex
-	nextProgramID        int64 = 0
-)
+func (pm *ProcessManager) Register(jp *JispProgram) string {
+	pidMutex.Lock()
+	pidCounter++
+	pid := fmt.Sprintf("pid-%d", pidCounter)
+	pidMutex.Unlock()
 
+	jp.PID = pid
+	pm.mutex.Lock()
+	pm.programs[pid] = jp
+	pm.mutex.Unlock()
+	return pid
+}
+
+func (pm *ProcessManager) Get(pid string) (*JispProgram, bool) {
+	pm.mutex.RLock()
+	defer pm.mutex.RUnlock()
+	jp, ok := pm.programs[pid]
+	return jp, ok
+}
 
 // exitOp stops the program execution.
 func exitOp(jp *JispProgram, op *JispOperation) error {
@@ -111,6 +131,7 @@ func (cf *CallFrame) MarshalJSON() ([]byte, error) {
 // JispProgram represents the entire state of a JISP program, including the
 // execution stack, variables map, a general-purpose state map, and a call stack.
 type JispProgram struct {
+	PID         string                 `json:"pid,omitempty"`
 	Stack       []interface{}          `json:"stack"`
 	Variables   map[string]interface{} `json:"variables"`
 	Code        []JispOperation        `json:"code"`
@@ -120,6 +141,9 @@ type JispProgram struct {
 	SaveHistory bool                   `json:"save_history,omitempty"`
 	Debug       bool                   `json:"debug,omitempty"`
 	Breakpoints [][]interface{}        `json:"breakpoints,omitempty"`
+	Running     bool                   `json:"running,omitempty"`
+	done        chan struct{}          `json:"-"`
+	runningMutex sync.Mutex            `json:"-"`
 }
 
 func (cf *CallFrame) UnmarshalJSON(data []byte) error {
@@ -542,23 +566,27 @@ func spawnOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("spawn error: could not reconstruct sub-program from stack value: %w", err)
 	}
 
-	runningProgramsMutex.Lock()
-	programID := nextProgramID
-	nextProgramID++
-	idStr := fmt.Sprintf("%d", programID)
-	doneChan := make(chan struct{})
-	runningPrograms[idStr] = &RunningProgram{program: subProgram, done: doneChan}
-	runningProgramsMutex.Unlock()
+	subProgram.done = make(chan struct{})
+	subProgram.runningMutex.Lock()
+	subProgram.Running = true
+	subProgram.runningMutex.Unlock()
+
+	processManager.Register(subProgram)
+	jp.Push(subProgram)
 
 	go func() {
+		defer func() {
+			subProgram.runningMutex.Lock()
+			subProgram.Running = false
+			subProgram.runningMutex.Unlock()
+			close(subProgram.done)
+		}()
 		err := subProgram.Run()
 		if err != nil && !errors.Is(err, ErrExit) {
 			log.Printf("spawn error: unexpected error during sub-program execution: %v", err)
 		}
-		close(doneChan)
 	}()
 
-	jp.Push(idStr)
 	return nil
 }
 
@@ -579,27 +607,41 @@ func awaitOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("await error: expected 0 arguments, got %d", len(op.Args))
 	}
 
-	idStr, err := pop[string](jp, "await")
+	subProgramVal, err := jp.popValue("await")
 	if err != nil {
 		return err
 	}
 
-	runningProgramsMutex.Lock()
-	runningProg, found := runningPrograms[idStr]
-	runningProgramsMutex.Unlock()
-
-	if !found {
-		return fmt.Errorf("await error: no running program found for id '%s'", idStr)
+	subProgramHandle, ok := subProgramVal.(*JispProgram)
+	if !ok {
+		// If it's not a direct pointer, it might be a map from JSON unmarshaling.
+		// We'll marshal and unmarshal to standardize it.
+		subProgramBytes, err := json.Marshal(subProgramVal)
+		if err != nil {
+			return fmt.Errorf("await error: failed to marshal sub-program handle: %w", err)
+		}
+		subProgramHandle, err = jispProgramFromBytes(subProgramBytes)
+		if err != nil {
+			return fmt.Errorf("await error: could not reconstruct sub-program handle from stack value: %w", err)
+		}
 	}
 
-	<-runningProg.done
+	if subProgramHandle.PID == "" {
+		return fmt.Errorf("await error: program object on stack has no PID, was it spawned?")
+	}
 
-	jp.Push(runningProg.program)
+	canonicalProgram, ok := processManager.Get(subProgramHandle.PID)
+	if !ok {
+		// This could mean the program finished and was reaped, or the PID is invalid.
+		// For now, we'll assume it's just not found.
+		return fmt.Errorf("await error: no running program found for PID '%s'", subProgramHandle.PID)
+	}
 
-	runningProgramsMutex.Lock()
-	delete(runningPrograms, idStr)
-	runningProgramsMutex.Unlock()
+	if canonicalProgram.done != nil {
+		<-canonicalProgram.done
+	}
 
+	jp.Push(canonicalProgram)
 	return nil
 }
 
