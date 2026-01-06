@@ -1,0 +1,210 @@
+[
+  {
+    "description": "Concurrency Test: Basic spawn and await.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "code": [
+              ["push", 5.0],
+              ["push", 3.0],
+              ["add"],
+              ["pop", "result"]
+            ]
+          }
+        ],
+        ["spawn"],
+        ["await"],
+        ["pop", "final_program"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "variables": {
+          "type": "object",
+          "properties": {
+            "final_program": {
+              "type": "object",
+              "properties": {
+                "variables": {
+                  "type": "object",
+                  "properties": {
+                    "result": {
+                      "type": "number",
+                      "const": 8.0
+                    }
+                  },
+                  "required": ["result"]
+                },
+                "pid": {
+                  "type": "string"
+                }
+              },
+              "required": ["variables", "pid"]
+            }
+          },
+          "required": ["final_program"]
+        }
+      }
+    }
+  },
+  {
+    "description": "Concurrency Test: Multiple awaits on a single spawned process.",
+    "jisp_program": {
+      "code": [
+        ["push", {"code": [["push", 10.0], ["pop", "value"]]}],
+        ["spawn"],
+        ["pop", "spawned_handle"],
+        ["get", "spawned_handle"],
+        ["await"],
+        ["pop", "result1"],
+        ["get", "spawned_handle"],
+        ["await"],
+        ["pop", "result2"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "variables": {
+          "type": "object",
+          "properties": {
+            "spawned_handle": {"type": "object"},
+            "result1": {
+              "type": "object",
+              "properties": {
+                "variables": {"properties": {"value": {"const": 10.0}}}
+              }
+            },
+            "result2": {
+              "type": "object",
+              "properties": {
+                "variables": {"properties": {"value": {"const": 10.0}}}
+              }
+            }
+          },
+          "required": ["spawned_handle", "result1", "result2"]
+        }
+      }
+    }
+  },
+  {
+    "description": "Concurrency Test: Spawn and await multiple independent processes.",
+    "jisp_program": {
+      "code": [
+        ["push", {"code": [["push", "A"], ["pop", "resA"]]}],
+        ["spawn"],
+        ["pop", "handleA"],
+        ["push", {"code": [["push", "B"], ["pop", "resB"]]}],
+        ["spawn"],
+        ["pop", "handleB"],
+        ["get", "handleA"],
+        ["await"],
+        ["pop", "finalA"],
+        ["get", "handleB"],
+        ["await"],
+        ["pop", "finalB"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "variables": {
+          "type": "object",
+          "properties": {
+            "finalA": {
+              "type": "object",
+              "properties": {
+                "variables": {"properties": {"resA": {"const": "A"}}},
+                "pid": {"type": "string"}
+              }
+            },
+            "finalB": {
+              "type": "object",
+              "properties": {
+                "variables": {"properties": {"resB": {"const": "B"}}},
+                "pid": {"type": "string"}
+              }
+            }
+          },
+          "required": ["finalA", "finalB"]
+        }
+      }
+    }
+  },
+    {
+    "description": "Concurrency Test: Nested spawn and await.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "code": [
+              [
+                "push",
+                {
+                  "code": [
+                    ["push", "inner_result"],
+                    ["pop", "inner_var"]
+                  ]
+                }
+              ],
+              ["spawn"],
+              ["await"],
+              ["pop", "nested_result"]
+            ]
+          }
+        ],
+        ["spawn"],
+        ["await"],
+        ["pop", "outer_result"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "variables": {
+          "type": "object",
+          "properties": {
+            "outer_result": {
+              "type": "object",
+              "properties": {
+                "variables": {
+                  "type": "object",
+                  "properties": {
+                    "nested_result": {
+                      "type": "object",
+                      "properties": {
+                        "variables": {
+                          "type": "object",
+                          "properties": {
+                            "inner_var": {
+                              "const": "inner_result"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": ["outer_result"]
+        }
+      }
+    }
+  },
+  {
+    "description": "Negative Concurrency Test: Awaiting a non-spawned program.",
+    "jisp_program": {
+      "code": [
+        ["push", {"code": [["push", 1]]}],
+        ["await"]
+      ]
+    },
+    "expected_error_message": "await error: program object on stack has no PID, was it spawned?"
+  }
+]
