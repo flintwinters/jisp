@@ -43,11 +43,33 @@ Jisp programs are written in JSON, a format most developers are already familiar
 
 Jisp takes advantage of JSON's simplicity and universality to create a programming system that’s easy to understand, easy to debug, and easy to integrate.
 
-### Build & Test
+### Installation
+
+You can download the pre-compiled Go binary from the [releases page](https://github.com/flintwinters/jisp/releases/tag/release).
+
+### Build
+
+To build Jisp from source, clone the repository and run the `build.py` script:
+
+```bash
+git clone https://github.com/flintwinters/jisp.git
+cd jisp
+python3 build.py
+```
+
+### Test
 
 Run all checks:
 
 `python3 build.py`
+
+### Usage
+
+To run a Jisp program, simply execute the `jisp` binary with your JSON-formatted Jisp code:
+
+```bash
+jisp example.json
+```
 
 ### Examples
 
