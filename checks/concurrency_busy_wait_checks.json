@@ -1,0 +1,171 @@
+[
+  {
+    "description": "Concurrency Test: Spawn is non-blocking, allowing main process to continue.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "code": [
+              ["push", 25000.0],
+              ["set", "counter"],
+              ["push", true],
+              ["set", "looping"],
+              [
+                "while",
+                "looping",
+                [
+                  ["get", "counter"],
+                  ["push", 1.0],
+                  ["sub"],
+                  ["set", "counter"],
+                  ["get", "counter"],
+                  ["push", 0.0],
+                  ["eq"],
+                  ["if", [["push", false], ["set", "looping"]]]
+                ]
+              ]
+            ]
+          }
+        ],
+        ["spawn"],
+        ["pop", "busy_process_handle"],
+        ["push", "Main process finished its work while busy process was running"],
+        ["pop", "main_process_status"],
+        ["get", "busy_process_handle"],
+        ["await"],
+        ["pop", "final_busy_process"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "variables": {
+          "type": "object",
+          "properties": {
+            "main_process_status": {
+              "type": "string",
+              "const": "Main process finished its work while busy process was running"
+            },
+            "final_busy_process": {
+              "type": "object",
+              "properties": {
+                "variables": {
+                  "type": "object",
+                  "properties": {
+                    "counter": {
+                      "type": "number",
+                      "const": 0.0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "required": ["main_process_status", "final_busy_process"]
+        }
+      }
+    }
+  },
+  {
+    "description": "Concurrency Test: Two busy-wait processes run in parallel.",
+    "jisp_program": {
+      "code": [
+        [
+          "push",
+          {
+            "code": [
+              ["push", 25000.0],
+              ["set", "counter1"],
+              ["push", true],
+              ["set", "looping1"],
+              [
+                "while",
+                "looping1",
+                [
+                  ["get", "counter1"],
+                  ["push", 1.0],
+                  ["sub"],
+                  ["set", "counter1"],
+                  ["get", "counter1"],
+                  ["push", 0.0],
+                  ["eq"],
+                  ["if", [["push", false], ["set", "looping1"]]]
+                ]
+              ]
+            ]
+          }
+        ],
+        ["spawn"],
+        ["pop", "p1_handle"],
+        [
+          "push",
+          {
+            "code": [
+              ["push", 25000.0],
+              ["set", "counter2"],
+              ["push", true],
+              ["set", "looping2"],
+              [
+                "while",
+                "looping2",
+                [
+                  ["get", "counter2"],
+                  ["push", 1.0],
+                  ["sub"],
+                  ["set", "counter2"],
+                  ["get", "counter2"],
+                  ["push", 0.0],
+                  ["eq"],
+                  ["if", [["push", false], ["set", "looping2"]]]
+                ]
+              ]
+            ]
+          }
+        ],
+        ["spawn"],
+        ["pop", "p2_handle"],
+        ["get", "p1_handle"],
+        ["await"],
+        ["pop", "p1_final"],
+        ["get", "p2_handle"],
+        ["await"],
+        ["pop", "p2_final"]
+      ]
+    },
+    "validation_schema": {
+      "type": "object",
+      "properties": {
+        "variables": {
+          "type": "object",
+          "properties": {
+            "p1_final": {
+              "type": "object",
+              "properties": {
+                "variables": {
+                  "properties": {
+                    "counter1": {
+                      "const": 0.0
+                    }
+                  }
+                }
+              }
+            },
+            "p2_final": {
+              "type": "object",
+              "properties": {
+                "variables": {
+                  "properties": {
+                    "counter2": {
+                      "const": 0.0
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+]
