@@ -4,7 +4,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -204,8 +203,7 @@ func exitOp(jp *JispProgram, op *JispOperation) error {
 	return ErrExit
 }
 
-// JispError is a custom error type for JISP program errors.
-// It allows the 'try' operation to catch and handle runtime errors gracefully.
+
 type JispError struct {
 	OperationName      string                 `json:"operation_name"`
 	InstructionPointer []interface{}          `json:"instruction_pointer"`
@@ -221,8 +219,7 @@ func (e *JispError) Error() string {
 
 
 
-// parseRawOperation parses a single operation from a raw array of interfaces.
-// It expects the first element to be the operation name (string) and the rest to be arguments.
+
 func parseRawOperation(rawOp []interface{}) (JispOperation, error) {
 	if len(rawOp) == 0 {
 		return JispOperation{}, fmt.Errorf("operation array is empty")
@@ -399,7 +396,7 @@ func (op *JispOperation) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// operationHandler defines the signature for all JISP operations.
+
 type operationHandler func(jp *JispProgram, op *JispOperation) error
 
 // makeNoArgsHandler is a higher-order function that wraps a JispProgram method
@@ -472,7 +469,6 @@ func (jp *JispProgram) popSubProgram(opName string) (*JispProgram, error) {
 	return subProgram, nil
 }
 
-// stepOp pops a Jisp state object, executes one instruction, and pushes the modified object back.
 func stepOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) != 0 {
 		return fmt.Errorf("step error: expected 0 arguments, got %d", len(op.Args))
@@ -535,7 +531,7 @@ func stepOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
-// undoOp pops a Jisp state object, reverts it to its previous state, and pushes it back.
+
 func undoOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) != 0 {
 		return fmt.Errorf("undo error: expected 0 arguments, got %d", len(op.Args))
@@ -601,9 +597,7 @@ func undoOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
-// Run executes the Jisp program to completion or until an error occurs.
-// It will start from the beginning if the program has not started, or resume
-// from the current instruction pointer if it's already in progress.
+
 func (jp *JispProgram) Run() error {
 	if jp.currentFrame() == nil {
 		if len(jp.Code) == 0 {
@@ -941,8 +935,7 @@ func init() {
 	}
 }
 
-// validOp pops a schema and a document from the stack, validates the document against the schema,
-// and pushes the boolean result (true for valid, false for invalid) onto the stack.
+
 func validOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) != 0 {
 		return fmt.Errorf("valid error: expected 0 arguments, got %d", len(op.Args))
@@ -977,7 +970,7 @@ func validOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
-// Helper to convert []interface{} to []comparable for set operations
+
 func toComparableSlice(input []interface{}, opName string) ([]interface{}, error) {
 	for _, item := range input {
 		switch item.(type) {
@@ -992,7 +985,7 @@ func toComparableSlice(input []interface{}, opName string) ([]interface{}, error
 	return input, nil
 }
 
-// Helper to get unique elements from a slice
+
 func unique(slice []interface{}) []interface{} {
 	allKeys := make(map[interface{}]bool)
 	list := []interface{}{}
@@ -1005,7 +998,7 @@ func unique(slice []interface{}) []interface{} {
 	return list
 }
 
-// isNumberSlice checks if all elements in the slice are float64.
+
 func isNumberSlice(slice []interface{}) bool {
 	for _, item := range slice {
 		if _, ok := item.(float64); !ok {
@@ -1015,7 +1008,7 @@ func isNumberSlice(slice []interface{}) bool {
 	return true
 }
 
-// isStringSlice checks if all elements in the slice are string.
+
 func isStringSlice(slice []interface{}) bool {
 	for _, item := range slice {
 		if _, ok := item.(string); !ok {
@@ -1107,16 +1100,7 @@ func differenceOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
-// joinOp performs a relational-style join on two arrays.
-// It pops five values from the stack:
-// 1. The left array to join.
-// 2. The right array to join.
-// 3. The name to assign to elements from the left array.
-// 4. The name to assign to elements from the right array.
-// 5. The join condition operations.
-// It iterates through the Cartesian product of the two arrays, and for each pair
-// of elements, it executes the condition. If the condition evaluates to true,
-// a new object containing both elements is added to the result array.
+
 func joinOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) != 0 {
 		return fmt.Errorf("join error: expected 0 arguments, got %d", len(op.Args))
@@ -1229,6 +1213,8 @@ func reduceOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("reduce error: expected 0 arguments, got %d", len(op.Args))
 	}
 
+	// For reduce, we pop 3 arguments: input array, body operations, and initial value.
+	// The helper popCollectionOpArgs pops input, varName, ops. We need to adjust.
 	args, err := jp.popx("reduce", 3)
 	if err != nil {
 		return err
@@ -1249,10 +1235,10 @@ func reduceOp(jp *JispProgram, op *JispOperation) error {
 	accumulator := initialValue
 
 	for _, item := range input {
-		jp.Push(accumulator) // Push current accumulator onto stack
-		jp.Push(item)        // Push current item onto stack
+		jp.Push(accumulator)
+		jp.Push(item)
 
-		previousStackLen := len(jp.Stack) // Store stack length before executing reduceOps
+		previousStackLen := len(jp.Stack)
 
 		if err := jp.executeOperationsWithPathSegment(reduceOps, "reduce_ops_from_stack", false); err != nil {
 			return err
@@ -1276,24 +1262,9 @@ func mapOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("map error: expected 0 arguments, got %d", len(op.Args))
 	}
 
-	args, err := jp.popx("map", 3)
+	input, varName, mapOps, err := jp.popCollectionOpArgs("map", 3)
 	if err != nil {
 		return err
-	}
-
-	input, ok := args[0].([]interface{})
-	if !ok {
-		return fmt.Errorf("map error: expected an array on stack for input, got %T", args[0])
-	}
-
-	varName, ok := args[1].(string)
-	if !ok {
-		return fmt.Errorf("map error: expected a string on stack for varName, got %T", args[1])
-	}
-
-	mapOps, err := parseJispOps(args[2])
-	if err != nil {
-		return fmt.Errorf("map error: invalid operations block: %w", err)
 	}
 
 	result, err := applyCollectionLoop(jp, "map", input, varName, mapOps, "map_ops_from_stack",
@@ -1321,24 +1292,9 @@ func filterOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("filter error: expected 0 arguments, got %d", len(op.Args))
 	}
 
-	args, err := jp.popx("filter", 3)
+	input, varName, conditionOps, err := jp.popCollectionOpArgs("filter", 3)
 	if err != nil {
 		return err
-	}
-
-	input, ok := args[0].([]interface{})
-	if !ok {
-		return fmt.Errorf("filter error: expected an array on stack for input, got %T", args[0])
-	}
-
-	varName, ok := args[1].(string)
-	if !ok {
-		return fmt.Errorf("filter error: expected a string on stack for varName, got %T", args[1])
-	}
-
-	conditionOps, err := parseJispOps(args[2])
-	if err != nil {
-		return fmt.Errorf("filter error: invalid condition block: %w", err)
 	}
 
 	result, err := applyCollectionLoop(jp, "filter", input, varName, conditionOps, "filter_ops_from_stack",
@@ -1354,13 +1310,12 @@ func filterOp(jp *JispProgram, op *JispOperation) error {
 			if condition {
 				return item, nil
 			}
-			return nil, nil // Return nil if condition is false, to be filtered out later
+			return nil, nil
 		})
 	if err != nil {
 		return err
 	}
 
-	// Filter out nil values from the result slice (from items that didn't meet the condition)
 	var filteredResult []interface{}
 	for _, item := range result {
 		if item != nil {
@@ -1423,7 +1378,7 @@ func assertOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
-// Slicer defines an interface for types that can be sliced.
+
 type Slicer interface {
 	Len() int
 	Slice(i, j int) interface{}
@@ -1439,7 +1394,7 @@ type sliceSlicer []interface{}
 func (s sliceSlicer) Len() int                   { return len(s) }
 func (s sliceSlicer) Slice(i, j int) interface{} { return s[i:j] }
 
-// currentInstructionPath returns the JSON path to the currently executing instruction.
+
 func (jp *JispProgram) currentInstructionPath() []interface{} {
 	frame := jp.currentFrame()
 	if frame == nil {
@@ -1449,21 +1404,17 @@ func (jp *JispProgram) currentInstructionPath() []interface{} {
 	return append(frame.basePath, frame.Ip)
 }
 
-// executeOperationsWithPathSegment is a helper to execute operations with a derived JSON path.
-// It takes a path segment (string or int) and appends it to the current instruction path
-// before executing the given operations.
+
 func (jp *JispProgram) executeOperationsWithPathSegment(ops []JispOperation, segment interface{}, useParentScope bool) error {
 	parentPath := jp.currentInstructionPath()
 	// It's crucial to copy the parentPath to avoid mutations across different branches of execution.
 	path := make([]interface{}, len(parentPath)+1)
 	copy(path, parentPath)
 	path[len(parentPath)] = segment
-	return jp.executeFrame(ops, path, useParentScope, -1)
+	return jp.ExecuteFrame(ops, path, useParentScope, -1)
 }
 
-// executeSingleInstruction executes the single operation at the current instruction pointer.
-// It is the atomic unit of the JISP interpreter. It sets jp.Error on runtime errors
-// and returns control flow errors to be handled by the execution loop.
+
 func (jp *JispProgram) executeSingleInstruction() error {
 	frame := jp.currentFrame()
 	op := frame.Ops[frame.Ip]
@@ -1522,7 +1473,7 @@ func (jp *JispProgram) executeSingleInstruction() error {
 
 // ExecuteOperations pushes a new call frame for the given operations and executes them.
 // It manages the instruction pointer within this frame and handles control flow.
-func (jp *JispProgram) executeFrame(ops []JispOperation, basePath []interface{}, useParentScope bool, instructionLimit int) error {
+func (jp *JispProgram) ExecuteFrame(ops []JispOperation, basePath []interface{}, useParentScope bool, instructionLimit int) error {
 	if len(ops) == 0 {
 		return nil
 	}
@@ -1572,7 +1523,7 @@ func (jp *JispProgram) executeFrame(ops []JispOperation, basePath []interface{},
 	return nil
 }
 
-// toFloat is a helper to convert various numeric types to float64 for comparison.
+
 func toFloat(v interface{}) (float64, bool) {
 	switch i := v.(type) {
 	case float64:
@@ -1588,7 +1539,7 @@ func toFloat(v interface{}) (float64, bool) {
 	}
 }
 
-// pathsEqual compares two Jisp paths, correctly handling int vs float64 differences.
+
 func pathsEqual(p1, p2 []interface{}) bool {
 	if len(p1) != len(p2) {
 		return false
@@ -1611,13 +1562,9 @@ func pathsEqual(p1, p2 []interface{}) bool {
 	return true
 }
 
-// ExecuteOperations pushes a new call frame for the given operations and executes them.
-// It manages the instruction pointer within this frame and handles control flow.
-func (jp *JispProgram) ExecuteOperations(ops []JispOperation, basePath []interface{}, useParentScope bool) error {
-	return jp.executeFrame(ops, basePath, useParentScope, -1)
-}
 
-// --- Operation Handlers ---
+
+
 
 func callOp(jp *JispProgram, op *JispOperation) error {
 	// Pop the function to be called from the stack.
@@ -1879,7 +1826,7 @@ func applyCollectionLoop(
 	return result, nil
 }
 
-// --- Core JISP Logic ---
+
 
 func (jp *JispProgram) Push(value interface{}) {
 	jp.Stack = append(jp.Stack, value)
@@ -2001,8 +1948,7 @@ func (jp *JispProgram) setValueForPath(pathVal interface{}, value interface{}) e
 	}
 }
 
-// setOp stores a value in the Variables map.
-// It supports multiple formats for specifying the path, similar to the getOp.
+
 func setOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) == 0 {
 		// No args: pop value, then pop path from the stack.
@@ -2089,8 +2035,7 @@ func (jp *JispProgram) getValueByPath(path []interface{}) (interface{}, error) {
 	}
 }
 
-// getValueForPath retrieves a value from the Variables map.
-// The key can be a string for a top-level variable, or an array for a nested value.
+
 func (jp *JispProgram) getValueForPath(pathVal interface{}) (interface{}, error) {
 	switch path := pathVal.(type) {
 	case string:
@@ -2337,7 +2282,7 @@ func (jp *JispProgram) handleCaughtError(caughtErr *JispError, catchVar string, 
 	}
 }
 
-// --- Helper Functions ---
+
 
 // pop pops a single value from the stack and asserts it to the specified type T.
 func pop[T any](jp *JispProgram, opName string) (T, error) {
@@ -2416,6 +2361,8 @@ func popThree[T1 any, T2 any, T3 any](jp *JispProgram, opName string) (T1, T2, T
 }
 
 // popx pops n values from the stack and returns them as a slice.
+
+
 func (jp *JispProgram) popx(opName string, n int) ([]interface{}, error) {
 	if len(jp.Stack) < n {
 		return nil, fmt.Errorf("stack underflow for %s: expected %d values", opName, n)
@@ -2423,6 +2370,32 @@ func (jp *JispProgram) popx(opName string, n int) ([]interface{}, error) {
 	values := jp.Stack[len(jp.Stack)-n:]
 	jp.Stack = jp.Stack[:len(jp.Stack)-n]
 	return values, nil
+}
+
+func (jp *JispProgram) popCollectionOpArgs(opName string, expectedArgs int) (input []interface{}, varName string, ops []JispOperation, err error) {
+	args, err := jp.popx(opName, expectedArgs)
+	if err != nil {
+		return
+	}
+
+	input, ok := args[0].([]interface{})
+	if !ok {
+		err = fmt.Errorf("%s error: expected an array on stack for input, got %T", opName, args[0])
+		return
+	}
+
+	varName, ok = args[1].(string)
+	if !ok {
+		err = fmt.Errorf("%s error: expected a string on stack for varName, got %T", opName, args[1])
+		return
+	}
+
+	ops, err = parseJispOps(args[2])
+	if err != nil {
+		err = fmt.Errorf("%s error: invalid operations block: %w", opName, err)
+		return
+	}
+	return
 }
 
 func (jp *JispProgram) applyStringUnaryOp(opName string, op func(string) string) error {
@@ -2493,7 +2466,304 @@ func parseJispOps(raw interface{}) ([]JispOperation, error) {
 	return Ops, nil
 }
 
+
+func isTerminal(f *os.File) bool {
+
+
+	fileInfo, err := f.Stat()
+
+
+	if err != nil {
+
+
+		return false
+
+
+	}
+
+
+	return (fileInfo.Mode() & os.ModeCharDevice) != 0
+
+
+}
+
+
+
+
+
+func colorizeJSON(data []byte) []byte {
+
+
+	var result []byte
+
+
+	inString := false
+
+
+	for i := 0; i < len(data); i++ {
+
+
+		char := data[i]
+
+
+
+
+
+		if inString {
+
+
+			if char == '"' {
+
+
+				backslashes := 0
+
+
+				for k := i - 1; k > 0 && data[k] == '\\'; k-- {
+
+
+					backslashes++
+
+
+				}
+
+
+				if backslashes%2 == 0 {
+
+
+					inString = false
+
+
+					result = append(result, char)
+
+
+					result = append(result, []byte(Reset)...)
+
+
+					continue
+
+
+				}
+
+
+			}
+
+
+			result = append(result, char)
+
+
+			continue
+
+
+		}
+
+
+
+
+
+		switch {
+
+
+		case char == '"':
+
+
+			inString = true
+
+
+			isKey := false
+
+
+			j := i + 1
+
+
+			for j < len(data) {
+
+
+				if data[j] == '"' {
+
+
+					backslashes := 0
+
+
+					for k := j - 1; k > i && data[k] == '\\'; k-- {
+
+
+						backslashes++
+
+
+					}
+
+
+					if backslashes%2 == 0 {
+
+
+						j++
+
+
+						break
+
+
+					}
+
+
+				}
+
+
+				j++
+
+
+			}
+
+
+			for j < len(data) && (data[j] == ' ' || data[j] == '\t' || data[j] == '\n' || data[j] == '\r') {
+
+
+				j++
+
+
+			}
+
+
+			if j < len(data) && data[j] == ':' {
+
+
+				isKey = true
+
+
+			}
+
+
+
+
+
+			if isKey {
+
+
+				result = append(result, []byte(Green)...)
+
+
+			} else {
+
+
+				result = append(result, []byte(Yellow)...)
+
+
+			}
+
+
+			result = append(result, char)
+
+
+
+
+
+		case char == '{' || char == '}' || char == '[' || char == ']':
+
+
+			result = append(result, []byte(Cyan)...)
+
+
+			result = append(result, char)
+
+
+			result = append(result, []byte(Reset)...)
+
+
+		case (char >= '0' && char <= '9') || char == '-':
+
+
+			result = append(result, []byte(Magenta)...)
+
+
+			j := i
+
+
+			for j < len(data) && ((data[j] >= '0' && data[j] <= '9') || data[j] == '.' || data[j] == 'e' || data[j] == 'E' || data[j] == '+' || data[j] == '-') {
+
+
+				result = append(result, data[j])
+
+
+				j++
+
+
+			}
+
+
+			result = append(result, []byte(Reset)...)
+
+
+			i = j - 1
+
+
+		case bytes.HasPrefix(data[i:], []byte("true")):
+
+
+			result = append(result, []byte(Blue)...)
+
+
+			result = append(result, []byte("true")	...)
+
+
+			result = append(result, []byte(Reset)...)
+
+
+			i += 3
+
+
+		case bytes.HasPrefix(data[i:], []byte("false")):
+
+
+			result = append(result, []byte(Blue)...)
+
+
+			result = append(result, []byte("false")	...)
+
+
+			result = append(result, []byte(Reset)...)
+
+
+			i += 4
+
+
+		case bytes.HasPrefix(data[i:], []byte("null")):
+
+
+			result = append(result, []byte(Red)...)
+
+
+			result = append(result, []byte("null")	...)
+
+
+			result = append(result, []byte(Reset)...)
+
+
+			i += 3
+
+
+		default:
+
+
+			result = append(result, char)
+
+
+		}
+
+
+	}
+
+
+	return result
+
+
+}
+
+
+
+
+
 // ANSI color codes
+
+
 const (
 	Reset   = "\033[0m"
 	Red     = "\033[31m"
@@ -2503,106 +2773,6 @@ const (
 	Magenta = "\033[35m"
 	Cyan    = "\033[36m"
 )
-
-func isTerminal(f *os.File) bool {
-	fileInfo, err := f.Stat()
-	if err != nil {
-		return false
-	}
-	return (fileInfo.Mode() & os.ModeCharDevice) != 0
-}
-
-func colorizeJSON(data []byte) []byte {
-	var result []byte
-	inString := false
-	for i := 0; i < len(data); i++ {
-		char := data[i]
-
-		if inString {
-			if char == '"' {
-				backslashes := 0
-				for k := i - 1; k > 0 && data[k] == '\\'; k-- {
-					backslashes++
-				}
-				if backslashes%2 == 0 {
-					inString = false
-					result = append(result, char)
-					result = append(result, []byte(Reset)...)
-					continue
-				}
-			}
-			result = append(result, char)
-			continue
-		}
-
-		// Not in a string
-		switch {
-		case char == '"':
-			inString = true
-			isKey := false
-			// lookahead for colon
-			j := i + 1
-			for j < len(data) {
-				if data[j] == '"' {
-					backslashes := 0
-					for k := j - 1; k > i && data[k] == '\\'; k-- {
-						backslashes++
-					}
-					if backslashes%2 == 0 {
-						j++
-						break
-					}
-				}
-				j++
-			}
-			for j < len(data) && (data[j] == ' ' || data[j] == '\t' || data[j] == '\n' || data[j] == '\r') {
-				j++
-			}
-			if j < len(data) && data[j] == ':' {
-				isKey = true
-			}
-
-			if isKey {
-				result = append(result, []byte(Green)...)
-			} else {
-				result = append(result, []byte(Yellow)...)
-			}
-			result = append(result, char)
-
-		case char == '{' || char == '}' || char == '[' || char == ']':
-			result = append(result, []byte(Cyan)...)
-			result = append(result, char)
-			result = append(result, []byte(Reset)...)
-		case (char >= '0' && char <= '9') || char == '-':
-			result = append(result, []byte(Magenta)...)
-			j := i
-			for j < len(data) && ((data[j] >= '0' && data[j] <= '9') || data[j] == '.' || data[j] == 'e' || data[j] == 'E' || data[j] == '+' || data[j] == '-') {
-				result = append(result, data[j])
-				j++
-			}
-			result = append(result, []byte(Reset)...)
-			i = j - 1
-		case bytes.HasPrefix(data[i:], []byte("true")):
-			result = append(result, []byte(Blue)...)
-			result = append(result, []byte("true")	...)
-			result = append(result, []byte(Reset)...)
-			i += 3 // len("true") - 1
-		case bytes.HasPrefix(data[i:], []byte("false")):
-			result = append(result, []byte(Blue)...)
-			result = append(result, []byte("false")	...)
-			result = append(result, []byte(Reset)...)
-			i += 4 // len("false") - 1
-		case bytes.HasPrefix(data[i:], []byte("null")):
-			result = append(result, []byte(Red)...)
-			result = append(result, []byte("null")	...)
-			result = append(result, []byte(Reset)...)
-			i += 3 // len("null") - 1
-		default:
-			result = append(result, char)
-		}
-	}
-	return result
-}
 
 func main() {
 	log.SetFlags(0) // No timestamps
@@ -2629,7 +2799,7 @@ func main() {
 
 	// Start execution only if there's no pre-existing error.
 	if jp.Error == nil {
-		err = jp.executeFrame(jp.Code, []interface{}{"code"}, false, -1)
+		err = jp.ExecuteFrame(jp.Code, []interface{}{"code"}, false, -1)
 		if err != nil && !errors.Is(err, ErrExit) {
 			// A non-JispError occurred during execution that wasn't handled.
 			// This would be a catastrophic interpreter bug.
