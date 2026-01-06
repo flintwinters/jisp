@@ -538,7 +538,7 @@ func lenArrayHandler(a []interface{}) (interface{}, error) { return float64(len(
 func lenObjectHandler(m map[string]interface{}) (interface{}, error) { return float64(len(m)), nil }
 
 func keysObjectHandler(m map[string]interface{}) (interface{}, error) {
-	keys := make([]string, 0, len(m))
+	keys := make([]interface{}, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
 	}
@@ -1140,7 +1140,7 @@ func rangeOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("range error: all arguments on stack must be numbers")
 	}
 
-	var result []float64
+	var result []interface{}
 	for i := start; i < stop; i += step {
 		result = append(result, i)
 	}
@@ -2268,7 +2268,7 @@ func colorizeJSON(data []byte) []byte {
 		if inString {
 			if char == '"' {
 				backslashes := 0
-				for k := i - 1; k > 0 && data[k] == '\n'; k-- {
+				for k := i - 1; k > 0 && data[k] == '\\'; k-- {
 					backslashes++
 				}
 				if backslashes%2 == 0 {
@@ -2292,7 +2292,7 @@ func colorizeJSON(data []byte) []byte {
 			for j < len(data) {
 				if data[j] == '"' {
 					backslashes := 0
-					for k := j - 1; k > i && data[k] == '\n'; k-- {
+					for k := j - 1; k > i && data[k] == '\\'; k-- {
 						backslashes++
 					}
 					if backslashes%2 == 0 {
