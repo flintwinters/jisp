@@ -45,6 +45,8 @@ Jisp takes advantage of JSON's simplicity and universality to create a programmi
 
 ### Build & Test
 
+Run all checks:
+
 `python3 build.py`
 
 ### TODO

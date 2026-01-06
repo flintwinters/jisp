@@ -1,0 +1,63 @@
+[
+  {
+    "description": "keys returns array of object keys (order-independent)",
+    "program": {
+      "code": [
+        ["push", {"a": 1, "b": 2}],
+        ["keys"],
+        ["sort"],
+        ["set", "out"]
+      ]
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "variables": {
+          "type": "object",
+          "properties": {
+            "out": {
+              "type": "array",
+              "items": { "enum": ["a", "b"] },
+              "minItems": 2,
+              "maxItems": 2,
+              "uniqueItems": true
+            }
+          },
+          "required": ["out"]
+        }
+      },
+      "required": ["variables"]
+    }
+  },
+  {
+    "description": "range produces a numeric sequence from start (inclusive) to stop (exclusive) by step",
+    "program": {
+      "code": [
+        ["push", 0],
+        ["push", 5],
+        ["push", 1],
+        ["range"],
+        ["set", "out"]
+      ]
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "variables": {
+          "type": "object",
+          "properties": {
+            "out": {
+              "type": "array",
+              "items": { "enum": [0, 1, 2, 3, 4] },
+              "minItems": 5,
+              "maxItems": 5,
+              "uniqueItems": true
+            }
+          },
+          "required": ["out"]
+        }
+      },
+      "required": ["variables"]
+    }
+  }
+]
