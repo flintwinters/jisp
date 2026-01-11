@@ -119,6 +119,20 @@ def compile_go_program():
     if os.path.exists(BINARY_NAME) and os.path.getmtime(GO_SOURCE_FILE) < os.path.getmtime(BINARY_NAME):
         return True
 
+    format_command = ["gofmt", "-w", GO_SOURCE_FILE]
+    try:
+        process = subprocess.run(format_command, check=True, capture_output=True, text=True)
+        if process.stdout.strip():
+            console.print(f"Formatted {GO_SOURCE_FILE}")
+    except subprocess.CalledProcessError as e:
+        console.print("[bold red]❌ gofmt failed.[/bold red]")
+        console.print(f"  Stderr: {e.stderr.strip()}")
+        return False
+    except FileNotFoundError:
+        console.print("[bold red]❌ gofmt command not found. Is Go installed and in your PATH?[/bold red]")
+        return False
+
+
     compile_command = ["go", "build", "-o", BINARY_NAME, GO_SOURCE_FILE]
     try:
         subprocess.run(compile_command, check=True, capture_output=True, text=True)
