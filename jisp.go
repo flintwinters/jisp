@@ -240,7 +240,7 @@ func parseRawOperation(rawOp []interface{}) (JispOperation, error) {
 type CallFrame struct {
 	Ip        int                    `json:"-"`
 	Ops       []JispOperation        `json:"Ops"`
-	basePath  []interface{}          `json:"basePath"`
+	BasePath  []interface{}          `json:"BasePath"`
 	Variables map[string]interface{} `json:"variables,omitempty"`
 }
 
@@ -252,7 +252,7 @@ func (cf *CallFrame) MarshalJSON() ([]byte, error) {
 		Ip []interface{} `json:"Ip"`
 		*Alias
 	}{
-		Ip:    append(cf.basePath, cf.Ip),
+		Ip:    append(cf.BasePath, cf.Ip),
 		Alias: (*Alias)(cf),
 	})
 }
@@ -294,7 +294,7 @@ func (cf *CallFrame) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	cf.basePath = []interface{}{} // Initialize basePath
+	cf.BasePath = []interface{}{} // Initialize BasePath
 
 	switch v := aux.Ip.(type) {
 	case []interface{}:
@@ -304,7 +304,7 @@ func (cf *CallFrame) UnmarshalJSON(data []byte) error {
 		if ipFloat, ok := v[len(v)-1].(float64); ok {
 			cf.Ip = int(ipFloat)
 			if len(v) > 1 {
-				cf.basePath = v[:len(v)-1]
+				cf.BasePath = v[:len(v)-1]
 			}
 		} else {
 			return fmt.Errorf("could not unmarshal Ip: last element of path is not a number")
@@ -525,7 +525,7 @@ func stepOp(jp *JispProgram, op *JispOperation) error {
 		frame := &CallFrame{
 			Ops:       subProgram.Code,
 			Ip:        0,
-			basePath:  []interface{}{"code"},
+			BasePath:  []interface{}{"code"},
 			Variables: subProgram.Variables,
 		}
 		subProgram.CallStack = append(subProgram.CallStack, frame)
@@ -641,7 +641,7 @@ func (jp *JispProgram) Run() error {
 		frame := &CallFrame{
 			Ops:       jp.Code,
 			Ip:        0,
-			basePath:  []interface{}{"code"},
+			BasePath:  []interface{}{"code"},
 			Variables: jp.Variables,
 		}
 		jp.CallStack = append(jp.CallStack, frame)
@@ -1408,7 +1408,7 @@ func (jp *JispProgram) currentInstructionPath() []interface{} {
 		return nil
 	}
 	// The full path is the base path of the current operation list plus the instruction pointer.
-	return append(frame.basePath, frame.Ip)
+	return append(frame.BasePath, frame.Ip)
 }
 
 func (jp *JispProgram) executeOperationsWithPathSegment(ops []JispOperation, segment interface{}, useParentScope bool) error {
@@ -1478,7 +1478,7 @@ func (jp *JispProgram) executeSingleInstruction() error {
 
 // ExecuteOperations pushes a new call frame for the given operations and executes them.
 // It manages the instruction pointer within this frame and handles control flow.
-func (jp *JispProgram) ExecuteFrame(ops []JispOperation, basePath []interface{}, useParentScope bool, instructionLimit int) error {
+func (jp *JispProgram) ExecuteFrame(ops []JispOperation, BasePath []interface{}, useParentScope bool, instructionLimit int) error {
 	if len(ops) == 0 {
 		return nil
 	}
@@ -1497,7 +1497,7 @@ func (jp *JispProgram) ExecuteFrame(ops []JispOperation, basePath []interface{},
 	frame := &CallFrame{
 		Ops:       ops,
 		Ip:        0,
-		basePath:  basePath,
+		BasePath:  BasePath,
 		Variables: frameVars,
 	}
 	jp.CallStack = append(jp.CallStack, frame)
@@ -2608,7 +2608,7 @@ func main() {
 	}
 
 	// Marshal the final state to JSON
-	output, err := json.MarshalIndent(jp, "", "  ")
+	output, err := json.MarshalIndent(&jp, "", "  ")
 	if err != nil {
 		log.Fatalf("Error marshaling final state: %v", err)
 	}
