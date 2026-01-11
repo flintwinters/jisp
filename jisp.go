@@ -261,12 +261,19 @@ func (cf *CallFrame) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// Import defines a single import statement.
+type Import struct {
+	Path []string `json:"path,omitempty"`
+	URL  string   `json:"url,omitempty"`
+}
+
 // JispProgram represents the entire state of a JISP program, including the
 // execution stack, variables map, a general-purpose state map, and a call stack.
 type JispProgram struct {
 	PID         string                 `json:"pid,omitempty"`
 	Stack       []interface{}          `json:"stack"`
 	Variables   map[string]interface{} `json:"variables"`
+	Imports     []Import               `json:"imports,omitempty"`
 	Code        []JispOperation        `json:"code"`
 	CallStack   []*CallFrame           `json:"call_stack"`
 	Error       *JispError             `json:"error,omitempty"`
@@ -367,6 +374,39 @@ func (jp *JispProgram) ensureInitialized() {
 	if jp.CallStack == nil {
 		jp.CallStack = []*CallFrame{}
 	}
+}
+
+func (jp *JispProgram) processImports() error {
+	if len(jp.Imports) == 0 {
+		return nil
+	}
+
+	jp.ensureInitialized()
+
+	for _, imp := range jp.Imports {
+		if len(imp.Path) > 0 {
+			libName := imp.Path[0]
+			// For now, only handle local jisp imports.
+			// Try .jisp then .json
+			filename := libName + ".jisp"
+			data, err := os.ReadFile(filename)
+			if err != nil {
+				filename = libName + ".json"
+				data, err = os.ReadFile(filename)
+				if err != nil {
+					return fmt.Errorf("import error: could not read file for import '%s': %w", libName, err)
+				}
+			}
+
+			var importedCode interface{}
+			if err := json.Unmarshal(data, &importedCode); err != nil {
+				return fmt.Errorf("import error: could not parse JSON for import '%s': %w", libName, err)
+			}
+			jp.Variables[libName] = importedCode
+		}
+		// TODO: Handle URL imports later.
+	}
+	return nil
 }
 
 // JispOperation represents a single instruction in a JISP program, consisting
@@ -1000,19 +1040,9 @@ func unique(slice []interface{}) []interface{} {
 }
 
 
-func isNumberSlice(slice []interface{}) bool {
+func isSliceOfType[T any](slice []interface{}) bool {
 	for _, item := range slice {
-		if _, ok := item.(float64); !ok {
-			return false
-		}
-	}
-	return true
-}
-
-
-func isStringSlice(slice []interface{}) bool {
-	for _, item := range slice {
-		if _, ok := item.(string); !ok {
+		if _, ok := item.(T); !ok {
 			return false
 		}
 	}
@@ -1184,7 +1214,7 @@ func sortOp(jp *JispProgram, op *JispOperation) error {
 		// Check type of first element to determine sort type
 		switch v[0].(type) {
 		case float64:
-			if !isNumberSlice(v) {
+			if !isSliceOfType[float64](v) {
 				return fmt.Errorf("sort error: array contains mixed types")
 			}
 			sort.Slice(v, func(i, j int) bool {
@@ -1193,7 +1223,7 @@ func sortOp(jp *JispProgram, op *JispOperation) error {
 			jp.Push(v)
 			return nil
 		case string:
-			if !isStringSlice(v) {
+			if !isSliceOfType[string](v) {
 				return fmt.Errorf("sort error: array contains mixed types")
 			}
 			sort.Slice(v, func(i, j int) bool {
@@ -2603,6 +2633,10 @@ func main() {
 
 	// Initialize maps and slices if they are nil after unmarshaling
 	jp.ensureInitialized()
+
+	if err := jp.processImports(); err != nil {
+		log.Fatalf("Error processing imports: %v", err)
+	}
 
 	// Start execution only if there's no pre-existing error.
 	if jp.Error == nil {
