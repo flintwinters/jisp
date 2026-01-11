@@ -89,12 +89,12 @@ func (p Patch) Apply(doc []byte) ([]byte, error) {
 
 func applyOp(doc *interface{}, op Operation) error {
 	parts := strings.Split(op.Path, "/")[1:]
-	
+
 	container, key, err := findContainer(*doc, parts)
 	if err != nil {
 		return err
 	}
-	
+
 	switch op.Op {
 	case "add", "replace":
 		m, ok := container.(map[string]interface{})
@@ -204,7 +204,6 @@ func exitOp(jp *JispProgram, op *JispOperation) error {
 	return ErrExit
 }
 
-
 type JispError struct {
 	OperationName      string                 `json:"operation_name"`
 	InstructionPointer []interface{}          `json:"instruction_pointer"`
@@ -217,9 +216,6 @@ type JispError struct {
 func (e *JispError) Error() string {
 	return fmt.Sprintf("Jisp error in '%s' at %v: %s", e.OperationName, e.InstructionPointer, e.Message)
 }
-
-
-
 
 func parseRawOperation(rawOp []interface{}) (JispOperation, error) {
 	if len(rawOp) == 0 {
@@ -242,9 +238,9 @@ func parseRawOperation(rawOp []interface{}) (JispOperation, error) {
 // CallFrame represents a single frame on the call stack, holding the instruction
 // pointer and the operations for its execution context.
 type CallFrame struct {
-	Ip       int                    `json:"-"`
-	Ops      []JispOperation        `json:"Ops"`
-	basePath []interface{}          `json:"basePath"`
+	Ip        int                    `json:"-"`
+	Ops       []JispOperation        `json:"Ops"`
+	basePath  []interface{}          `json:"basePath"`
 	Variables map[string]interface{} `json:"variables,omitempty"`
 }
 
@@ -270,20 +266,20 @@ type Import struct {
 // JispProgram represents the entire state of a JISP program, including the
 // execution stack, variables map, a general-purpose state map, and a call stack.
 type JispProgram struct {
-	PID         string                 `json:"pid,omitempty"`
-	Stack       []interface{}          `json:"stack"`
-	Variables   map[string]interface{} `json:"variables"`
-	Imports     []Import               `json:"imports,omitempty"`
-	Code        []JispOperation        `json:"code"`
-	CallStack   []*CallFrame           `json:"call_stack"`
-	Error       *JispError             `json:"error,omitempty"`
-	History     []json.RawMessage      `json:"history"`
-	SaveHistory bool                   `json:"save_history,omitempty"`
-	Debug       bool                   `json:"debug,omitempty"`
-	Breakpoints [][]interface{}        `json:"breakpoints,omitempty"`
-	Running     bool                   `json:"running,omitempty"`
-	done        chan struct{}          `json:"-"`
-	runningMutex sync.Mutex            `json:"-"`
+	PID          string                 `json:"pid,omitempty"`
+	Stack        []interface{}          `json:"stack"`
+	Variables    map[string]interface{} `json:"variables"`
+	Imports      []Import               `json:"imports,omitempty"`
+	Code         []JispOperation        `json:"code"`
+	CallStack    []*CallFrame           `json:"call_stack"`
+	Error        *JispError             `json:"error,omitempty"`
+	History      []json.RawMessage      `json:"history"`
+	SaveHistory  bool                   `json:"save_history,omitempty"`
+	Debug        bool                   `json:"debug,omitempty"`
+	Breakpoints  [][]interface{}        `json:"breakpoints,omitempty"`
+	Running      bool                   `json:"running,omitempty"`
+	done         chan struct{}          `json:"-"`
+	runningMutex sync.Mutex             `json:"-"`
 }
 
 func (cf *CallFrame) UnmarshalJSON(data []byte) error {
@@ -437,7 +433,6 @@ func (op *JispOperation) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-
 type operationHandler func(jp *JispProgram, op *JispOperation) error
 
 // makeNoArgsHandler is a higher-order function that wraps a JispProgram method
@@ -524,54 +519,53 @@ func stepOp(jp *JispProgram, op *JispOperation) error {
 		jp.Push(subProgram)
 		return nil
 	}
-	
+
 	if subProgram.currentFrame() == nil {
-			// If the sub-program hasn't started yet, initialize its call stack
-			frame := &CallFrame{
-				Ops:       subProgram.Code,
-				Ip:        0,
-				basePath:  []interface{}{"code"},
-				Variables: subProgram.Variables,
-			}
-			subProgram.CallStack = append(subProgram.CallStack, frame)
+		// If the sub-program hasn't started yet, initialize its call stack
+		frame := &CallFrame{
+			Ops:       subProgram.Code,
+			Ip:        0,
+			basePath:  []interface{}{"code"},
+			Variables: subProgram.Variables,
 		}
-	
-		if frame := subProgram.currentFrame(); frame != nil && frame.Ip < len(frame.Ops) && subProgram.SaveHistory {
-			before, err := json.Marshal(subProgram)
-			if err != nil {
-				return fmt.Errorf("step error: failed to snapshot sub-program: %w", err)
-			}
-	
-			err = subProgram.executeSingleInstruction() // Execute one instruction
-			if err != nil && !errors.Is(err, ErrBreakpoint) {
-				return fmt.Errorf("step error: during single instruction execution: %w", err)
-			}
-	
-			after, err := json.Marshal(subProgram)
-			if err != nil {
-				return fmt.Errorf("step error: failed to marshal post-execution state: %w", err)
-			}
-	
-			patch, err := CreatePatch(after, before)
-			if err != nil {
-				return fmt.Errorf("step error: failed to generate diff: %w", err)
-			}
-	
-			patchBytes, err := patch.MarshalJSON()
-			if err != nil {
-				return fmt.Errorf("step error: failed to marshal patch: %w", err)
-			}
-			subProgram.History = append(subProgram.History, patchBytes)
-		} else if frame != nil && frame.Ip < len(frame.Ops) {
-			err := subProgram.executeSingleInstruction() // Execute one instruction
-			if err != nil && !errors.Is(err, ErrBreakpoint) {
-				return fmt.Errorf("step error: during single instruction execution: %w", err)
-			}
+		subProgram.CallStack = append(subProgram.CallStack, frame)
+	}
+
+	if frame := subProgram.currentFrame(); frame != nil && frame.Ip < len(frame.Ops) && subProgram.SaveHistory {
+		before, err := json.Marshal(subProgram)
+		if err != nil {
+			return fmt.Errorf("step error: failed to snapshot sub-program: %w", err)
 		}
+
+		err = subProgram.executeSingleInstruction() // Execute one instruction
+		if err != nil && !errors.Is(err, ErrBreakpoint) {
+			return fmt.Errorf("step error: during single instruction execution: %w", err)
+		}
+
+		after, err := json.Marshal(subProgram)
+		if err != nil {
+			return fmt.Errorf("step error: failed to marshal post-execution state: %w", err)
+		}
+
+		patch, err := CreatePatch(after, before)
+		if err != nil {
+			return fmt.Errorf("step error: failed to generate diff: %w", err)
+		}
+
+		patchBytes, err := patch.MarshalJSON()
+		if err != nil {
+			return fmt.Errorf("step error: failed to marshal patch: %w", err)
+		}
+		subProgram.History = append(subProgram.History, patchBytes)
+	} else if frame != nil && frame.Ip < len(frame.Ops) {
+		err := subProgram.executeSingleInstruction() // Execute one instruction
+		if err != nil && !errors.Is(err, ErrBreakpoint) {
+			return fmt.Errorf("step error: during single instruction execution: %w", err)
+		}
+	}
 	jp.Push(subProgram)
 	return nil
 }
-
 
 func undoOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) != 0 {
@@ -637,7 +631,6 @@ func undoOp(jp *JispProgram, op *JispOperation) error {
 	jp.Push(&revertedProgram)
 	return nil
 }
-
 
 func (jp *JispProgram) Run() error {
 	if jp.currentFrame() == nil {
@@ -816,8 +809,8 @@ func concatOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
-func lenStringHandler(s string) (interface{}, error) { return float64(len(s)), nil }
-func lenArrayHandler(a []interface{}) (interface{}, error) { return float64(len(a)), nil }
+func lenStringHandler(s string) (interface{}, error)                 { return float64(len(s)), nil }
+func lenArrayHandler(a []interface{}) (interface{}, error)           { return float64(len(a)), nil }
 func lenObjectHandler(m map[string]interface{}) (interface{}, error) { return float64(len(m)), nil }
 
 func keysObjectHandler(m map[string]interface{}) (interface{}, error) {
@@ -884,17 +877,16 @@ func sliceOp(jp *JispProgram, op *JispOperation) error {
 		end = int(endFloat)
 	}
 
-	var sliceable Slicer
+	var length int
 	switch v := inputVal.(type) {
 	case string:
-		sliceable = stringSlicer(v)
+		length = len(v)
 	case []interface{}:
-		sliceable = sliceSlicer(v)
+		length = len(v)
 	default:
 		return fmt.Errorf("slice error: unsupported type %T for slicing, expected string or array", inputVal)
 	}
 
-	length := sliceable.Len()
 	if !hasEnd {
 		end = length
 	}
@@ -903,79 +895,84 @@ func sliceOp(jp *JispProgram, op *JispOperation) error {
 		return fmt.Errorf("slice error: invalid indices [%d:%d] for collection of length %d", start, end, length)
 	}
 
-	jp.Push(sliceable.Slice(start, end))
+	switch v := inputVal.(type) {
+	case string:
+		jp.Push(v[start:end])
+	case []interface{}:
+		jp.Push(v[start:end])
+	}
+
 	return nil
 }
 
 func init() {
 	operations = map[string]operationHandler{
-	"push":         pushOp,
-	"pop":          popOp,
-	"set":          setOp,
-	"get":          getOp,
-	"if":           ifOp,
-	"while":        whileOp,
-	"raise":        raiseOp,
-	"assert":       assertOp,
-	"await":        awaitOp,
-	"range":        rangeOp,
-	"foreach":      forOp,
-	"filter":       filterOp,
-	"map":          mapOp,
-	"reduce":       reduceOp,
-	"sort":         sortOp,
-	"union":        unionOp,
-	"intersection": intersectionOp,
-	"difference":   differenceOp,
-	"join":         joinOp,
-	"valid":        validOp,
-	"call":         callOp,
-	"return":       returnOp,
-	"exit":         exitOp,
-	"step":         stepOp,
-	"undo":         undoOp,
-	"run":          runOp,
-	"spawn":        spawnOp,
-	"breakpoint":   breakpointOp,
-	"to_string": 	toStringOp,
-	"concat": 		concatOp,
-	"try":  		tryOp,
-	"replace": 		replaceOp,
-	"for":          forOp,
-	"slice": 		sliceOp,
-	"exists":       makeNoArgsHandler((*JispProgram).Exists),
-	"delete":       makeNoArgsHandler((*JispProgram).Delete),
-	"eq":           makeNoArgsHandler((*JispProgram).Eq),
-	"lt":           makeNoArgsHandler((*JispProgram).Lt),
-	"gt":           makeNoArgsHandler((*JispProgram).Gt),
-	"add":          makeNoArgsHandler((*JispProgram).Add),
-	"sub":          makeNoArgsHandler((*JispProgram).Sub),
-	"mul":          makeNoArgsHandler((*JispProgram).Mul),
-	"div":          makeNoArgsHandler((*JispProgram).Div),
-	"mod":          makeNoArgsHandler((*JispProgram).Mod),
-	"and":          makeNoArgsHandler((*JispProgram).And),
-	"or":           makeNoArgsHandler((*JispProgram).Or),
-	"not":          makeNoArgsHandler((*JispProgram).Not),
-	"trim":         makeStringUnaryOpHandler(strings.TrimSpace),
-	"lower":        makeStringUnaryOpHandler(strings.ToLower),
-	"upper":        makeStringUnaryOpHandler(strings.ToUpper),
-	"break":    	makeConstantErrorHandler(ErrBreak),
-	"continue": 	makeConstantErrorHandler(ErrContinue),
-	"noop": 		makeConstantErrorHandler(nil),
-	"len": makeCollectionOpHandler(collectionHandlers{
-		stringHandler: lenStringHandler,
-		arrayHandler:  lenArrayHandler,
-		objectHandler: lenObjectHandler,
-	}),
-	"keys": makeCollectionOpHandler(collectionHandlers{
-		objectHandler: keysObjectHandler,
-	}),
-	"values": makeCollectionOpHandler(collectionHandlers{
-		objectHandler: valuesObjectHandler,
-	}),
+		"push":         pushOp,
+		"pop":          popOp,
+		"set":          setOp,
+		"get":          getOp,
+		"if":           ifOp,
+		"while":        whileOp,
+		"raise":        raiseOp,
+		"assert":       assertOp,
+		"await":        awaitOp,
+		"range":        rangeOp,
+		"foreach":      forOp,
+		"filter":       filterOp,
+		"map":          mapOp,
+		"reduce":       reduceOp,
+		"sort":         sortOp,
+		"union":        unionOp,
+		"intersection": intersectionOp,
+		"difference":   differenceOp,
+		"join":         joinOp,
+		"valid":        validOp,
+		"call":         callOp,
+		"return":       returnOp,
+		"exit":         exitOp,
+		"step":         stepOp,
+		"undo":         undoOp,
+		"run":          runOp,
+		"spawn":        spawnOp,
+		"breakpoint":   breakpointOp,
+		"to_string":    toStringOp,
+		"concat":       concatOp,
+		"try":          tryOp,
+		"replace":      replaceOp,
+		"for":          forOp,
+		"slice":        sliceOp,
+		"exists":       makeNoArgsHandler((*JispProgram).Exists),
+		"delete":       makeNoArgsHandler((*JispProgram).Delete),
+		"eq":           makeNoArgsHandler((*JispProgram).Eq),
+		"lt":           makeNoArgsHandler((*JispProgram).Lt),
+		"gt":           makeNoArgsHandler((*JispProgram).Gt),
+		"add":          makeNoArgsHandler((*JispProgram).Add),
+		"sub":          makeNoArgsHandler((*JispProgram).Sub),
+		"mul":          makeNoArgsHandler((*JispProgram).Mul),
+		"div":          makeNoArgsHandler((*JispProgram).Div),
+		"mod":          makeNoArgsHandler((*JispProgram).Mod),
+		"and":          makeNoArgsHandler((*JispProgram).And),
+		"or":           makeNoArgsHandler((*JispProgram).Or),
+		"not":          makeNoArgsHandler((*JispProgram).Not),
+		"trim":         makeStringUnaryOpHandler(strings.TrimSpace),
+		"lower":        makeStringUnaryOpHandler(strings.ToLower),
+		"upper":        makeStringUnaryOpHandler(strings.ToUpper),
+		"break":        makeConstantErrorHandler(ErrBreak),
+		"continue":     makeConstantErrorHandler(ErrContinue),
+		"noop":         makeConstantErrorHandler(nil),
+		"len": makeCollectionOpHandler(collectionHandlers{
+			stringHandler: lenStringHandler,
+			arrayHandler:  lenArrayHandler,
+			objectHandler: lenObjectHandler,
+		}),
+		"keys": makeCollectionOpHandler(collectionHandlers{
+			objectHandler: keysObjectHandler,
+		}),
+		"values": makeCollectionOpHandler(collectionHandlers{
+			objectHandler: valuesObjectHandler,
+		}),
 	}
 }
-
 
 func validOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) != 0 {
@@ -1011,7 +1008,6 @@ func validOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
-
 func toComparableSlice(input []interface{}, opName string) ([]interface{}, error) {
 	for _, item := range input {
 		switch item.(type) {
@@ -1026,7 +1022,6 @@ func toComparableSlice(input []interface{}, opName string) ([]interface{}, error
 	return input, nil
 }
 
-
 func unique(slice []interface{}) []interface{} {
 	allKeys := make(map[interface{}]bool)
 	list := []interface{}{}
@@ -1038,7 +1033,6 @@ func unique(slice []interface{}) []interface{} {
 	}
 	return list
 }
-
 
 func isSliceOfType[T any](slice []interface{}) bool {
 	for _, item := range slice {
@@ -1130,7 +1124,6 @@ func differenceOp(jp *JispProgram, op *JispOperation) error {
 	jp.Push(unique(result))
 	return nil
 }
-
 
 func joinOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) != 0 {
@@ -1409,23 +1402,6 @@ func assertOp(jp *JispProgram, op *JispOperation) error {
 	return nil
 }
 
-
-type Slicer interface {
-	Len() int
-	Slice(i, j int) interface{}
-}
-
-type stringSlicer string
-
-func (s stringSlicer) Len() int                   { return len(s) }
-func (s stringSlicer) Slice(i, j int) interface{} { return s[i:j] }
-
-type sliceSlicer []interface{}
-
-func (s sliceSlicer) Len() int                   { return len(s) }
-func (s sliceSlicer) Slice(i, j int) interface{} { return s[i:j] }
-
-
 func (jp *JispProgram) currentInstructionPath() []interface{} {
 	frame := jp.currentFrame()
 	if frame == nil {
@@ -1435,7 +1411,6 @@ func (jp *JispProgram) currentInstructionPath() []interface{} {
 	return append(frame.basePath, frame.Ip)
 }
 
-
 func (jp *JispProgram) executeOperationsWithPathSegment(ops []JispOperation, segment interface{}, useParentScope bool) error {
 	parentPath := jp.currentInstructionPath()
 	// It's crucial to copy the parentPath to avoid mutations across different branches of execution.
@@ -1444,7 +1419,6 @@ func (jp *JispProgram) executeOperationsWithPathSegment(ops []JispOperation, seg
 	path[len(parentPath)] = segment
 	return jp.ExecuteFrame(ops, path, useParentScope, -1)
 }
-
 
 func (jp *JispProgram) executeSingleInstruction() error {
 	frame := jp.currentFrame()
@@ -1554,7 +1528,6 @@ func (jp *JispProgram) ExecuteFrame(ops []JispOperation, basePath []interface{},
 	return nil
 }
 
-
 func toFloat(v interface{}) (float64, bool) {
 	switch i := v.(type) {
 	case float64:
@@ -1569,7 +1542,6 @@ func toFloat(v interface{}) (float64, bool) {
 		return 0, false
 	}
 }
-
 
 func pathsEqual(p1, p2 []interface{}) bool {
 	if len(p1) != len(p2) {
@@ -1592,7 +1564,6 @@ func pathsEqual(p1, p2 []interface{}) bool {
 	}
 	return true
 }
-
 
 func callOp(jp *JispProgram, op *JispOperation) error {
 	// Pop the function to be called from the stack.
@@ -1854,8 +1825,6 @@ func applyCollectionLoop(
 	return result, nil
 }
 
-
-
 func (jp *JispProgram) Push(value interface{}) {
 	jp.Stack = append(jp.Stack, value)
 }
@@ -1976,7 +1945,6 @@ func (jp *JispProgram) setValueForPath(pathVal interface{}, value interface{}) e
 	}
 }
 
-
 func setOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) == 0 {
 		// No args: pop value, then pop path from the stack.
@@ -2062,7 +2030,6 @@ func (jp *JispProgram) getValueByPath(path []interface{}) (interface{}, error) {
 		return nil, fmt.Errorf("get error: invalid final path segment type %T in path %v", lastSegment, path)
 	}
 }
-
 
 func (jp *JispProgram) getValueForPath(pathVal interface{}) (interface{}, error) {
 	switch path := pathVal.(type) {
@@ -2269,19 +2236,19 @@ func (jp *JispProgram) For(loopVar string, collection interface{}, bodyOps []Jis
 				return err // Propagate other errors
 			}
 		}
-	    case map[string]interface{}:
-			for key := range c {
-				jp.Variables[loopVar] = key
-				jp.Variables[loopVar+"_value"] = c[key] // Expose the value
-				if err := jp.executeLoopBody(bodyOps, bodyOpsPathSegment); err != nil {
-					if errors.Is(err, ErrBreak) {
-						return nil // Break from loop
-					}
-					return err // Propagate other errors
+	case map[string]interface{}:
+		for key := range c {
+			jp.Variables[loopVar] = key
+			jp.Variables[loopVar+"_value"] = c[key] // Expose the value
+			if err := jp.executeLoopBody(bodyOps, bodyOpsPathSegment); err != nil {
+				if errors.Is(err, ErrBreak) {
+					return nil // Break from loop
 				}
+				return err // Propagate other errors
 			}
-		default:
-			return fmt.Errorf("for error: unsupported collection type %T", collection)
+		}
+	default:
+		return fmt.Errorf("for error: unsupported collection type %T", collection)
 	}
 	return nil
 }
@@ -2309,8 +2276,6 @@ func (jp *JispProgram) handleCaughtError(caughtErr *JispError, catchVar string, 
 		_ = jp.executeOperationsWithPathSegment(catchBody, catchBodyPathSegment, true)
 	}
 }
-
-
 
 // pop pops a single value from the stack and asserts it to the specified type T.
 func pop[T any](jp *JispProgram, opName string) (T, error) {
@@ -2389,7 +2354,6 @@ func popThree[T1 any, T2 any, T3 any](jp *JispProgram, opName string) (T1, T2, T
 }
 
 // popx pops n values from the stack and returns them as a slice.
-
 
 func (jp *JispProgram) popx(opName string, n int) ([]interface{}, error) {
 	if len(jp.Stack) < n {
@@ -2494,7 +2458,6 @@ func parseJispOps(raw interface{}) ([]JispOperation, error) {
 	return Ops, nil
 }
 
-
 func isTerminal(f *os.File) bool {
 	fileInfo, err := f.Stat()
 	if err != nil {
@@ -2574,17 +2537,17 @@ func colorizeJSON(data []byte) []byte {
 			i = j - 1
 		case bytes.HasPrefix(data[i:], []byte("true")):
 			result = append(result, []byte(Blue)...)
-			result = append(result, []byte("true")	...)
+			result = append(result, []byte("true")...)
 			result = append(result, []byte(Reset)...)
 			i += 3
 		case bytes.HasPrefix(data[i:], []byte("false")):
 			result = append(result, []byte(Blue)...)
-			result = append(result, []byte("false")	...)
+			result = append(result, []byte("false")...)
 			result = append(result, []byte(Reset)...)
 			i += 4
 		case bytes.HasPrefix(data[i:], []byte("null")):
 			result = append(result, []byte(Red)...)
-			result = append(result, []byte("null")	...)
+			result = append(result, []byte("null")...)
 			result = append(result, []byte(Reset)...)
 			i += 3
 		default:
@@ -2594,12 +2557,7 @@ func colorizeJSON(data []byte) []byte {
 	return result
 }
 
-
-
-
-
 // ANSI color codes
-
 
 const (
 	Reset   = "\033[0m"
