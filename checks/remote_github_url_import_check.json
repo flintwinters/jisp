@@ -1,0 +1,21 @@
+[
+  {
+    "description": "Import from a remote GitHub repository and verify its content.",
+    "jisp_program": {
+      "imports": [
+        {"url": "https://github.com/flintwinters/httpschema", "path": ["httpschema"]}
+      ],
+      "code": [
+        ["get", ["httpschema", "title"]],
+        ["pop", "imported_title"],
+        ["get", ["httpschema", "description"]],
+        ["pop", "imported_description"]
+      ]
+    },
+    "expected_stack": [],
+    "expected_variables": {
+      "imported_title": "httpschema",
+      "imported_description": "http library for jisp"
+    }
+  }
+]

@@ -8,8 +8,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"math"
+	"net/http"
 	"os"
 	"reflect"
 	"sort"
@@ -380,7 +382,47 @@ func (jp *JispProgram) processImports() error {
 	jp.ensureInitialized()
 
 	for _, imp := range jp.Imports {
-		if len(imp.Path) > 0 {
+		if imp.URL != "" {
+			var libName string
+			if len(imp.Path) > 0 {
+				libName = imp.Path[0]
+			} else {
+				parts := strings.Split(imp.URL, "/")
+				if len(parts) == 0 {
+					return fmt.Errorf("import error: invalid URL for import: %s", imp.URL)
+				}
+				libName = parts[len(parts)-1]
+			}
+
+			var fetchURL string
+			if strings.Contains(imp.URL, "github.com") {
+				fetchURL = strings.Replace(imp.URL, "github.com", "raw.githubusercontent.com", 1)
+				fetchURL += "/main/main.json"
+			} else {
+				return fmt.Errorf("import error: only github.com URLs are currently supported, got: %s", imp.URL)
+			}
+
+			resp, err := http.Get(fetchURL)
+			if err != nil {
+				return fmt.Errorf("import error: could not fetch from URL %s: %w", fetchURL, err)
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				return fmt.Errorf("import error: failed to fetch from URL %s, status: %s", fetchURL, resp.Status)
+			}
+
+			data, err := io.ReadAll(resp.Body)
+			if err != nil {
+				return fmt.Errorf("import error: could not read response body from URL %s: %w", fetchURL, err)
+			}
+
+			var importedCode interface{}
+			if err := json.Unmarshal(data, &importedCode); err != nil {
+				return fmt.Errorf("import error: could not parse JSON for import from '%s': %w", imp.URL, err)
+			}
+			jp.Variables[libName] = importedCode
+		} else if len(imp.Path) > 0 {
 			libName := imp.Path[0]
 			// For now, only handle local jisp imports.
 			// Try .jisp then .json
@@ -400,7 +442,6 @@ func (jp *JispProgram) processImports() error {
 			}
 			jp.Variables[libName] = importedCode
 		}
-		// TODO: Handle URL imports later.
 	}
 	return nil
 }
