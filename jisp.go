@@ -1799,8 +1799,8 @@ func httpRouteOp(jp *JispProgram, op *JispOperation) error {
 		return err
 	}
 
-	handlerFnVal := values[0]
-	path := values[1].(string)
+	handlerFnVal := values[1]
+	path := values[0].(string)
 
 	// Capture the current program state to be used as a template for the handler
 	// We need a deep copy of the program state for each handler instance
@@ -1827,6 +1827,8 @@ func httpRouteOp(jp *JispProgram, op *JispOperation) error {
 		handlerJispProgram.ensureInitialized()
 
 		// Push request and response writer to the stack of the new program
+		// Note the order: response_writer (w) is pushed first, then request (r)
+		// So request is at the top of the stack.
 		handlerJispProgram.Push(map[string]interface{}{"type": "http.ResponseWriter", "value": w})
 		handlerJispProgram.Push(map[string]interface{}{"type": "http.Request", "value": r})
 
@@ -1840,12 +1842,16 @@ func httpRouteOp(jp *JispProgram, op *JispOperation) error {
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 			return
 		}
+		if handlerJispProgram.Error != nil {
+			log.Printf("Jisp handler finished with error: %v", handlerJispProgram.Error.Message)
+			http.Error(w, fmt.Sprintf("Jisp Handler Error: %s", handlerJispProgram.Error.Message), http.StatusInternalServerError)
+			return
+		}
 	})
 
 	jp.Push("ok")
 	return nil
 }
-
 func httpServeOp(jp *JispProgram, op *JispOperation) error {
 	if len(op.Args) != 0 {
 		return fmt.Errorf("http-serve error: expected 0 arguments, got %d", len(op.Args))
