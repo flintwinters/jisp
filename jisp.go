@@ -1012,6 +1012,17 @@ func init() {
 		"values": makeCollectionOpHandler(collectionHandlers{
 			objectHandler: valuesObjectHandler,
 		}),
+		"http-get":            httpGetOp,
+		"http-post":           httpPostOp,
+		"http-res-body":       httpResBodyOp,
+		"http-res-status":     httpResStatusOp,
+		"http-route":          httpRouteOp,
+		"http-serve":          httpServeOp,
+		"http-req-method":     httpReqMethodOp,
+		"http-req-path":       httpReqPathOp,
+		"http-req-body":       httpReqBodyOp,
+		"http-res-set-status": httpResSetStatusOp,
+		"http-res-write-body": httpResWriteBodyOp,
 	}
 }
 
@@ -1695,6 +1706,302 @@ func ifOp(jp *JispProgram, op *JispOperation) error {
 		}
 	}
 	return jp.If(thenBody, elseBody)
+}
+
+// Define a type for a Jisp HTTP handler function
+type JispHttpHandler func(w http.ResponseWriter, r *http.Request, jp *JispProgram)
+
+// handlerRegistry maps paths to JispHttpHandler functions
+var handlerRegistry = make(map[string]JispHttpHandler)
+
+func httpGetOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("http-get error: expected 0 arguments, got %d", len(op.Args))
+	}
+	url, err := pop[string](jp, "http-get")
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("http-get error: failed to perform GET request: %w", err)
+	}
+	jp.Push(resp)
+	return nil
+}
+
+func httpPostOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("http-post error: expected 0 arguments, got %d", len(op.Args))
+	}
+	url, contentType, body, err := popThree[string, string, string](jp, "http-post")
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.Post(url, contentType, strings.NewReader(body))
+	if err != nil {
+		return fmt.Errorf("http-post error: failed to perform POST request: %w", err)
+	}
+	jp.Push(resp)
+	return nil
+}
+
+func httpResBodyOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("http-res-body error: expected 0 arguments, got %d", len(op.Args))
+	}
+	respVal, err := jp.popValue("http-res-body")
+	if err != nil {
+		return err
+	}
+
+	resp, ok := respVal.(*http.Response)
+	if !ok {
+		return fmt.Errorf("http-res-body error: expected *http.Response on stack, got %T", respVal)
+	}
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("http-res-body error: failed to read response body: %w", err)
+	}
+	jp.Push(string(bodyBytes))
+	return nil
+}
+
+func httpResStatusOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("http-res-status error: expected 0 arguments, got %d", len(op.Args))
+	}
+	respVal, err := jp.popValue("http-res-status")
+	if err != nil {
+		return err
+	}
+
+	resp, ok := respVal.(*http.Response)
+	if !ok {
+		return fmt.Errorf("http-res-status error: expected *http.Response on stack, got %T", respVal)
+	}
+	jp.Push(float64(resp.StatusCode))
+	return nil
+}
+
+func httpRouteOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("http-route error: expected 0 arguments, got %d", len(op.Args))
+	}
+
+	// Pop handlerFn and path from stack
+	values, err := jp.popx("http-route", 2)
+	if err != nil {
+		return err
+	}
+
+	handlerFnVal := values[0]
+	path := values[1].(string)
+
+	// Capture the current program state to be used as a template for the handler
+	// We need a deep copy of the program state for each handler instance
+	handlerProgramBytes, err := json.Marshal(jp)
+	if err != nil {
+		return fmt.Errorf("http-route error: failed to marshal program state for handler: %w", err)
+	}
+
+	// Parse handlerFn into JispOperations
+	handlerOps, err := parseJispOps(handlerFnVal)
+	if err != nil {
+		return fmt.Errorf("http-route error: invalid operations block for handler: %w", err)
+	}
+
+	http.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		// Reconstruct a new JispProgram for each request based on the captured template
+		var handlerJispProgram JispProgram
+		if err := json.Unmarshal(handlerProgramBytes, &handlerJispProgram); err != nil {
+			log.Printf("HTTP handler error: failed to unmarshal JispProgram template: %v", err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+
+		handlerJispProgram.ensureInitialized()
+
+		// Push request and response writer to the stack of the new program
+		handlerJispProgram.Push(map[string]interface{}{"type": "http.ResponseWriter", "value": w})
+		handlerJispProgram.Push(map[string]interface{}{"type": "http.Request", "value": r})
+
+		// Execute the handler operations within the new program's context
+		err := handlerJispProgram.ExecuteFrame(handlerOps, []interface{}{"http_route_handler"}, false, -1)
+		if err != nil {
+			log.Printf("HTTP handler error during execution: %v", err)
+			if handlerJispProgram.Error != nil {
+				log.Printf("Jisp error details: %v", handlerJispProgram.Error.Message)
+			}
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			return
+		}
+	})
+
+	jp.Push("ok")
+	return nil
+}
+
+func httpServeOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("http-serve error: expected 0 arguments, got %d", len(op.Args))
+	}
+	addr, err := pop[string](jp, "http-serve")
+	if err != nil {
+		return err
+	}
+
+	log.Printf("Starting HTTP server on %s", addr)
+	// http.ListenAndServe blocks, so we run it in a goroutine
+	go func() {
+		if err := http.ListenAndServe(addr, nil); err != nil {
+			log.Printf("HTTP server failed: %v", err)
+			// In a real Jisp program, we might want to signal this error back
+			// to the spawning program, but for now, just log.
+		}
+	}()
+
+	jp.Push("ok") // This "ok" indicates the server *started* trying to listen.
+	return nil
+}
+
+func httpReqMethodOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("http-req-method error: expected 0 arguments, got %d", len(op.Args))
+	}
+	reqVal, err := jp.popValue("http-req-method")
+	if err != nil {
+		return err
+	}
+
+	reqMap, ok := reqVal.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("http-req-method error: expected map for request, got %T", reqVal)
+	}
+	rawReq, ok := reqMap["value"].(*http.Request)
+	if !ok {
+		return fmt.Errorf("http-req-method error: expected *http.Request in map, got %T", reqMap["value"])
+	}
+
+	jp.Push(rawReq.Method)
+	return nil
+}
+
+func httpReqPathOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("http-req-path error: expected 0 arguments, got %d", len(op.Args))
+	}
+	reqVal, err := jp.popValue("http-req-path")
+	if err != nil {
+		return err
+	}
+
+	reqMap, ok := reqVal.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("http-req-path error: expected map for request, got %T", reqVal)
+	}
+	rawReq, ok := reqMap["value"].(*http.Request)
+	if !ok {
+		return fmt.Errorf("http-req-path error: expected *http.Request in map, got %T", reqMap["value"])
+	}
+
+	jp.Push(rawReq.URL.Path)
+	return nil
+}
+
+func httpReqBodyOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("http-req-body error: expected 0 arguments, got %d", len(op.Args))
+	}
+	reqVal, err := jp.popValue("http-req-body")
+	if err != nil {
+		return err
+	}
+
+	reqMap, ok := reqVal.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("http-req-body error: expected map for request, got %T", reqVal)
+	}
+	rawReq, ok := reqMap["value"].(*http.Request)
+	if !ok {
+		return fmt.Errorf("http-req-body error: expected *http.Request in map, got %T", reqMap["value"])
+	}
+
+	bodyBytes, err := io.ReadAll(rawReq.Body)
+	if err != nil {
+		return fmt.Errorf("http-req-body error: failed to read request body: %w", err)
+	}
+	jp.Push(string(bodyBytes))
+	return nil
+}
+
+func httpResSetStatusOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("http-res-set-status error: expected 0 arguments, got %d", len(op.Args))
+	}
+	values, err := jp.popx("http-res-set-status", 2)
+	if err != nil {
+		return err
+	}
+
+	wVal := values[0]
+	codeVal := values[1]
+
+	codeFloat, ok := codeVal.(float64)
+	if !ok {
+		return fmt.Errorf("http-res-set-status error: expected numeric code, got %T", codeVal)
+	}
+
+	wMap, ok := wVal.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("http-res-set-status error: expected map for response writer, got %T", wVal)
+	}
+	rawW, ok := wMap["value"].(http.ResponseWriter)
+	if !ok {
+		return fmt.Errorf("http-res-set-status error: expected http.ResponseWriter in map, got %T", wMap["value"])
+	}
+
+	rawW.WriteHeader(int(codeFloat))
+	jp.Push("ok")
+	return nil
+}
+
+func httpResWriteBodyOp(jp *JispProgram, op *JispOperation) error {
+	if len(op.Args) != 0 {
+		return fmt.Errorf("http-res-write-body error: expected 0 arguments, got %d", len(op.Args))
+	}
+	values, err := jp.popx("http-res-write-body", 2)
+	if err != nil {
+		return err
+	}
+
+	wVal := values[0]
+	bodyVal := values[1]
+
+	bodyStr, ok := bodyVal.(string)
+	if !ok {
+		return fmt.Errorf("http-res-write-body error: expected string body, got %T", bodyVal)
+	}
+
+	wMap, ok := wVal.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("http-res-write-body error: expected map for response writer, got %T", wVal)
+	}
+	rawW, ok := wMap["value"].(http.ResponseWriter)
+	if !ok {
+		return fmt.Errorf("http-res-write-body error: expected http.ResponseWriter in map, got %T", wMap["value"])
+	}
+
+	_, err = rawW.Write([]byte(bodyStr))
+	if err != nil {
+		return fmt.Errorf("http-res-write-body error: failed to write response body: %w", err)
+	}
+	jp.Push("ok")
+	return nil
 }
 
 func tryOp(jp *JispProgram, op *JispOperation) error {
